@@ -1,0 +1,15 @@
+spring:
+  profiles:
+    active: local
+
+api:
+  client:
+    tiingo:
+      url: https://api.tiingo.com
+      auth-type: Token
+      authorization-token: ${tiingo.auth-token}
+    yahoo-finance:
+      url: http://finance.yahoo.com
+
+server:
+  port: 8080

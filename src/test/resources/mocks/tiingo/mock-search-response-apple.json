@@ -1,0 +1,92 @@
+[
+  {
+    "name": "Apple Inc",
+    "ticker": "AAPL",
+    "permaTicker": "US000000000038",
+    "openFIGIComposite": "BBG000B9XRY4",
+    "assetType": "Stock",
+    "isActive": true,
+    "countryCode": "US"
+  },
+  {
+    "name": "Applegreen Plc",
+    "ticker": "APGEF",
+    "permaTicker": "US000000092142",
+    "openFIGIComposite": "BBG00Z3XQZN5",
+    "assetType": "Stock",
+    "isActive": true,
+    "countryCode": "US"
+  },
+  {
+    "name": "Pineapple Express Inc",
+    "ticker": "PNPL",
+    "permaTicker": "US000000047877",
+    "openFIGIComposite": "BBG000D05J52",
+    "assetType": "Stock",
+    "isActive": true,
+    "countryCode": "US"
+  },
+  {
+    "name": "Apple Rush Company Inc",
+    "ticker": "APRU",
+    "permaTicker": "US000000057387",
+    "openFIGIComposite": "BBG000TKJLW1",
+    "assetType": "Stock",
+    "isActive": true,
+    "countryCode": "US"
+  },
+  {
+    "name": "Apple Green Holding Inc",
+    "ticker": "AGPL",
+    "permaTicker": "US000000080789",
+    "openFIGIComposite": "BBG001LV8MG1",
+    "assetType": "Stock",
+    "isActive": true,
+    "countryCode": "US"
+  },
+  {
+    "name": "Golden Apple Oil & Gas Inc",
+    "ticker": "GAPJ",
+    "permaTicker": "US000000059924",
+    "openFIGIComposite": "BBG000C1TL32",
+    "assetType": "Stock",
+    "isActive": true,
+    "countryCode": "US"
+  },
+  {
+    "name": "Apple Hospitality REIT Inc",
+    "ticker": "APLE",
+    "permaTicker": "US000000011715",
+    "openFIGIComposite": "BBG006473QX9",
+    "assetType": "Stock",
+    "isActive": true,
+    "countryCode": "US"
+  },
+  {
+    "name": "APPLESEED FUND INVESTOR CLASS",
+    "ticker": "APPLX",
+    "permaTicker": "US000000014828",
+    "openFIGIComposite": "BBG000HTVHF9",
+    "assetType": "Mutual Fund",
+    "isActive": true,
+    "countryCode": "US"
+  },
+  {
+    "name": "Maui Land & Pineapple Co. Inc",
+    "ticker": "MLP",
+    "permaTicker": "US000000010266",
+    "openFIGIComposite": "BBG000BB52X6",
+    "assetType": "Stock",
+    "isActive": true,
+    "countryCode": "US"
+  },
+  {
+    "name": "APPLESEED FUND INSTITUTIONAL CLASS",
+    "ticker": "APPIX",
+    "permaTicker": "US000000014829",
+    "openFIGIComposite": "BBG001HJKB46",
+    "assetType": "Mutual Fund",
+    "isActive": true,
+    "countryCode": "US"
+  }
+]

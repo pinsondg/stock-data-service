@@ -1,0 +1,45 @@
+
+spring:
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+  datasource:
+    url: jdbc:h2:mem:testdb
+    username: SA
+    password:
+    platform: org.hibernate.dialect.H2Dialect
+  h2:
+    console:
+      enabled: true
+      path: /h2-console
+  config:
+    activate:
+      on-profile: local
+---
+spring:
+  datasource:
+    url: jdbc:h2:./test
+  jpa:
+    hibernate:
+      ddl-auto: update
+  config:
+    activate:
+      on-profile: local-save
+
+---
+spring:
+  config:
+    activate:
+      on-profile: local-mock
+
+
+api:
+  client:
+    tiingo:
+      url: http://localhost
+      port: 1080
+      auth-type: Token
+      authorization-token: 123456
+    yahoo-finance:
+      url: http://localhost
+      port: 1080

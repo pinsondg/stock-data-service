@@ -1,0 +1,5 @@
+---
+databaseChangeLog:
+  - changeset:
+      id: 1
+      author: valid
