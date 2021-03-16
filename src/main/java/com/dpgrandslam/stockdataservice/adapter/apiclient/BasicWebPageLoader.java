@@ -15,7 +15,10 @@ public class BasicWebPageLoader implements WebpageLoader {
     @Override
     public Document parseUrl(String url) {
         try {
-            return Jsoup.connect(url).cookie("APID", UUID.randomUUID().toString()).get();
+            return Jsoup.connect(url)
+                    .cookie("APID", UUID.randomUUID().toString())
+                    .header("User-Agent", "bot " + Math.random() * 10)
+                    .get();
         } catch (IOException e) {
             log.error("Could not connect to url: {}.", url, e);
             return null;

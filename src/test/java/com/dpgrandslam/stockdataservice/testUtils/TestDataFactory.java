@@ -8,6 +8,7 @@ import com.dpgrandslam.stockdataservice.domain.model.options.OptionsChain;
 import java.sql.Timestamp;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.Collections;
 
 public class TestDataFactory {
@@ -17,7 +18,7 @@ public class TestDataFactory {
         public static HistoricalOption.HistoricalOptionBuilder completeWithOnePriceData() {
             return HistoricalOption.builder()
                     .optionType(Option.OptionType.CALL)
-                    .expiration(LocalDate.now())
+                    .expiration(LocalDate.now(ZoneId.of("America/New_York")))
                     .ticker("TEST")
                     .strike(12.5)
                     .historicalPriceData(Collections.singleton(OptionPriceDataMother
@@ -48,7 +49,7 @@ public class TestDataFactory {
 
         public static OptionsChain oneOption() {
             OptionsChain chain = OptionsChain.builder()
-                    .expirationDate(LocalDate.now())
+                    .expirationDate(LocalDate.now(ZoneId.of("America/New_York")))
                     .ticker("TEST")
                     .build();
             chain.addOption(HistoricalOptionMother.completeWithOnePriceData().build());
@@ -58,7 +59,7 @@ public class TestDataFactory {
         public static OptionsChain.OptionsChainBuilder emptyOptions() {
             return OptionsChain.builder()
                     .ticker("TEST")
-                    .expirationDate(LocalDate.now());
+                    .expirationDate(LocalDate.now(ZoneId.of("America/New_York")));
         }
     }
 }

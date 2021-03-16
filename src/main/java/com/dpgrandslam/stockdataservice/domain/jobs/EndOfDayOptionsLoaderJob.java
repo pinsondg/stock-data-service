@@ -12,15 +12,18 @@ import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
 import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.Queue;
-import java.util.concurrent.*;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 @Component
 @Slf4j
 public class EndOfDayOptionsLoaderJob {
 
-    private static final int STEPS = 5;
+    private static final int STEPS = 2;
 
     private ExecutorService executorService = Executors.newFixedThreadPool(STEPS);
 
@@ -53,32 +56,60 @@ public class EndOfDayOptionsLoaderJob {
         trackedStocks.addAll(trackedStockService.getAllActiveTrackedStocks());
     }
 
-    @Scheduled(cron = "0 * * * * *", zone = "EST")
-//    @Scheduled(cron = "* 10-15 ? ? ?", zone = "EST")
+//    @Scheduled(cron = "0 * * * * *", zone = "EST")
+    @Scheduled(cron = "0 * 10-15 * * *", zone = "EST")
+    public void weekdayReset() {
+        resetJob();
+    }
+
+    @Scheduled(cron = "0 * 10-15 * * *", zone = "EST")
+    public void weekendReset() {
+        resetJob();
+    }
+
+
     private void resetJob() {
-        log.info("Started Restart");
         if (jobComplete) {
             log.info("Resetting data load job for next run.");
             reset();
         }
     }
 
-//    @Scheduled(cron = "* 0-9,16-24 ? ? 1-5", zone = "EST")
-    @Scheduled(cron = "5 * * * * 1-5", zone = "EST")
-    public void storeOptionsChainEndOfDayData() {
+    @Scheduled(cron = "0 * * * * 6", zone = "EST") // Every minute on Saturday
+    public void weekendLoadJob() {
+        storeOptionsChainEndOfDayData();
+    }
+
+    @Scheduled(cron = "0 * 0-9 * * 1-5", zone = "EST")
+    public void weekdayLoadJobBeforeHours() {
+        storeOptionsChainEndOfDayData();
+    }
+
+    @Scheduled(cron = "0 * 16-23 * * 1-5", zone = "EST") // Every minute from
+    public void weekdayLoadJobAfterHours() {
+        storeOptionsChainEndOfDayData();
+    }
+
+//    @Scheduled(cron = "5 * * * * 1-5", zone = "EST")
+    private void storeOptionsChainEndOfDayData() {
         if (!jobComplete) {
             log.info("Starting data load job batch.");
             for (int i = 0; i < STEPS; i++) {
                 if (!trackedStocks.isEmpty()) {
                     executorService.execute(() -> {
                         TrackedStock current = trackedStocks.poll();
-                        log.info("Executing update for {}", current);
-                        if (current != null) {
-                            List<OptionsChain> fullOptionsChain = optionsChainLoadService
-                                    .loadFullLiveOptionsChain(current.getTicker());
-                            historicOptionsDataService.addFullOptionsChain(fullOptionsChain);
-                            current.setLastOptionsHistoricDataUpdate(LocalDate.now());
-                            trackedStockService.updateOptionUpdatedTimestamp(current.getTicker());
+                        if (current != null && !jobComplete) {
+                            log.info("Executing update for {}", current);
+                            try {
+                                List<OptionsChain> fullOptionsChain = optionsChainLoadService
+                                        .loadFullLiveOptionsChain(current.getTicker());
+                                historicOptionsDataService.addFullOptionsChain(fullOptionsChain);
+                                current.setLastOptionsHistoricDataUpdate(LocalDate.now(ZoneId.of("America/New_York")));
+                                trackedStockService.updateOptionUpdatedTimestamp(current.getTicker());
+                            } catch (Exception e) {
+                                log.error("Failed to load options chain for tracked stock: {}. Putting back in queue for retry later.", current.getTicker(), e);
+                                trackedStocks.add(current);
+                            }
                         } else {
                             completeJob();
                         }

@@ -20,6 +20,7 @@ import java.util.stream.Stream;
 
 @Service
 @Slf4j
+@Transactional
 public class HistoricOptionsDataService {
 
     @Autowired
@@ -37,14 +38,13 @@ public class HistoricOptionsDataService {
                 .orElseThrow(() -> new EntityNotFoundException("Could not find option with id " + id));
     }
 
-    @Transactional
     public HistoricalOption addOption(Option option) {
         Optional<HistoricalOption> found = historicalOptionRepository.findDistinctFirstByExpirationAndTickerAndStrikeAndOptionType(option.getExpiration(),
                 option.getTicker(),
                 option.getStrike(),
                 option.getOptionType());
         if (found.isPresent()) {
-            log.info("Option {} already exists. Adding price data instead.", found.get());
+            log.debug("Option {} already exists. Adding price data instead.", found.get());
             return addPriceDataToOption(found.get().getId(), option.getOptionPriceData());
         } else {
             return historicalOptionRepository.save(option.toHistoricalOption());
@@ -80,7 +80,7 @@ public class HistoricOptionsDataService {
         HistoricalOption option = findById(optionId);
         optionPriceData.setOption(option);
         option.getHistoricalPriceData().add(optionPriceData);
-        return historicalOptionRepository.saveAndFlush(option);
+        return historicalOptionRepository.save(option);
     }
 
     @Transactional
@@ -88,7 +88,7 @@ public class HistoricOptionsDataService {
         HistoricalOption option = findById(optionId);
         optionPriceData.forEach(data -> data.setOption(option));
         option.getHistoricalPriceData().addAll(optionPriceData);
-        return historicalOptionRepository.saveAndFlush(option);
+        return historicalOptionRepository.save(option);
     }
 
     public void removeOption(Long optionId) {

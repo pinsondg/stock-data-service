@@ -8,8 +8,7 @@ import lombok.NoArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.sql.Timestamp;
-import java.time.Instant;
-import java.time.LocalDate;
+import java.time.*;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
@@ -136,5 +135,22 @@ public abstract class OptionsChainLoadService {
                 fullChain.add(optionsChain);
             }
         });
+    }
+
+    protected LocalDate getLastTradeDate() {
+        LocalDateTime now = LocalDateTime.now(ZoneId.of("America/New_York"));
+        // If now is before a weekday at 9:30am set to previous day
+        if (isWeekday(now.getDayOfWeek()) && now.getHour() <= 9 && now.getMinute() < 30) {
+            now = now.minusDays(1);
+        }
+        //If it is a weekend go until Friday
+        while (now.getDayOfWeek() == DayOfWeek.SUNDAY || now.getDayOfWeek() == DayOfWeek.SATURDAY) {
+            now = now.minusDays(1);
+        }
+        return now.toLocalDate();
+    }
+
+    private boolean isWeekday(DayOfWeek dayOfWeek) {
+        return dayOfWeek != DayOfWeek.SATURDAY && dayOfWeek != DayOfWeek.SUNDAY;
     }
 }

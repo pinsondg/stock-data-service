@@ -15,6 +15,7 @@ import org.mockito.junit.MockitoJUnitRunner;
 
 import javax.persistence.EntityNotFoundException;
 import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.Optional;
 import java.util.stream.Stream;
 
@@ -66,11 +67,11 @@ public class HistoricOptionsDataServiceTest {
 
     @Test
     public void testFindOption_optionExists() {
-        LocalDate expiration = LocalDate.now();
+        LocalDate expiration = LocalDate.now(ZoneId.of("America/New_York"));
         when(historicalOptionRepository.findDistinctFirstByExpirationAndTickerAndStrikeAndOptionType(any(), any(), any(), any()))
                 .thenReturn(Optional.of(TestDataFactory.HistoricalOptionMother.completeWithOnePriceData().build()));
 
-        subject.findOption("TEST", LocalDate.now(), 12.5, Option.OptionType.CALL);
+        subject.findOption("TEST", LocalDate.now(ZoneId.of("America/New_York")), 12.5, Option.OptionType.CALL);
 
         verify(historicalOptionRepository, times(1)).findDistinctFirstByExpirationAndTickerAndStrikeAndOptionType(eq(expiration), eq("TEST"), eq(12.5), eq(Option.OptionType.CALL));
     }
@@ -79,12 +80,12 @@ public class HistoricOptionsDataServiceTest {
     public void testFindOption_optionDoesNotExist_throwsException() {
         when(historicalOptionRepository.findDistinctFirstByExpirationAndTickerAndStrikeAndOptionType(any(), any(), any(), any())).thenReturn(Optional.empty());
 
-        subject.findOption("TEST", LocalDate.now(), 12.5, Option.OptionType.PUT);
+        subject.findOption("TEST", LocalDate.now(ZoneId.of("America/New_York")), 12.5, Option.OptionType.PUT);
     }
 
     @Test
     public void testFindOptions_expirationAndTicker_callsCorrectMethod() {
-        LocalDate now = LocalDate.now();
+        LocalDate now = LocalDate.now(ZoneId.of("America/New_York"));
         when(historicalOptionRepository.findByExpirationAndTicker(any(), anyString())).thenReturn(Stream.of(TestDataFactory.HistoricalOptionMother.completeWithOnePriceData().build()));
 
         subject.findOptions("TEST", now);
@@ -94,8 +95,8 @@ public class HistoricOptionsDataServiceTest {
 
     @Test
     public void testFindOptions_byTicker_callsCorrectMethod() {
-        LocalDate now = LocalDate.now();
-        when(historicalOptionRepository.findByExpirationAndTicker(any(), anyString())).thenReturn(Stream.of(TestDataFactory.HistoricalOptionMother.completeWithOnePriceData().build()));
+        LocalDate now = LocalDate.now(ZoneId.of("America/New_York"));
+        when(historicalOptionRepository.findByTicker(anyString())).thenReturn(Stream.of(TestDataFactory.HistoricalOptionMother.completeWithOnePriceData().build()));
 
         subject.findOptions("TEST");
 

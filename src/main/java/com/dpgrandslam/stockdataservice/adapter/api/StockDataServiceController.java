@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.*;
 import java.sql.Timestamp;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -37,8 +38,8 @@ public class StockDataServiceController {
         if ((startDate.isPresent() || endDate.isPresent()) && expirationDate.isPresent()) {
             retVal.add(optionsChainLoadService.loadCompleteOptionsChainForExpirationDateWithPriceDataInRange(ticker,
                     expirationDate.get(),
-                    Timestamp.from(Instant.from(startDate.orElse(LocalDate.now()))),
-                    Timestamp.from(Instant.from(endDate.orElse(LocalDate.now())))));
+                    Timestamp.from(Instant.from(startDate.orElse(LocalDate.now(ZoneId.of("America/New_York"))))),
+                    Timestamp.from(Instant.from(endDate.orElse(LocalDate.now(ZoneId.of("America/New_York")))))));
         } else if (expirationDate.isPresent()){
             retVal.add(optionsChainLoadService.loadLiveOptionsChainForExpirationDate(ticker, expirationDate.get()));
         } else {

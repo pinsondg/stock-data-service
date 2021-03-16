@@ -1,0 +1,13 @@
+spring:
+  config:
+    activate:
+      on-profile: prod
+  liquibase:
+    default-schema: stock-data-service_prod
+  jpa:
+    hibernate:
+      ddl-auto: none
+  datasource:
+    url:
+    username: ${datasource.username}
+    password: ${datasource.password}

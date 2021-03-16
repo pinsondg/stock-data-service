@@ -103,7 +103,7 @@ public class HistoricalOptionRepositoryTest extends RepositoryIntTestBase {
 //        subject.save(historicalOption);
 //
 //        Stream<HistoricalOption> returned = subject.findByTickerAndExpirationWithDataBetweenDates("TEST",
-//                LocalDate.now(),
+//                LocalDate.now(ZoneId.of("America/New_York")),
 //                Timestamp.from(Instant.now().minus(6, ChronoUnit.DAYS)),
 //                Timestamp.from(Instant.now()));
 //        Set<OptionPriceData> priceData = returned.findFirst().get().getHistoricalPriceData();

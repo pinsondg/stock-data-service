@@ -55,7 +55,7 @@ public class YahooFinanceOptionsChainLoadService extends OptionsChainLoadService
     public OptionsChain loadLiveOptionsChainForExpirationDate(String ticker, LocalDate expirationDate) {
         Document document = doCall(ticker, expirationDate);
         if (parseDocumentForExpirationDates(document).stream().noneMatch(x -> x.compareTo(expirationDate) == 0)) {
-            throw new IllegalArgumentException("The expiration date provided is not valid.");
+            throw new IllegalArgumentException("The expiration date provided (" + expirationDate.toString() + ") is not valid for ticker: " + ticker + ".");
         }
         return buildOptionsChain(ticker, expirationDate, document);
     }
@@ -124,6 +124,7 @@ public class YahooFinanceOptionsChainLoadService extends OptionsChainLoadService
                     .ifPresent(val -> option.getMostRecentPriceData().setOpenInterest(val.intValue()));
             option.getMostRecentPriceData().setImpliedVolatility(extractPercent(optionRow.selectFirst("td.data-col10").text()));
             option.getMostRecentPriceData().setDataObtainedDate(Timestamp.from(Instant.now()));
+            option.getMostRecentPriceData().setTradeDate(getLastTradeDate());
             option.setOptionType(optionType);
             options.add(option);
         });
@@ -158,13 +159,17 @@ public class YahooFinanceOptionsChainLoadService extends OptionsChainLoadService
     private List<LocalDate> parseDocumentForExpirationDates(Document document) {
         List<LocalDate> timestamps = new LinkedList<>();
         if (document != null) {
-            Elements dateSelectors = document.selectFirst("div#Col1-1-OptionContracts-Proxy")
-                    .selectFirst("div.controls").selectFirst("select")
-                    .select("option");
-            dateSelectors.forEach(element -> {
-                Long timestamp = Long.parseLong(element.attr("value"));
-                timestamps.add(LocalDate.ofInstant(Instant.ofEpochSecond(timestamp), ZoneId.of("Z")));
-            });
+            try {
+                Elements dateSelectors = document.selectFirst("div#Col1-1-OptionContracts-Proxy")
+                        .selectFirst("div.controls").selectFirst("select")
+                        .select("option");
+                dateSelectors.forEach(element -> {
+                    Long timestamp = Long.parseLong(element.attr("value"));
+                    timestamps.add(LocalDate.ofInstant(Instant.ofEpochSecond(timestamp), ZoneId.of("Z")));
+                });
+            } catch (NullPointerException e) {
+                log.error("Could not parse Yahoo Finance Options Chain at: {}. Most likely due to too many calls.", document.location());
+            }
         }
         return timestamps;
     }

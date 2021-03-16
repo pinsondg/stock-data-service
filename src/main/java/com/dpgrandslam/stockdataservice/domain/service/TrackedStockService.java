@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service;
 
 import javax.persistence.EntityNotFoundException;
 import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -43,7 +44,7 @@ public class TrackedStockService {
 
     public void updateOptionUpdatedTimestamp(String ticker)  {
         TrackedStock trackedStock = findByTicker(ticker);
-        trackedStock.setLastOptionsHistoricDataUpdate(LocalDate.now());
+        trackedStock.setLastOptionsHistoricDataUpdate(LocalDate.now(ZoneId.of("America/New_York")));
         trackedStocksRepository.save(trackedStock);
     }
 
@@ -69,7 +70,7 @@ public class TrackedStockService {
         if (stockMetaData != null && stockMetaData.isValid()) {
             trackedStock.setName(stockMetaData.getName());
             trackedStock.setTicker(stockMetaData.getTicker());
-            trackedStock.setOptionsHistoricDataStartDate(LocalDate.now());
+            trackedStock.setOptionsHistoricDataStartDate(LocalDate.now(ZoneId.of("America/New_York")));
             trackedStock.setActive(true);
         } else {
             trackedStock = null;

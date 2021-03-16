@@ -6,6 +6,7 @@ import org.hibernate.annotations.Cascade;
 
 import javax.persistence.*;
 import java.sql.Timestamp;
+import java.time.LocalDate;
 
 @Data
 @Entity
@@ -47,5 +48,8 @@ public class OptionPriceData {
 
     @EqualsAndHashCode.Include
     private Timestamp dataObtainedDate;
+
+    @EqualsAndHashCode.Include
+    private LocalDate tradeDate;
 
 }
