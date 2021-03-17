@@ -14,7 +14,7 @@
     <name>StockDataService</name>
     <description>MicroService for getting stock and options data</description>
     <properties>
-        <java.version>11.0.2</java.version>
+        <java.version>11</java.version>
         <feign.version>11.0</feign.version>
         <jsoup.version>1.13.1</jsoup.version>
         <jasypt.version>1.9.2</jasypt.version>
