@@ -4,4 +4,4 @@ databaseChangeLog:
       id: 1
       author: valid
   - include:
-      file: db/changelog/liquibase-diff-changeLog.xml
+      file: db/changelog/liquibase-initial-create-changeLog.xml

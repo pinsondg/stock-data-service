@@ -166,7 +166,7 @@
                 <version>${liquibase.version}</version>
                 <configuration>
                     <changeLogFile>${project.basedir}/src/main/resources/db/changelog/db.changelog-master.yaml</changeLogFile>
-                    <outputChangeLogFile>${project.basedir}/src/main/resources/db/changelog/liquibase-diff-changeLog.xml</outputChangeLogFile>
+                    <outputChangeLogFile>${project.basedir}/src/main/resources/db/changelog/${maven.build.timestamp}_changelog.xml</outputChangeLogFile>
                     <logging>debug</logging>
                     <!--suppress UnresolvedMavenProperty -->
                     <url>${env.datasource.url}</url>
