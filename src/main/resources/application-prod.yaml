@@ -9,8 +9,8 @@ spring:
       ddl-auto: create
   datasource:
     url: jdbc:postgresql://stockdatadb.cqhdyaweszhm.us-east-1.rds.amazonaws.com:5432/StockData?currentSchema=${spring.liquibase.default-schema}
-    username: ${datasource.username}
-    password: ${datasource.password}
+    username: ${DATASOURCE_USERNAME}
+    password: ${DATASOURCE_PASSWORD}
 
 server:
   port: 5000

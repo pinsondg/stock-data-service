@@ -7,7 +7,7 @@ api:
     tiingo:
       url: https://api.tiingo.com
       auth-type: Token
-      authorization-token: ${tiingo.auth-token}
+      authorization-token: ${TIINGO_AUTH_TOKEN}
     yahoo-finance:
       url: http://finance.yahoo.com
 
