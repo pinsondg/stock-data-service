@@ -19,7 +19,8 @@
         <jsoup.version>1.13.1</jsoup.version>
         <jasypt.version>1.9.2</jasypt.version>
         <caffine.version>3.0.0</caffine.version>
-        <liquibase.version>3.10.3</liquibase.version>
+        <validation-api.version>2.0.1.Final</validation-api.version>
+        <liquibase-hibernate5.version>3.10.2</liquibase-hibernate5.version>
     </properties>
     <dependencies>
         <dependency>
@@ -175,13 +176,13 @@
                     <password>${env.datasource.password}</password>
                     <driver>org.postgresql.Driver</driver>
                     <defaultSchemaName>stock-data-service_prod</defaultSchemaName>
-                    <referenceUrl>hibernate:spring:com.dpgrandslam.stockdataservice.domain.model?dialect=org.hibernate.dialect.PostgreSQLDialect&amp;hibernate.physical_naming_strategy=org.springframework.boot.orm.jpa.hibernate.SpringPhysicalNamingStrategy&amp;hibernate.implicit_naming_strategy=org.springframework.boot.orm.jpa.hibernate.SpringImplicitNamingStrategy</referenceUrl>
+                    <referenceUrl>hibernate:spring:com.dpgrandslam.stockdataservice.domain.model?dialect=org.hibernate.dialect.PostgreSQLDialect</referenceUrl>
                 </configuration>
                 <dependencies>
                     <dependency>
                         <groupId>org.liquibase.ext</groupId>
-                        <artifactId>liquibase-hibernate4</artifactId>
-                        <version>3.5</version>
+                        <artifactId>liquibase-hibernate5</artifactId>
+                        <version>${liquibase-hibernate5.version}</version>
                     </dependency>
                     <dependency>
                         <groupId>org.springframework</groupId>
@@ -198,11 +199,16 @@
                         <artifactId>snakeyaml</artifactId>
                         <version>1.15</version>
                     </dependency>
-<!--                    <dependency>-->
-<!--                        <groupId>org.javassist</groupId>-->
-<!--                        <artifactId>javassist</artifactId>-->
-<!--                        <version>3.27.0-GA</version>-->
-<!--                    </dependency>-->
+                    <dependency>
+                        <groupId>javax.validation</groupId>
+                        <artifactId>validation-api</artifactId>
+                        <version>${validation-api.version}</version>
+                    </dependency>
+                    <dependency>
+                        <groupId>org.javassist</groupId>
+                        <artifactId>javassist</artifactId>
+                        <version>3.24.0-GA</version>
+                    </dependency>
                 </dependencies>
             </plugin>
         </plugins>
