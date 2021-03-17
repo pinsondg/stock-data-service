@@ -6,8 +6,11 @@ spring:
     default-schema: stock-data-service_prod
   jpa:
     hibernate:
-      ddl-auto: none
+      ddl-auto: create
   datasource:
-    url:
+    url: jdbc:postgresql://stockdatadb.cqhdyaweszhm.us-east-1.rds.amazonaws.com:5432/StockData?currentSchema=${spring.liquibase.default-schema}
     username: ${datasource.username}
     password: ${datasource.password}
+
+server:
+  port: 5000

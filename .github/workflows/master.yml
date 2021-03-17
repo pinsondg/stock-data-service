@@ -1,0 +1,46 @@
+# This workflow will build a Java project with Maven
+# For more information see: https://help.github.com/actions/language-and-framework-guides/building-and-testing-java-with-maven
+
+name: Java CI with Maven
+
+on:
+  push:
+    branches: [ master ]
+
+jobs:
+  build_deploy:
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set up JDK 1.8
+        uses: actions/setup-java@v1
+        with:
+          java-version: 11.0.2
+      - name: Build with Maven
+        run: mvn clean install
+      - name: Beanstalk Deploy
+        uses: einaregilsson/beanstalk-deploy@v10
+        with:
+          # AWS Access Key
+          aws_access_key: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          # AWS Secret Key
+          aws_secret_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          # AWS Region
+          region: us-east-1
+          # Beanstalk application name
+          application_name: StockDataService
+          # Beanstalk environment name. If empty a version will be created but not deployed anywhere.
+          environment_name: Stockdataservice-env
+          # Version label for new Beanstalk version
+          version_label: StockDataService-${{ github.run_id }}
+          # Version description for the new Beanstalk version
+          version_description: # optional
+          # Zip file with the version to deploy. If skipped the action will deploy existing version.
+          deployment_package: ${{ github.workspace }}/target/stockdataservice-0.0.1-SNAPSHOT.jar
+          # Whether the action should wait for the deployment to finish and log status messages during the wait. Default is "true". If set to "false" the action will start the deployment on Beanstalk and then exit.
+          wait_for_deployment: true
+          # How many seconds to wait for the environment to return to Green state after deployment is finished. Default is 30 seconds.
+          wait_for_environment_recovery: 1000
+          use_existing_version_if_available: true

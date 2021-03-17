@@ -3,3 +3,5 @@ databaseChangeLog:
   - changeset:
       id: 1
       author: valid
+  - include:
+      file: db/changelog/liquibase-diff-changeLog.xml
