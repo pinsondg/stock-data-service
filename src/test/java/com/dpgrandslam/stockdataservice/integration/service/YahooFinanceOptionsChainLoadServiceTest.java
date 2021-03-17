@@ -3,6 +3,7 @@ package com.dpgrandslam.stockdataservice.integration.service;
 import com.dpgrandslam.stockdataservice.domain.model.options.OptionsChain;
 import com.dpgrandslam.stockdataservice.domain.service.YahooFinanceOptionsChainLoadService;
 import com.dpgrandslam.stockdataservice.integration.client.MockClientTest;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.mockserver.matchers.Times;
 import org.mockserver.model.HttpResponse;
@@ -14,6 +15,7 @@ import java.time.LocalDate;
 import static junit.framework.TestCase.assertNotNull;
 import static org.mockserver.model.HttpRequest.request;
 
+@Ignore
 public class YahooFinanceOptionsChainLoadServiceTest extends MockClientTest {
 
     @Autowired
