@@ -15,6 +15,7 @@ import java.time.LocalDate;
 @AllArgsConstructor
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
 @ToString(exclude = "option")
+@Table(indexes = @Index(name = "idk_optionId_tradeDate", columnList = "option_id, trade_date", unique = true))
 public class OptionPriceData {
 
     @Id
@@ -49,6 +50,7 @@ public class OptionPriceData {
     @EqualsAndHashCode.Include
     private Timestamp dataObtainedDate;
 
+    @Column(name = "trade_date")
     @EqualsAndHashCode.Include
     private LocalDate tradeDate;
 

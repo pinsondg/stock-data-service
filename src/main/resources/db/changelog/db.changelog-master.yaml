@@ -5,3 +5,5 @@ databaseChangeLog:
       author: valid
   - include:
       file: db/changelog/liquibase-initial-create-changeLog.xml
+  - include:
+      file: db/changelog/schema/liquibase-add-index-20210322.xml

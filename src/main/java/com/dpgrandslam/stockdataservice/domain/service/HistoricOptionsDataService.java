@@ -13,9 +13,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import javax.persistence.EntityNotFoundException;
 import java.time.LocalDate;
-import java.util.Collection;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 import java.util.stream.Stream;
 
 @Service
@@ -86,8 +84,12 @@ public class HistoricOptionsDataService {
     @Transactional
     public HistoricalOption addPriceDataToOption(Long optionId, Collection<OptionPriceData> optionPriceData) {
         HistoricalOption option = findById(optionId);
-        optionPriceData.forEach(data -> data.setOption(option));
-        option.getHistoricalPriceData().addAll(optionPriceData);
+        Set<OptionPriceData> priceDataCopy = new HashSet<>(optionPriceData);
+        priceDataCopy.removeIf(data -> option.getHistoricalPriceData()
+                .stream()
+                .anyMatch(x -> data.getTradeDate().equals(x.getTradeDate())));
+        priceDataCopy.forEach(data -> data.setOption(option));
+        option.getHistoricalPriceData().addAll(priceDataCopy);
         return historicalOptionRepository.save(option);
     }
 

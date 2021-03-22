@@ -3,6 +3,7 @@ package com.dpgrandslam.stockdataservice.unit.service;
 import com.dpgrandslam.stockdataservice.adapter.repository.HistoricalOptionRepository;
 import com.dpgrandslam.stockdataservice.domain.model.options.HistoricalOption;
 import com.dpgrandslam.stockdataservice.domain.model.options.Option;
+import com.dpgrandslam.stockdataservice.domain.model.options.OptionPriceData;
 import com.dpgrandslam.stockdataservice.domain.service.HistoricOptionsDataService;
 import com.dpgrandslam.stockdataservice.testUtils.TestDataFactory;
 import org.junit.Test;
@@ -16,10 +17,11 @@ import org.mockito.junit.MockitoJUnitRunner;
 import javax.persistence.EntityNotFoundException;
 import java.time.LocalDate;
 import java.time.ZoneId;
-import java.util.Optional;
+import java.util.*;
 import java.util.stream.Stream;
 
 import static junit.framework.TestCase.assertEquals;
+import static junit.framework.TestCase.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
@@ -101,5 +103,29 @@ public class HistoricOptionsDataServiceTest {
         subject.findOptions("TEST");
 
         verify(historicalOptionRepository, times(1)).findByTicker(eq("TEST"));
+    }
+
+    @Test
+    public void testAddPriceDataToOption_duplicateDate_notAdded() {
+        LocalDate now = LocalDate.now();
+        LocalDate tomorrow = LocalDate.now().plusDays(1);
+        Set<OptionPriceData> priceDataSet = new HashSet<>();
+        priceDataSet.add(TestDataFactory.OptionPriceDataMother.complete().tradeDate(now).build());
+        priceDataSet.add(TestDataFactory.OptionPriceDataMother.complete().tradeDate(tomorrow).build());
+
+        Set<OptionPriceData> existingPriceDataSet = new HashSet<>();
+        existingPriceDataSet.add(TestDataFactory.OptionPriceDataMother.complete().tradeDate(now).build());
+        when(historicalOptionRepository.findById(anyLong())).thenReturn(Optional.of(TestDataFactory.HistoricalOptionMother.noPriceData()
+        .historicalPriceData(existingPriceDataSet).build()));
+
+        subject.addPriceDataToOption(1234L, priceDataSet);
+
+        verify(historicalOptionRepository, times(1)).findById(eq(1234L));
+        verify(historicalOptionRepository, times(1)).save(historicalOptionAC.capture());
+
+        HistoricalOption saved = historicalOptionAC.getValue();
+
+        assertEquals(2, saved.getHistoricalPriceData().size());
+        assertTrue(saved.getHistoricalPriceData().stream().anyMatch(data -> data.getTradeDate().equals(tomorrow)));
     }
 }
