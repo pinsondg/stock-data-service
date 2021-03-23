@@ -1,15 +1,18 @@
 package com.dpgrandslam.stockdataservice.domain.service;
 
 import com.dpgrandslam.stockdataservice.adapter.repository.TrackedStocksRepository;
+import com.dpgrandslam.stockdataservice.domain.event.TrackedStockAddedEvent;
 import com.dpgrandslam.stockdataservice.domain.model.stock.StockMetaData;
 import com.dpgrandslam.stockdataservice.domain.model.stock.TrackedStock;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 
 import javax.persistence.EntityNotFoundException;
 import java.time.LocalDate;
 import java.time.ZoneId;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -23,6 +26,9 @@ public class TrackedStockService {
 
     @Autowired
     private StockDataLoadService stockDataLoadService;
+
+    @Autowired
+    private ApplicationEventPublisher applicationEventPublisher;
 
     public TrackedStock findByTicker(String ticker) {
         return trackedStocksRepository.findById(ticker).orElseThrow(() -> new EntityNotFoundException("Not currently tracking stock with ticker: " + ticker));
@@ -50,10 +56,11 @@ public class TrackedStockService {
 
     public void addTrackedStocks(List<String> tickers) {
         log.info("Attempting to track tickers {}", tickers);
-        trackedStocksRepository.saveAll(tickers.stream()
+        List<TrackedStock> added = trackedStocksRepository.saveAll(tickers.stream()
                 .map(ticker -> verifyAndBuildTrackedStock(ticker)
                         .orElseThrow(() -> new IllegalStateException("Ticker: " + ticker + " is not valid. Skipping addition.")))
                 .collect(Collectors.toList()));
+        applicationEventPublisher.publishEvent(new TrackedStockAddedEvent(this, added));
     }
 
     public void addTrackedStock(String ticker) {
@@ -61,6 +68,7 @@ public class TrackedStockService {
         verifyAndBuildTrackedStock(ticker).ifPresent(trackedStock -> {
             TrackedStock saved = trackedStocksRepository.save(trackedStock);
             log.info("Added tracked stock: {}", saved);
+            applicationEventPublisher.publishEvent(new TrackedStockAddedEvent(this, Collections.singleton(saved)));
         });
     }
 

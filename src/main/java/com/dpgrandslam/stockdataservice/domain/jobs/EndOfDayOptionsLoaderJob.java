@@ -1,12 +1,15 @@
 package com.dpgrandslam.stockdataservice.domain.jobs;
 
+import com.dpgrandslam.stockdataservice.domain.event.TrackedStockAddedEvent;
 import com.dpgrandslam.stockdataservice.domain.model.options.OptionsChain;
 import com.dpgrandslam.stockdataservice.domain.model.stock.TrackedStock;
 import com.dpgrandslam.stockdataservice.domain.service.HistoricOptionsDataService;
 import com.dpgrandslam.stockdataservice.domain.service.OptionsChainLoadService;
 import com.dpgrandslam.stockdataservice.domain.service.TrackedStockService;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationListener;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
@@ -18,10 +21,11 @@ import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.stream.Collectors;
 
 @Component
 @Slf4j
-public class EndOfDayOptionsLoaderJob {
+public class EndOfDayOptionsLoaderJob implements ApplicationListener<TrackedStockAddedEvent> {
 
     private static final int STEPS = 2;
 
@@ -38,10 +42,21 @@ public class EndOfDayOptionsLoaderJob {
 
     private Queue<TrackedStock> trackedStocks;
 
-    private boolean jobComplete;
+    private JobStatus jobStatus;
+
+    @Getter
+    private enum JobStatus {
+        NOT_STARTED(false), RUNNING_MANUAL(true), RUNNING_SCHEDULED(true), COMPLETE(true);
+
+        boolean isRunning;
+
+        private JobStatus(boolean isRunning) {
+            this.isRunning = isRunning;
+        }
+    }
 
     public EndOfDayOptionsLoaderJob() {
-        this.jobComplete = false;
+        this.jobStatus = JobStatus.NOT_STARTED;
         this.trackedStocks = new ConcurrentLinkedQueue<>();
     }
 
@@ -51,7 +66,7 @@ public class EndOfDayOptionsLoaderJob {
     }
 
     private void reset() {
-        jobComplete = false;
+        jobStatus = JobStatus.NOT_STARTED;
         trackedStocks = new ConcurrentLinkedQueue<>();
         trackedStocks.addAll(trackedStockService.getAllActiveTrackedStocks());
     }
@@ -69,7 +84,7 @@ public class EndOfDayOptionsLoaderJob {
 
 
     private void resetJob() {
-        if (jobComplete) {
+        if (jobStatus == JobStatus.COMPLETE) {
             log.info("Resetting data load job for next run.");
             reset();
         }
@@ -77,28 +92,31 @@ public class EndOfDayOptionsLoaderJob {
 
     @Scheduled(cron = "0 * * * * 6", zone = "EST") // Every minute on Saturday
     public void weekendLoadJob() {
+        startJob();
         storeOptionsChainEndOfDayData();
     }
 
     @Scheduled(cron = "0 * 0-9 * * 1-5", zone = "EST")
     public void weekdayLoadJobBeforeHours() {
+        startJob();
         storeOptionsChainEndOfDayData();
     }
 
     @Scheduled(cron = "0 * 16-23 * * 1-5", zone = "EST") // Every minute from
     public void weekdayLoadJobAfterHours() {
+        startJob();
         storeOptionsChainEndOfDayData();
     }
 
 //    @Scheduled(cron = "5 * * * * 1-5", zone = "EST")
     private void storeOptionsChainEndOfDayData() {
-        if (!jobComplete) {
+        if (jobStatus.isRunning()) {
             log.info("Starting data load job batch.");
             for (int i = 0; i < STEPS; i++) {
                 if (!trackedStocks.isEmpty()) {
                     executorService.execute(() -> {
                         TrackedStock current = trackedStocks.poll();
-                        if (current != null && !jobComplete) {
+                        if (current != null && jobStatus.isRunning() && current.isActive()) {
                             log.info("Executing update for {}", current);
                             try {
                                 List<OptionsChain> fullOptionsChain = optionsChainLoadService
@@ -121,10 +139,29 @@ public class EndOfDayOptionsLoaderJob {
         }
     }
 
+    private void startJob() {
+        if (jobStatus == JobStatus.NOT_STARTED) {
+            jobStatus = JobStatus.RUNNING_SCHEDULED;
+        }
+    }
+
     private void completeJob() {
-        if (!jobComplete) {
+        if (jobStatus.isRunning()) {
             log.info("Job finished.");
-            jobComplete = true;
+            jobStatus = JobStatus.COMPLETE;
+        }
+    }
+
+    @Override
+    public void onApplicationEvent(TrackedStockAddedEvent trackedStockAddedEvent) {
+        log.info("Adding newly added tracked stocks {} to the queue to run in the next job.", trackedStockAddedEvent.getTrackedStocks()
+                .stream()
+                .map(TrackedStock::getTicker)
+                .collect(Collectors.toList()));
+        trackedStocks.addAll(trackedStockAddedEvent.getTrackedStocks());
+        if (jobStatus == JobStatus.COMPLETE) {
+            log.info("Setting job status to running for newly added tickers.");
+            jobStatus = JobStatus.RUNNING_MANUAL;
         }
     }
 }
