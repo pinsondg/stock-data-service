@@ -84,13 +84,19 @@ public class HistoricOptionsDataService {
     @Transactional
     public HistoricalOption addPriceDataToOption(Long optionId, Collection<OptionPriceData> optionPriceData) {
         HistoricalOption option = findById(optionId);
+        log.info("Adding new price data {} to option {}", optionPriceData, option);
         Set<OptionPriceData> priceDataCopy = new HashSet<>(optionPriceData);
         priceDataCopy.removeIf(data -> option.getHistoricalPriceData()
                 .stream()
                 .anyMatch(x -> data.getTradeDate().equals(x.getTradeDate())));
         priceDataCopy.forEach(data -> data.setOption(option));
-        option.getHistoricalPriceData().addAll(priceDataCopy);
-        return historicalOptionRepository.save(option);
+        if (priceDataCopy.size() == 0) {
+            log.info("Price data for trade date {} already exists. Skipping addition...", optionPriceData.stream().findFirst().get().getTradeDate());
+        } else {
+            option.getHistoricalPriceData().addAll(priceDataCopy);
+            return historicalOptionRepository.save(option);
+        }
+        return option;
     }
 
     public void removeOption(Long optionId) {
