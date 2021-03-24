@@ -147,6 +147,10 @@ public abstract class OptionsChainLoadService {
         if (isWeekday(now.getDayOfWeek()) && now.toLocalTime().compareTo(LocalTime.of(9, 30)) < 0) {
             now = now.minusDays(1);
         }
+        //If it is a holiday subtract a day
+        if (timeUtils.isStockMarketHoliday(now.toLocalDate())) {
+            now = now.minusDays(1);
+        }
         //If it is a weekend go until Friday
         while (now.getDayOfWeek() == DayOfWeek.SUNDAY || now.getDayOfWeek() == DayOfWeek.SATURDAY) {
             now = now.minusDays(1);
@@ -157,4 +161,5 @@ public abstract class OptionsChainLoadService {
     private boolean isWeekday(DayOfWeek dayOfWeek) {
         return dayOfWeek != DayOfWeek.SATURDAY && dayOfWeek != DayOfWeek.SUNDAY;
     }
+
 }

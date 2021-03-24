@@ -59,6 +59,7 @@ public class YahooFinanceOptionsChainLoadServiceTest {
         when(webpageLoader.parseUrl(anyString())).thenReturn(Jsoup.parse(TestUtils
                 .loadResourceFile("mocks/yahoofinance/yahoo-finance-spy.html"), "UTF-8"));
         when(timeUtils.getNowAmericaNewYork()).thenCallRealMethod();
+        when(timeUtils.isStockMarketHoliday(any(LocalDate.class))).thenReturn(false);
     }
 
     @Test
@@ -214,6 +215,18 @@ public class YahooFinanceOptionsChainLoadServiceTest {
         OptionsChain optionsChain = subject.loadLiveOptionsChainForClosestExpiration("AAPL");
 
         assertEquals(monday, optionsChain.getAllOptions().stream().findFirst().get().getMostRecentPriceData().getTradeDate());
+        verify(timeUtils, atLeastOnce()).getNowAmericaNewYork();
+    }
+
+    @Test
+    public void testLoadLiveOptionsChain_mondayHoliday() {
+        LocalDate monday = LocalDate.now().with(TemporalAdjusters.next(DayOfWeek.MONDAY));
+        when(timeUtils.getNowAmericaNewYork()).thenReturn(LocalDateTime.of(monday, LocalTime.of(9, 30)));
+        when(timeUtils.isStockMarketHoliday(any())).thenReturn(true);
+
+        OptionsChain optionsChain = subject.loadLiveOptionsChainForClosestExpiration("AAPL");
+
+        assertEquals(monday.with(TemporalAdjusters.previous(DayOfWeek.FRIDAY)), optionsChain.getAllOptions().stream().findFirst().get().getMostRecentPriceData().getTradeDate());
         verify(timeUtils, atLeastOnce()).getNowAmericaNewYork();
     }
 

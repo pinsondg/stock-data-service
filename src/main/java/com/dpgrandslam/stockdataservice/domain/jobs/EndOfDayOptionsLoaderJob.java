@@ -6,6 +6,8 @@ import com.dpgrandslam.stockdataservice.domain.model.stock.TrackedStock;
 import com.dpgrandslam.stockdataservice.domain.service.HistoricOptionsDataService;
 import com.dpgrandslam.stockdataservice.domain.service.OptionsChainLoadService;
 import com.dpgrandslam.stockdataservice.domain.service.TrackedStockService;
+import com.dpgrandslam.stockdataservice.domain.util.Holiday;
+import com.dpgrandslam.stockdataservice.domain.util.TimeUtils;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -39,6 +41,9 @@ public class EndOfDayOptionsLoaderJob implements ApplicationListener<TrackedStoc
 
     @Autowired
     private HistoricOptionsDataService historicOptionsDataService;
+
+    @Autowired
+    private TimeUtils timeUtils;
 
     private Queue<TrackedStock> trackedStocks;
 
@@ -110,7 +115,7 @@ public class EndOfDayOptionsLoaderJob implements ApplicationListener<TrackedStoc
 
 //    @Scheduled(cron = "5 * * * * 1-5", zone = "EST")
     private void storeOptionsChainEndOfDayData() {
-        if (jobStatus.isRunning()) {
+        if (jobStatus.isRunning() && !timeUtils.isTodayAmericaNewYorkStockMarketHoliday()) {
             log.info("Starting data load job batch.");
             for (int i = 0; i < STEPS; i++) {
                 if (!trackedStocks.isEmpty()) {
@@ -136,6 +141,12 @@ public class EndOfDayOptionsLoaderJob implements ApplicationListener<TrackedStoc
                     completeJob();
                 }
             }
+        } else if (timeUtils.isTodayAmericaNewYorkStockMarketHoliday()) {
+            timeUtils.getStockMarketHolidays().stream()
+                    .filter(d -> d.getDate().equals(timeUtils.getNowAmericaNewYork().toLocalDate()))
+                    .findFirst()
+                    .ifPresent((h) -> log.info("Not running job because today is a holiday ({})", h.getName()));
+            completeJob();
         }
     }
 
