@@ -6,7 +6,6 @@ import com.dpgrandslam.stockdataservice.domain.model.stock.TrackedStock;
 import com.dpgrandslam.stockdataservice.domain.service.HistoricOptionsDataService;
 import com.dpgrandslam.stockdataservice.domain.service.OptionsChainLoadService;
 import com.dpgrandslam.stockdataservice.domain.service.TrackedStockService;
-import com.dpgrandslam.stockdataservice.domain.util.Holiday;
 import com.dpgrandslam.stockdataservice.domain.util.TimeUtils;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -77,12 +76,12 @@ public class EndOfDayOptionsLoaderJob implements ApplicationListener<TrackedStoc
     }
 
 //    @Scheduled(cron = "0 * * * * *", zone = "EST")
-    @Scheduled(cron = "0 * 10-15 * * *", zone = "EST")
+    @Scheduled(cron = "0 * 10-15 * * *")
     public void weekdayReset() {
         resetJob();
     }
 
-    @Scheduled(cron = "0 * 10-15 * * *", zone = "EST")
+    @Scheduled(cron = "0 * 10-15 * * *")
     public void weekendReset() {
         resetJob();
     }
@@ -95,19 +94,19 @@ public class EndOfDayOptionsLoaderJob implements ApplicationListener<TrackedStoc
         }
     }
 
-    @Scheduled(cron = "0 * * * * 6", zone = "EST") // Every minute on Saturday
+    @Scheduled(cron = "0 * * * * 6") // Every minute on Saturday
     public void weekendLoadJob() {
         startJob();
         storeOptionsChainEndOfDayData();
     }
 
-    @Scheduled(cron = "0 * 0-9 * * 1-5", zone = "EST")
+    @Scheduled(cron = "0 * 0-9 * * 1-5")
     public void weekdayLoadJobBeforeHours() {
         startJob();
         storeOptionsChainEndOfDayData();
     }
 
-    @Scheduled(cron = "0 * 16-23 * * 1-5", zone = "EST") // Every minute from
+    @Scheduled(cron = "0 * 16-23 * * 1-5") // Every minute from
     public void weekdayLoadJobAfterHours() {
         startJob();
         storeOptionsChainEndOfDayData();
