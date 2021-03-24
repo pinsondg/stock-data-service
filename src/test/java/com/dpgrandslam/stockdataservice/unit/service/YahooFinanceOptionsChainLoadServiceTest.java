@@ -8,6 +8,7 @@ import com.dpgrandslam.stockdataservice.domain.model.options.OptionChainKey;
 import com.dpgrandslam.stockdataservice.domain.model.options.OptionsChain;
 import com.dpgrandslam.stockdataservice.domain.service.HistoricOptionsDataService;
 import com.dpgrandslam.stockdataservice.domain.service.YahooFinanceOptionsChainLoadService;
+import com.dpgrandslam.stockdataservice.domain.util.TimeUtils;
 import com.dpgrandslam.stockdataservice.testUtils.TestDataFactory;
 import com.dpgrandslam.stockdataservice.testUtils.TestUtils;
 import org.jsoup.Jsoup;
@@ -20,9 +21,9 @@ import org.mockito.junit.MockitoJUnitRunner;
 
 import java.io.IOException;
 import java.sql.Timestamp;
-import java.time.Instant;
-import java.time.LocalDate;
+import java.time.*;
 import java.time.temporal.ChronoUnit;
+import java.time.temporal.TemporalAdjusters;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -46,6 +47,9 @@ public class YahooFinanceOptionsChainLoadServiceTest {
     @Mock
     private HistoricOptionsDataService historicOptionsDataService;
 
+    @Mock
+    private TimeUtils timeUtils;
+
     @InjectMocks
     private YahooFinanceOptionsChainLoadService subject;
 
@@ -54,6 +58,7 @@ public class YahooFinanceOptionsChainLoadServiceTest {
         when(clientConfigurationProperties.getUrl()).thenReturn(TEST_URL);
         when(webpageLoader.parseUrl(anyString())).thenReturn(Jsoup.parse(TestUtils
                 .loadResourceFile("mocks/yahoofinance/yahoo-finance-spy.html"), "UTF-8"));
+        when(timeUtils.getNowAmericaNewYork()).thenCallRealMethod();
     }
 
     @Test
@@ -155,6 +160,61 @@ public class YahooFinanceOptionsChainLoadServiceTest {
         assertEquals(37, actualExpirationDates.size());
         assertEquals(LocalDate.of(2021, 3, 5), actualExpirationDates.get(0));
         assertEquals(LocalDate.of(2023, 12,15), actualExpirationDates.get(actualExpirationDates.size() - 1));
+    }
+
+    @Test
+    public void testLoadLiveOptionsChain_weekdayMorning_beforeMarketOpen() {
+        LocalDate nextTuesday = LocalDate.now().with(TemporalAdjusters.next(DayOfWeek.TUESDAY));
+        when(timeUtils.getNowAmericaNewYork()).thenReturn(LocalDateTime.of(nextTuesday, LocalTime.of(8, 45)));
+
+        OptionsChain optionsChain = subject.loadLiveOptionsChainForClosestExpiration("AAPL");
+
+        assertEquals(nextTuesday.minusDays(1), optionsChain.getAllOptions().stream().findFirst().get().getMostRecentPriceData().getTradeDate());
+        verify(timeUtils, atLeastOnce()).getNowAmericaNewYork();
+    }
+
+    @Test
+    public void testLoadLiveOptionsChain_sunday() {
+        LocalDate nextSunday = LocalDate.now().with(TemporalAdjusters.next(DayOfWeek.SUNDAY));
+        when(timeUtils.getNowAmericaNewYork()).thenReturn(LocalDateTime.of(nextSunday, LocalTime.of(8, 45)));
+
+        OptionsChain optionsChain = subject.loadLiveOptionsChainForClosestExpiration("AAPL");
+
+        assertEquals(nextSunday.with(TemporalAdjusters.previous(DayOfWeek.FRIDAY)), optionsChain.getAllOptions().stream().findFirst().get().getMostRecentPriceData().getTradeDate());
+        verify(timeUtils, atLeastOnce()).getNowAmericaNewYork();
+    }
+
+    @Test
+    public void testLoadLiveOptionsChain_saturday() {
+        LocalDate nextSunday = LocalDate.now().with(TemporalAdjusters.next(DayOfWeek.SATURDAY));
+        when(timeUtils.getNowAmericaNewYork()).thenReturn(LocalDateTime.of(nextSunday, LocalTime.of(8, 45)));
+
+        OptionsChain optionsChain = subject.loadLiveOptionsChainForClosestExpiration("AAPL");
+
+        assertEquals(nextSunday.with(TemporalAdjusters.previous(DayOfWeek.FRIDAY)), optionsChain.getAllOptions().stream().findFirst().get().getMostRecentPriceData().getTradeDate());
+        verify(timeUtils, atLeastOnce()).getNowAmericaNewYork();
+    }
+
+    @Test
+    public void testLoadLiveOptionsChain_mondayMorning_beforeMarketOpen() {
+        LocalDate monday = LocalDate.now().with(TemporalAdjusters.next(DayOfWeek.MONDAY));
+        when(timeUtils.getNowAmericaNewYork()).thenReturn(LocalDateTime.of(monday, LocalTime.of(8, 45)));
+
+        OptionsChain optionsChain = subject.loadLiveOptionsChainForClosestExpiration("AAPL");
+
+        assertEquals(monday.with(TemporalAdjusters.previous(DayOfWeek.FRIDAY)), optionsChain.getAllOptions().stream().findFirst().get().getMostRecentPriceData().getTradeDate());
+        verify(timeUtils, atLeastOnce()).getNowAmericaNewYork();
+    }
+
+    @Test
+    public void testLoadLiveOptionsChain_mondayMorning_afterMarketOpen() {
+        LocalDate monday = LocalDate.now().with(TemporalAdjusters.next(DayOfWeek.MONDAY));
+        when(timeUtils.getNowAmericaNewYork()).thenReturn(LocalDateTime.of(monday, LocalTime.of(9, 30)));
+
+        OptionsChain optionsChain = subject.loadLiveOptionsChainForClosestExpiration("AAPL");
+
+        assertEquals(monday, optionsChain.getAllOptions().stream().findFirst().get().getMostRecentPriceData().getTradeDate());
+        verify(timeUtils, atLeastOnce()).getNowAmericaNewYork();
     }
 
     private List<HistoricalOption> buildHistoricalOptions(Timestamp actual, String ticker, LocalDate expiration, Double strike) {

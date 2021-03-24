@@ -3,6 +3,7 @@ package com.dpgrandslam.stockdataservice.domain.service;
 import com.dpgrandslam.stockdataservice.domain.model.options.Option;
 import com.dpgrandslam.stockdataservice.domain.model.options.OptionPriceData;
 import com.dpgrandslam.stockdataservice.domain.model.options.OptionsChain;
+import com.dpgrandslam.stockdataservice.domain.util.TimeUtils;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,6 +20,9 @@ public abstract class OptionsChainLoadService {
 
     @Autowired
     private HistoricOptionsDataService historicOptionsDataService;
+
+    @Autowired
+    private TimeUtils timeUtils;
 
     /**
      * Gets the a live OptionChain for a ticker that is for the closest expiration date.
@@ -138,9 +142,9 @@ public abstract class OptionsChainLoadService {
     }
 
     protected LocalDate getLastTradeDate() {
-        LocalDateTime now = LocalDateTime.now(ZoneId.of("America/New_York"));
+        LocalDateTime now = timeUtils.getNowAmericaNewYork();
         // If now is before a weekday at 9:30am set to previous day
-        if (isWeekday(now.getDayOfWeek()) && now.getHour() <= 9 && now.getMinute() < 30) {
+        if (isWeekday(now.getDayOfWeek()) && now.toLocalTime().compareTo(LocalTime.of(9, 30)) < 0) {
             now = now.minusDays(1);
         }
         //If it is a weekend go until Friday
