@@ -1,4 +1,4 @@
-package com.dpgrandslam.stockdataservice.domain.util;
+package com.dpgrandslam.stockdataservice.domain.model;
 
 import lombok.Data;
 
