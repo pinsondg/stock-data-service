@@ -1,11 +1,11 @@
 package com.dpgrandslam.stockdataservice.domain.util;
 
+import com.dpgrandslam.stockdataservice.domain.model.Holiday;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 
-import javax.annotation.PostConstruct;
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
@@ -57,7 +57,7 @@ public class TimeUtils {
 
     private List<Holiday> parseStockMarketHolidays() throws IOException {
         List<Holiday> holidays = new ArrayList<>();
-        try (BufferedReader reader =  new BufferedReader(new FileReader(new ClassPathResource(HOLIDAYS_FILE_PATH).getFile()))) {
+        try (BufferedReader reader =  new BufferedReader(new FileReader(FileUtils.getResourceFile(HOLIDAYS_FILE_PATH)))) {
             String line = reader.readLine();
             //skip headers
             line = reader.readLine();
