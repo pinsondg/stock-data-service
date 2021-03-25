@@ -122,12 +122,15 @@ public class EndOfDayOptionsLoaderJob implements ApplicationListener<TrackedStoc
                         TrackedStock current = trackedStocks.poll();
                         if (current != null && jobStatus.isRunning() && current.isActive()) {
                             log.info("Executing update for {}", current);
+                            long start = System.currentTimeMillis();
                             try {
                                 List<OptionsChain> fullOptionsChain = optionsChainLoadService
                                         .loadFullLiveOptionsChain(current.getTicker());
                                 historicOptionsDataService.addFullOptionsChain(fullOptionsChain);
                                 current.setLastOptionsHistoricDataUpdate(LocalDate.now(ZoneId.of("America/New_York")));
                                 trackedStockService.updateOptionUpdatedTimestamp(current.getTicker());
+                                log.info("Options chain for {} processed successfully.", current.getTicker());
+                                log.info("Took {} seconds to process options for {}", System.currentTimeMillis() - start / 1000.0, current.getTicker());
                             } catch (Exception e) {
                                 log.error("Failed to load options chain for tracked stock: {}. Putting back in queue for retry later.", current.getTicker(), e);
                                 trackedStocks.add(current);

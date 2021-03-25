@@ -84,7 +84,7 @@ public class HistoricOptionsDataService {
     @Transactional
     public HistoricalOption addPriceDataToOption(Long optionId, Collection<OptionPriceData> optionPriceData) {
         HistoricalOption option = findById(optionId);
-        log.info("Adding new price data {} to option {}", optionPriceData, option);
+        log.debug("Adding new price data {} to option {}", optionPriceData, option);
         Set<OptionPriceData> priceDataCopy = new HashSet<>(optionPriceData);
         priceDataCopy.removeIf(data -> option.getHistoricalPriceData()
                 .stream()
