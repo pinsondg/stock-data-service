@@ -3,7 +3,9 @@ package com.dpgrandslam.stockdataservice.domain.util;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Component;
+import org.springframework.util.Assert;
 
+import javax.annotation.PostConstruct;
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
@@ -21,6 +23,11 @@ public class TimeUtils {
 
     private List<Holiday> stockMarketHolidays;
 
+
+    public TimeUtils() {
+        Assert.notNull(getStockMarketHolidays(), "Holidays are null on startup.");
+    }
+
     public LocalDateTime getNowAmericaNewYork() {
         return LocalDateTime.now(ZoneId.of("America/New_York"));
     }
@@ -30,14 +37,18 @@ public class TimeUtils {
             try {
                 stockMarketHolidays = parseStockMarketHolidays();
             } catch (IOException e) {
-                log.error("Error reading holiday file.");
+                log.error("Error reading holiday file.", e);
             }
         }
         return stockMarketHolidays;
     }
 
     public boolean isStockMarketHoliday(LocalDate date) {
-        return getStockMarketHolidays().stream().map(Holiday::getDate).anyMatch(date::equals);
+        List<Holiday> stockMarketHolidays = getStockMarketHolidays();
+        if (stockMarketHolidays != null) {
+            return stockMarketHolidays.stream().map(Holiday::getDate).anyMatch(date::equals);
+        }
+        return false;
     }
 
     public boolean isTodayAmericaNewYorkStockMarketHoliday() {
@@ -46,17 +57,18 @@ public class TimeUtils {
 
     private List<Holiday> parseStockMarketHolidays() throws IOException {
         List<Holiday> holidays = new ArrayList<>();
-        BufferedReader reader =  new BufferedReader(new FileReader(new ClassPathResource(HOLIDAYS_FILE_PATH).getFile()));
-        String line = reader.readLine();
-        //skip headers
-        line = reader.readLine();
-        while (line != null) {
-            Holiday holiday = new Holiday();
-            String[] vals = line.split(",");
-            holiday.setName(vals[0]);
-            holiday.setDate(vals[1]);
-            holidays.add(holiday);
+        try (BufferedReader reader =  new BufferedReader(new FileReader(new ClassPathResource(HOLIDAYS_FILE_PATH).getFile()))) {
+            String line = reader.readLine();
+            //skip headers
             line = reader.readLine();
+            while (line != null) {
+                Holiday holiday = new Holiday();
+                String[] vals = line.split(",");
+                holiday.setName(vals[0]);
+                holiday.setDate(vals[1]);
+                holidays.add(holiday);
+                line = reader.readLine();
+            }
         }
         return holidays;
     }

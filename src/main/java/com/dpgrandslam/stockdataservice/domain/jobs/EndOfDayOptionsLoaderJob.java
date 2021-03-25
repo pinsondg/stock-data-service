@@ -138,6 +138,7 @@ public class EndOfDayOptionsLoaderJob implements ApplicationListener<TrackedStoc
                     });
                 } else {
                     completeJob();
+                    break;
                 }
             }
         } else if (timeUtils.isTodayAmericaNewYorkStockMarketHoliday()) {
