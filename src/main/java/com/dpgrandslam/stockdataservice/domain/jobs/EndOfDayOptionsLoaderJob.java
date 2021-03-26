@@ -50,7 +50,7 @@ public class EndOfDayOptionsLoaderJob implements ApplicationListener<TrackedStoc
 
     @Getter
     private enum JobStatus {
-        NOT_STARTED(false), RUNNING_MANUAL(true), RUNNING_SCHEDULED(true), COMPLETE(true);
+        NOT_STARTED(false), RUNNING_MANUAL(true), RUNNING_SCHEDULED(true), COMPLETE(false);
 
         boolean isRunning;
 
@@ -120,7 +120,7 @@ public class EndOfDayOptionsLoaderJob implements ApplicationListener<TrackedStoc
                 if (!trackedStocks.isEmpty()) {
                     executorService.execute(() -> {
                         TrackedStock current = trackedStocks.poll();
-                        if (current != null && jobStatus.isRunning() && current.isActive()) {
+                        if (current != null && jobStatus.isRunning() && current.isActive() && !current.getLastOptionsHistoricDataUpdate().equals(timeUtils.getNowAmericaNewYork().toLocalDate())) {
                             log.info("Executing update for {}", current);
                             long start = System.currentTimeMillis();
                             try {
@@ -135,7 +135,7 @@ public class EndOfDayOptionsLoaderJob implements ApplicationListener<TrackedStoc
                                 log.error("Failed to load options chain for tracked stock: {}. Putting back in queue for retry later.", current.getTicker(), e);
                                 trackedStocks.add(current);
                             }
-                        } else {
+                        } else if (current != null && !current.isActive() && !current.getLastOptionsHistoricDataUpdate().equals(timeUtils.getNowAmericaNewYork().toLocalDate())){
                             completeJob();
                         }
                     });
