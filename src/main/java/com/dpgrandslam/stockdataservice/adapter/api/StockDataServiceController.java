@@ -1,5 +1,6 @@
 package com.dpgrandslam.stockdataservice.adapter.api;
 
+import com.dpgrandslam.stockdataservice.domain.error.OptionsChainLoadException;
 import com.dpgrandslam.stockdataservice.domain.model.options.OptionsChain;
 import com.dpgrandslam.stockdataservice.domain.model.stock.TrackedStock;
 import com.dpgrandslam.stockdataservice.domain.service.OptionsChainLoadService;
@@ -33,7 +34,7 @@ public class StockDataServiceController {
     public ResponseEntity<List<OptionsChain>> getOptionsChain(@PathVariable(name = "ticker") String ticker,
                                                              @RequestParam(name = "expirationDate") Optional<LocalDate> expirationDate,
                                                              @RequestParam(name = "startDate") Optional<LocalDate> startDate,
-                                                             @RequestParam(name = "endDate") Optional<LocalDate> endDate) {
+                                                             @RequestParam(name = "endDate") Optional<LocalDate> endDate) throws OptionsChainLoadException {
         List<OptionsChain> retVal = new ArrayList<>();
         if ((startDate.isPresent() || endDate.isPresent()) && expirationDate.isPresent()) {
             retVal.add(optionsChainLoadService.loadCompleteOptionsChainForExpirationDateWithPriceDataInRange(ticker,

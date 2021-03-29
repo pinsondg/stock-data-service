@@ -1,5 +1,6 @@
 package com.dpgrandslam.stockdataservice.domain.service;
 
+import com.dpgrandslam.stockdataservice.domain.error.OptionsChainLoadException;
 import com.dpgrandslam.stockdataservice.domain.model.options.Option;
 import com.dpgrandslam.stockdataservice.domain.model.options.OptionPriceData;
 import com.dpgrandslam.stockdataservice.domain.model.options.OptionsChain;
@@ -29,7 +30,7 @@ public abstract class OptionsChainLoadService {
      * @param ticker the ticker to search
      * @return the live option data for the closest expiration
      */
-    public abstract OptionsChain loadLiveOptionsChainForClosestExpiration(String ticker);
+    public abstract OptionsChain loadLiveOptionsChainForClosestExpiration(String ticker) throws OptionsChainLoadException;
 
     /**
      * Loads the full options chain (List of OptionsChain) for a ticker. A full options chain is the complete chain for
@@ -38,7 +39,7 @@ public abstract class OptionsChainLoadService {
      * @param ticker the ticker to look for
      * @return a list of OptionsChain
      */
-    public abstract List<OptionsChain> loadFullLiveOptionsChain(String ticker);
+    public abstract List<OptionsChain> loadFullLiveOptionsChain(String ticker) throws OptionsChainLoadException;
 
     /**
      * Loads the live options chain for a ticker and expiration date.
@@ -47,7 +48,7 @@ public abstract class OptionsChainLoadService {
      * @param expirationDate the expiration date of the option
      * @return the live options chain
      */
-    public abstract OptionsChain loadLiveOptionsChainForExpirationDate(String ticker, LocalDate expirationDate);
+    public abstract OptionsChain loadLiveOptionsChainForExpirationDate(String ticker, LocalDate expirationDate) throws OptionsChainLoadException;
 
     /**
      * Loads possible expiration dates for the option as of today.
@@ -55,7 +56,7 @@ public abstract class OptionsChainLoadService {
      * @param ticker the ticker to look for
      * @return a list of expiration dates
      */
-    public abstract List<LocalDate> getOptionExpirationDates(String ticker);
+    public abstract List<LocalDate> getOptionExpirationDates(String ticker) throws OptionsChainLoadException;
 
     /**
      * Loads the options chain for a specific ticker on a specific expiration date. Includes stored historic options
@@ -70,7 +71,7 @@ public abstract class OptionsChainLoadService {
     public OptionsChain loadCompleteOptionsChainForExpirationDateWithPriceDataInRange(String ticker,
                                                                                       LocalDate expirationDate,
                                                                                       Timestamp priceDataStart,
-                                                                                      Timestamp priceDataEnd) {
+                                                                                      Timestamp priceDataEnd) throws OptionsChainLoadException {
         OptionsChain optionsChain = new OptionsChain(ticker, expirationDate);
         if (priceDataEnd == null) {
             optionsChain = loadLiveOptionsChainForExpirationDate(ticker, expirationDate);
@@ -90,19 +91,19 @@ public abstract class OptionsChainLoadService {
      * @param expirationDate the expiration date to load for
      * @return the options chain
      */
-    public OptionsChain loadOptionsChainForExpirationDateWithAllData(String ticker, LocalDate expirationDate) {
+    public OptionsChain loadOptionsChainForExpirationDateWithAllData(String ticker, LocalDate expirationDate) throws OptionsChainLoadException {
         OptionsChain liveOptionsChain = loadLiveOptionsChainForExpirationDate(ticker, expirationDate);
         liveOptionsChain.addOptions(historicOptionsDataService.findOptions(ticker, expirationDate).collect(Collectors.toList()));
         return liveOptionsChain;
     }
 
-    public List<OptionsChain> loadFullOptionsChainWithAllData(String ticker) {
+    public List<OptionsChain> loadFullOptionsChainWithAllData(String ticker) throws OptionsChainLoadException {
         List<OptionsChain> fullChain = loadFullLiveOptionsChain(ticker);
         combineLiveAndHistoricData(ticker, fullChain);
         return fullChain;
     }
 
-    public List<OptionsChain> loadFullOptionsChainWithAllDataBetweenDates(String ticker, Timestamp start, Timestamp end) {
+    public List<OptionsChain> loadFullOptionsChainWithAllDataBetweenDates(String ticker, Timestamp start, Timestamp end) throws OptionsChainLoadException {
         List<OptionsChain> fullChain = loadFullLiveOptionsChain(ticker);
         if (end == null) {
             end = Timestamp.from(Instant.now());
