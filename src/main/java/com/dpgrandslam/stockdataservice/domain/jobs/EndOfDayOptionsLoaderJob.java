@@ -72,7 +72,7 @@ public class EndOfDayOptionsLoaderJob implements ApplicationListener<TrackedStoc
     private void reset() {
         jobStatus = JobStatus.NOT_STARTED;
         trackedStocks = new ConcurrentLinkedQueue<>();
-        trackedStocks.addAll(trackedStockService.getAllActiveTrackedStocks());
+        trackedStocks.addAll(trackedStockService.getAllTrackedStocks(true));
     }
 
 //    @Scheduled(cron = "0 * * * * *", zone = "EST")

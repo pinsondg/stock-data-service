@@ -93,8 +93,8 @@ public class YahooFinanceOptionsChainLoadServiceTest {
 
         OptionsChain chain = subject.loadCompleteOptionsChainForExpirationDateWithPriceDataInRange("TEST",
                 LocalDate.now(),
-                Timestamp.from(Instant.now().minus(9, ChronoUnit.DAYS)),
-                Timestamp.from(Instant.now().minus(1, ChronoUnit.DAYS)));
+                LocalDate.now().minusDays(9),
+                LocalDate.now().minusDays(1));
         assertEquals(1, chain.getAllOptions().size());
         Option option = chain.getOption(OptionChainKey.builder().strike(strike).optionType(Option.OptionType.CALL).build());
         assertNotNull(option);
@@ -118,7 +118,7 @@ public class YahooFinanceOptionsChainLoadServiceTest {
 
         OptionsChain chain = subject.loadCompleteOptionsChainForExpirationDateWithPriceDataInRange("AAPL",
                 march15th2021,
-                Timestamp.from(Instant.now().minus(9, ChronoUnit.DAYS)),
+                LocalDate.now().minusDays(9),
                 null);
         Option option = chain.getOption(OptionChainKey.builder().strike(strike).optionType(Option.OptionType.CALL).build());
         assertNotNull(option);

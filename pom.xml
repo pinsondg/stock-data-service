@@ -176,7 +176,7 @@
                     <password>${env.datasource.password}</password>
                     <driver>org.postgresql.Driver</driver>
                     <defaultSchemaName>stock-data-service_prod</defaultSchemaName>
-                    <referenceUrl>hibernate:spring:com.dpgrandslam.stockdataservice.domain.model?dialect=org.hibernate.dialect.PostgreSQLDialect</referenceUrl>
+                    <referenceUrl>hibernate:spring:com.dpgrandslam.stockdataservice.domain.model?dialect=org.hibernate.dialect.PostgreSQLDialect&amp;hibernate.physical_naming_strategy=org.springframework.boot.orm.jpa.hibernate.SpringPhysicalNamingStrategy&amp;hibernate.implicit_naming_strategy=org.springframework.boot.orm.jpa.hibernate.SpringImplicitNamingStrategy</referenceUrl>
                 </configuration>
                 <dependencies>
                     <dependency>

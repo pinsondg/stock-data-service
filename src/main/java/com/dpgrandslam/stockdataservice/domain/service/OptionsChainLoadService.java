@@ -8,8 +8,10 @@ import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 
-import java.sql.Timestamp;
-import java.time.*;
+import java.time.DayOfWeek;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
@@ -68,18 +70,22 @@ public abstract class OptionsChainLoadService {
      * @return the OptionsChain containing the historic and live data
      */
     public OptionsChain loadCompleteOptionsChainForExpirationDateWithPriceDataInRange(String ticker,
-                                                                                      LocalDate expirationDate,
-                                                                                      Timestamp priceDataStart,
-                                                                                      Timestamp priceDataEnd) {
+                                                                                      final LocalDate expirationDate,
+                                                                                      final LocalDate priceDataStart,
+                                                                                      final LocalDate priceDataEnd) {
         OptionsChain optionsChain = new OptionsChain(ticker, expirationDate);
-        if (priceDataEnd == null) {
+        LocalDate finalEndDate = priceDataEnd;
+        LocalDate finalStartDate = priceDataStart;
+        if (finalEndDate == null) {
             optionsChain = loadLiveOptionsChainForExpirationDate(ticker, expirationDate);
-            priceDataEnd = Timestamp.from(Instant.now());
+            finalEndDate = LocalDate.now();
+        }
+        if (finalStartDate == null)  {
+            finalStartDate = LocalDate.MIN;
         }
         List<Option> historicOptions = historicOptionsDataService.findOptions(ticker, expirationDate)
                 .collect(Collectors.toList());
-        Timestamp finalEndDate = priceDataEnd;
-        filterOptionsDataByDates(priceDataStart, historicOptions, finalEndDate);
+        filterOptionsDataByDates(finalStartDate, historicOptions, finalEndDate);
         optionsChain.addOptions(historicOptions);
         return optionsChain;
     }
@@ -102,22 +108,26 @@ public abstract class OptionsChainLoadService {
         return fullChain;
     }
 
-    public List<OptionsChain> loadFullOptionsChainWithAllDataBetweenDates(String ticker, Timestamp start, Timestamp end) {
+    public List<OptionsChain> loadFullOptionsChainWithAllDataBetweenDates(String ticker, LocalDate start, LocalDate end) {
         List<OptionsChain> fullChain = loadFullLiveOptionsChain(ticker);
         if (end == null) {
-            end = Timestamp.from(Instant.now());
+            end = LocalDate.now();
+        }
+        if (start == null) {
+            start = LocalDate.MIN;
         }
         combineLiveAndHistoricData(ticker, fullChain);
-        Timestamp finalEnd = end;
-        fullChain.forEach(chain -> filterOptionsDataByDates(start, chain.getAllOptions(), finalEnd));
+        LocalDate finalEnd = end;
+        LocalDate finalStart = start;
+        fullChain.forEach(chain -> filterOptionsDataByDates(finalStart, chain.getAllOptions(), finalEnd));
         return fullChain;
     }
 
-    private void filterOptionsDataByDates(Timestamp priceDataStart, Collection<Option> historicOptions, Timestamp finalEndDate) {
+    private void filterOptionsDataByDates(LocalDate startDate, Collection<Option> historicOptions, LocalDate endDate) {
         historicOptions.forEach(option -> {
             List<OptionPriceData> filteredData = option.getOptionPriceData().stream()
-                    .filter(data -> data.getDataObtainedDate().compareTo(priceDataStart) >= 0
-                            && data.getDataObtainedDate().compareTo(finalEndDate) <= 0).collect(Collectors.toList());
+                    .filter(data -> data.getTradeDate().compareTo(startDate) >= 0
+                            && data.getTradeDate().compareTo(endDate) <= 0).collect(Collectors.toList());
             option.setOptionPriceData(filteredData);
         });
     }

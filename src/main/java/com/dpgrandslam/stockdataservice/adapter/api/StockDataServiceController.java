@@ -11,13 +11,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 
-import java.sql.Timestamp;
-import java.time.Instant;
 import java.time.LocalDate;
-import java.time.ZoneId;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 
 @Controller
 @RequestMapping("/data")
@@ -38,19 +33,49 @@ public class StockDataServiceController {
         if ((startDate.isPresent() || endDate.isPresent()) && expirationDate.isPresent()) {
             retVal.add(optionsChainLoadService.loadCompleteOptionsChainForExpirationDateWithPriceDataInRange(ticker,
                     expirationDate.get(),
-                    Timestamp.from(Instant.from(startDate.orElse(LocalDate.now(ZoneId.of("America/New_York"))))),
-                    Timestamp.from(Instant.from(endDate.orElse(LocalDate.now(ZoneId.of("America/New_York")))))));
+                    startDate.orElse(LocalDate.MIN),
+                    endDate.orElse(LocalDate.now())));
+        } else if (startDate.isPresent() || endDate.isPresent()) {
+            optionsChainLoadService.loadFullOptionsChainWithAllDataBetweenDates(
+                    ticker,
+                    startDate.orElse(LocalDate.MIN),
+                    endDate.orElse(LocalDate.now())
+            );
         } else if (expirationDate.isPresent()){
             retVal.add(optionsChainLoadService.loadLiveOptionsChainForExpirationDate(ticker, expirationDate.get()));
         } else {
             retVal = optionsChainLoadService.loadFullLiveOptionsChain(ticker);
         }
-        return ResponseEntity.ok(retVal);
+        if (retVal.size() > 0) {
+            return ResponseEntity.ok(retVal);
+        } else {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+        }
     }
 
     @GetMapping("/tracked")
     public ResponseEntity<List<TrackedStock>> getTrackedStocks(@RequestParam(name = "activeOnly", required = false, defaultValue = "true") boolean activeOnly) {
-        return ResponseEntity.ok(trackedStockService.getAllTrackedStocks());
+        return ResponseEntity.ok(trackedStockService.getAllTrackedStocks(activeOnly));
+    }
+
+    @PutMapping("/tracked/active")
+    public ResponseEntity<Map<String, Object>> updateTrackedStocksActive(@RequestBody Map<String, Boolean> body) {
+        Map<String, Object> response = new HashMap<>();
+        Map<String, String> failedUpdates = new HashMap<>();
+        body.forEach((key, value) -> {
+            try {
+                trackedStockService.setTrackedStockActive(key, value);
+            } catch (Exception e) {
+                failedUpdates.put(key, "Could not update status of tracked stock " + key + ". Reason: " + e.getMessage());
+            }
+        });
+        if (failedUpdates.isEmpty()) {
+            response.put("status", "success");
+        } else {
+            response.put("status", "has_failures");
+            response.put("failed", failedUpdates);
+        }
+        return ResponseEntity.ok(response);
     }
 
     @PostMapping(value = "/tracked", consumes = MediaType.APPLICATION_JSON_VALUE)
