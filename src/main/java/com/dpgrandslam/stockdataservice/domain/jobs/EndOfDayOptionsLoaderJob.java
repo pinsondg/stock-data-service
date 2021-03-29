@@ -1,5 +1,6 @@
 package com.dpgrandslam.stockdataservice.domain.jobs;
 
+import com.dpgrandslam.stockdataservice.domain.error.OptionsChainLoadException;
 import com.dpgrandslam.stockdataservice.domain.event.TrackedStockAddedEvent;
 import com.dpgrandslam.stockdataservice.domain.model.options.OptionsChain;
 import com.dpgrandslam.stockdataservice.domain.model.stock.TrackedStock;
@@ -100,13 +101,13 @@ public class EndOfDayOptionsLoaderJob implements ApplicationListener<TrackedStoc
         storeOptionsChainEndOfDayData();
     }
 
-    @Scheduled(cron = "0 * 0-9 * * 1-5")
+    @Scheduled(cron = "0 0/10 0-9 * * 1-5")
     public void weekdayLoadJobBeforeHours() {
         startJob();
         storeOptionsChainEndOfDayData();
     }
 
-    @Scheduled(cron = "0 * 16-23 * * 1-5") // Every minute from
+    @Scheduled(cron = "0 0/10 16-23 * * 1-5") // Every minute from
     public void weekdayLoadJobAfterHours() {
         startJob();
         storeOptionsChainEndOfDayData();
@@ -120,7 +121,8 @@ public class EndOfDayOptionsLoaderJob implements ApplicationListener<TrackedStoc
                 if (!trackedStocks.isEmpty()) {
                     executorService.execute(() -> {
                         TrackedStock current = trackedStocks.poll();
-                        if (current != null && jobStatus.isRunning() && current.isActive() && !current.getLastOptionsHistoricDataUpdate().equals(timeUtils.getNowAmericaNewYork().toLocalDate())) {
+                        if (current != null && jobStatus.isRunning() && current.isActive()
+                                && (current.getLastOptionsHistoricDataUpdate() == null || !current.getLastOptionsHistoricDataUpdate().equals(timeUtils.getNowAmericaNewYork().toLocalDate()))) {
                             log.info("Executing update for {}", current);
                             long start = System.currentTimeMillis();
                             try {
@@ -131,7 +133,7 @@ public class EndOfDayOptionsLoaderJob implements ApplicationListener<TrackedStoc
                                 trackedStockService.updateOptionUpdatedTimestamp(current.getTicker());
                                 log.info("Options chain for {} processed successfully.", current.getTicker());
                                 log.info("Took {} seconds to process options for {}", System.currentTimeMillis() - start / 1000.0, current.getTicker());
-                            } catch (Exception e) {
+                            } catch (OptionsChainLoadException e) {
                                 log.error("Failed to load options chain for tracked stock: {}. Putting back in queue for retry later.", current.getTicker(), e);
                                 trackedStocks.add(current);
                             }

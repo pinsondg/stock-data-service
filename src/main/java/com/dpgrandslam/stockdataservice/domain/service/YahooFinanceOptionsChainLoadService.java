@@ -2,6 +2,7 @@ package com.dpgrandslam.stockdataservice.domain.service;
 
 import com.dpgrandslam.stockdataservice.adapter.apiclient.WebpageLoader;
 import com.dpgrandslam.stockdataservice.domain.config.ApiClientConfigurationProperties;
+import com.dpgrandslam.stockdataservice.domain.error.OptionsChainLoadException;
 import com.dpgrandslam.stockdataservice.domain.model.options.LiveOption;
 import com.dpgrandslam.stockdataservice.domain.model.options.Option;
 import com.dpgrandslam.stockdataservice.domain.model.options.OptionsChain;
@@ -34,35 +35,58 @@ public class YahooFinanceOptionsChainLoadService extends OptionsChainLoadService
     private ApiClientConfigurationProperties clientConfigurationProperties;
 
     @Override
-    public OptionsChain loadLiveOptionsChainForClosestExpiration(String ticker) {
+    public OptionsChain loadLiveOptionsChainForClosestExpiration(String ticker) throws OptionsChainLoadException {
         Document document = doCall(ticker);
-        LocalDate expiration = parseDocumentForExpirationDates(document).get(0);
-        return buildOptionsChain(ticker, expiration, document);
+        try {
+            LocalDate expiration = parseDocumentForExpirationDates(document).get(0);
+            return buildOptionsChain(ticker, expiration, document);
+        } catch (Exception e) {
+            throw new OptionsChainLoadException(ticker, document.baseUri(), "Options chain load failure most likely due to too many calls.", e);
+        }
     }
 
     @Override
-    public List<OptionsChain> loadFullLiveOptionsChain(String ticker) {
+    public List<OptionsChain> loadFullLiveOptionsChain(String ticker) throws OptionsChainLoadException {
         log.info("Started loading of full options chain from yahoo-finance for ticker {}.", ticker);
         long startTime = System.currentTimeMillis();
         List<OptionsChain> optionsChains = Collections.synchronizedList(new ArrayList<>());
         Document document = doCall(ticker);
-        parseDocumentForExpirationDates(document).stream().parallel().forEach(date -> optionsChains.add(loadLiveOptionsChainForExpirationDate(ticker, date)));
-        log.info("Loading of options from yahoo-finance for ticker {} complete. Took {} seconds to load all options.", ticker, (System.currentTimeMillis() - startTime) / 1000.0);
+        try {
+            parseDocumentForExpirationDates(document).stream().parallel().forEach(date -> {
+                try {
+                    optionsChains.add(loadLiveOptionsChainForExpirationDate(ticker, date));
+                } catch (OptionsChainLoadException e) {
+                    log.error("Error adding option to the full chain. Chain will be incomplete.", e);
+                }
+            });
+            log.info("Loading of options from yahoo-finance for ticker {} complete. Took {} seconds to load all options.", ticker, (System.currentTimeMillis() - startTime) / 1000.0);
+        } catch (Exception e) {
+            throw new OptionsChainLoadException(ticker, document.baseUri(), "Options chain load failure most likely due to too many calls.", e);
+        }
         return optionsChains;
     }
 
     @Override
-    public OptionsChain loadLiveOptionsChainForExpirationDate(String ticker, LocalDate expirationDate) {
+    public OptionsChain loadLiveOptionsChainForExpirationDate(String ticker, LocalDate expirationDate) throws OptionsChainLoadException {
         Document document = doCall(ticker, expirationDate);
-        if (parseDocumentForExpirationDates(document).stream().noneMatch(x -> x.compareTo(expirationDate) == 0)) {
-            throw new IllegalArgumentException("The expiration date provided (" + expirationDate.toString() + ") is not valid for ticker: " + ticker + ".");
+        try {
+            if (parseDocumentForExpirationDates(document).stream().noneMatch(x -> x.compareTo(expirationDate) == 0)) {
+                throw new IllegalArgumentException("The expiration date provided (" + expirationDate.toString() + ") is not valid for ticker: " + ticker + ".");
+            }
+        } catch (Exception e) {
+            throw new OptionsChainLoadException(ticker, document.baseUri(), "Options chain load failure most likely due to too many calls.", e);
         }
         return buildOptionsChain(ticker, expirationDate, document);
     }
 
     @Override
-    public List<LocalDate> getOptionExpirationDates(String ticker) {
-        return parseDocumentForExpirationDates(doCall(ticker));
+    public List<LocalDate> getOptionExpirationDates(String ticker) throws OptionsChainLoadException {
+        Document document = doCall(ticker);
+        try {
+            return parseDocumentForExpirationDates(document);
+        } catch (Exception e) {
+            throw new OptionsChainLoadException(ticker, document.baseUri(), "Options chain load failure most likely due to too many calls.", e);
+        }
     }
 
     private Document doCall(String ticker) {
@@ -159,17 +183,13 @@ public class YahooFinanceOptionsChainLoadService extends OptionsChainLoadService
     private List<LocalDate> parseDocumentForExpirationDates(Document document) {
         List<LocalDate> timestamps = new LinkedList<>();
         if (document != null) {
-            try {
-                Elements dateSelectors = document.selectFirst("div#Col1-1-OptionContracts-Proxy")
-                        .selectFirst("div.controls").selectFirst("select")
-                        .select("option");
-                dateSelectors.forEach(element -> {
-                    Long timestamp = Long.parseLong(element.attr("value"));
-                    timestamps.add(LocalDate.ofInstant(Instant.ofEpochSecond(timestamp), ZoneId.of("Z")));
-                });
-            } catch (NullPointerException e) {
-                log.error("Could not parse Yahoo Finance Options Chain at: {}. Most likely due to too many calls.", document.location());
-            }
+            Elements dateSelectors = document.selectFirst("div#Col1-1-OptionContracts-Proxy")
+                    .selectFirst("div.controls").selectFirst("select")
+                    .select("option");
+            dateSelectors.forEach(element -> {
+                Long timestamp = Long.parseLong(element.attr("value"));
+                timestamps.add(LocalDate.ofInstant(Instant.ofEpochSecond(timestamp), ZoneId.of("Z")));
+            });
         }
         return timestamps;
     }

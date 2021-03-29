@@ -2,6 +2,7 @@ package com.dpgrandslam.stockdataservice.unit.service;
 
 import com.dpgrandslam.stockdataservice.adapter.apiclient.WebpageLoader;
 import com.dpgrandslam.stockdataservice.domain.config.ApiClientConfigurationProperties;
+import com.dpgrandslam.stockdataservice.domain.error.OptionsChainLoadException;
 import com.dpgrandslam.stockdataservice.domain.model.options.HistoricalOption;
 import com.dpgrandslam.stockdataservice.domain.model.options.Option;
 import com.dpgrandslam.stockdataservice.domain.model.options.OptionChainKey;
@@ -63,7 +64,7 @@ public class YahooFinanceOptionsChainLoadServiceTest {
     }
 
     @Test
-    public void testLoadOptionsChainForClosestExpiration_noPortInUrl() {
+    public void testLoadOptionsChainForClosestExpiration_noPortInUrl() throws OptionsChainLoadException {
         when(clientConfigurationProperties.getPort()).thenReturn(null);
         OptionsChain optionsChain = subject.loadLiveOptionsChainForClosestExpiration("test");
 
@@ -76,7 +77,7 @@ public class YahooFinanceOptionsChainLoadServiceTest {
     }
 
     @Test
-    public void testLoadOptionsChainForClosestExpiration_portInUrl() {
+    public void testLoadOptionsChainForClosestExpiration_portInUrl() throws OptionsChainLoadException {
         when(clientConfigurationProperties.getPort()).thenReturn(8080);
 
         subject.loadLiveOptionsChainForClosestExpiration("test");
@@ -84,7 +85,7 @@ public class YahooFinanceOptionsChainLoadServiceTest {
     }
 
     @Test
-    public void testLoadCompleteOptionsChainForExpirationDateWithPriceDataInRange_dateRangeBeforeToday() {
+    public void testLoadCompleteOptionsChainForExpirationDateWithPriceDataInRange_dateRangeBeforeToday() throws OptionsChainLoadException {
         Timestamp actual = Timestamp.from(Instant.now().minus(5, ChronoUnit.DAYS));
         double strike = 1.0;
         List<HistoricalOption> options = buildHistoricalOptions(actual, "TEST", LocalDate.now(), strike);
@@ -108,7 +109,7 @@ public class YahooFinanceOptionsChainLoadServiceTest {
     }
 
     @Test
-    public void testLoadCompleteOptionsChainForExpirationDateWithPriceDataInRange_nullEndDate() {
+    public void testLoadCompleteOptionsChainForExpirationDateWithPriceDataInRange_nullEndDate() throws OptionsChainLoadException {
         LocalDate march15th2021 = LocalDate.of(2021, 3, 5);
         Timestamp actual = Timestamp.from(Instant.now().minus(4, ChronoUnit.DAYS));
         Double strike = 405.0;
@@ -132,7 +133,7 @@ public class YahooFinanceOptionsChainLoadServiceTest {
     }
 
     @Test
-    public void testLoadOptionsChainForExpirationDateWithAllHistoricData() {
+    public void testLoadOptionsChainForExpirationDateWithAllHistoricData() throws OptionsChainLoadException {
         LocalDate march15th2021 = LocalDate.of(2021, 3, 5);
         Timestamp actual = Timestamp.from(Instant.now().minus(4, ChronoUnit.DAYS));
         Double strike = 405.0;
@@ -153,7 +154,7 @@ public class YahooFinanceOptionsChainLoadServiceTest {
     }
 
     @Test
-    public void testGetOptionExpirationDates() {
+    public void testGetOptionExpirationDates() throws OptionsChainLoadException {
         List<LocalDate> actualExpirationDates = subject.getOptionExpirationDates("AAPL");
 
         assertNotNull(actualExpirationDates);
@@ -164,7 +165,7 @@ public class YahooFinanceOptionsChainLoadServiceTest {
     }
 
     @Test
-    public void testLoadLiveOptionsChain_weekdayMorning_beforeMarketOpen() {
+    public void testLoadLiveOptionsChain_weekdayMorning_beforeMarketOpen() throws OptionsChainLoadException {
         LocalDate nextTuesday = LocalDate.now().with(TemporalAdjusters.next(DayOfWeek.TUESDAY));
         when(timeUtils.getNowAmericaNewYork()).thenReturn(LocalDateTime.of(nextTuesday, LocalTime.of(8, 45)));
 
@@ -175,7 +176,7 @@ public class YahooFinanceOptionsChainLoadServiceTest {
     }
 
     @Test
-    public void testLoadLiveOptionsChain_sunday() {
+    public void testLoadLiveOptionsChain_sunday() throws OptionsChainLoadException {
         LocalDate nextSunday = LocalDate.now().with(TemporalAdjusters.next(DayOfWeek.SUNDAY));
         when(timeUtils.getNowAmericaNewYork()).thenReturn(LocalDateTime.of(nextSunday, LocalTime.of(8, 45)));
 
@@ -186,7 +187,7 @@ public class YahooFinanceOptionsChainLoadServiceTest {
     }
 
     @Test
-    public void testLoadLiveOptionsChain_saturday() {
+    public void testLoadLiveOptionsChain_saturday() throws OptionsChainLoadException {
         LocalDate nextSunday = LocalDate.now().with(TemporalAdjusters.next(DayOfWeek.SATURDAY));
         when(timeUtils.getNowAmericaNewYork()).thenReturn(LocalDateTime.of(nextSunday, LocalTime.of(8, 45)));
 
@@ -197,7 +198,7 @@ public class YahooFinanceOptionsChainLoadServiceTest {
     }
 
     @Test
-    public void testLoadLiveOptionsChain_mondayMorning_beforeMarketOpen() {
+    public void testLoadLiveOptionsChain_mondayMorning_beforeMarketOpen() throws OptionsChainLoadException {
         LocalDate monday = LocalDate.now().with(TemporalAdjusters.next(DayOfWeek.MONDAY));
         when(timeUtils.getNowAmericaNewYork()).thenReturn(LocalDateTime.of(monday, LocalTime.of(8, 45)));
 
@@ -208,7 +209,7 @@ public class YahooFinanceOptionsChainLoadServiceTest {
     }
 
     @Test
-    public void testLoadLiveOptionsChain_mondayMorning_afterMarketOpen() {
+    public void testLoadLiveOptionsChain_mondayMorning_afterMarketOpen() throws OptionsChainLoadException {
         LocalDate monday = LocalDate.now().with(TemporalAdjusters.next(DayOfWeek.MONDAY));
         when(timeUtils.getNowAmericaNewYork()).thenReturn(LocalDateTime.of(monday, LocalTime.of(9, 30)));
 
@@ -219,7 +220,7 @@ public class YahooFinanceOptionsChainLoadServiceTest {
     }
 
     @Test
-    public void testLoadLiveOptionsChain_mondayHoliday() {
+    public void testLoadLiveOptionsChain_mondayHoliday() throws OptionsChainLoadException {
         LocalDate monday = LocalDate.now().with(TemporalAdjusters.next(DayOfWeek.MONDAY));
         when(timeUtils.getNowAmericaNewYork()).thenReturn(LocalDateTime.of(monday, LocalTime.of(9, 30)));
         when(timeUtils.isStockMarketHoliday(any())).thenReturn(true);
