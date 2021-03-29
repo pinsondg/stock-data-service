@@ -74,7 +74,7 @@ public class EndOfDayOptionsLoaderJob implements ApplicationListener<TrackedStoc
         jobStatus = JobStatus.NOT_STARTED;
         trackedStocks = new ConcurrentLinkedQueue<>();
         trackedStocks.addAll(trackedStockService.getAllActiveTrackedStocks().stream()
-                .filter(trackedStock -> trackedStock.getLastOptionsHistoricDataUpdate().isBefore(timeUtils.getNowAmericaNewYork().toLocalDate()))
+                .filter(trackedStock -> trackedStock.getLastOptionsHistoricDataUpdate() == null || trackedStock.getLastOptionsHistoricDataUpdate().isBefore(timeUtils.getNowAmericaNewYork().toLocalDate()))
                 .collect(Collectors.toList()));
     }
 
