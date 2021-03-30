@@ -91,7 +91,7 @@ public class HistoricOptionsDataService {
                 .anyMatch(x -> data.getTradeDate().equals(x.getTradeDate())));
         priceDataCopy.forEach(data -> data.setOption(option));
         if (priceDataCopy.size() == 0) {
-            log.info("Price data for trade date {} already exists. Skipping addition...", optionPriceData.stream().findFirst().get().getTradeDate());
+            log.info("Price data for option {} at trade date {} already exists. Skipping addition...", option, optionPriceData.stream().findFirst().get().getTradeDate());
         } else {
             option.getHistoricalPriceData().addAll(priceDataCopy);
             return historicalOptionRepository.save(option);

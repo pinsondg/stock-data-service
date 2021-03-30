@@ -103,13 +103,13 @@ public class EndOfDayOptionsLoaderJob implements ApplicationListener<TrackedStoc
         storeOptionsChainEndOfDayData();
     }
 
-    @Scheduled(cron = "0 0/10 0-9 * * 1-5")
+    @Scheduled(cron = "0 0/5 0-9 * * 1-5")
     public void weekdayLoadJobBeforeHours() {
         startJob();
         storeOptionsChainEndOfDayData();
     }
 
-    @Scheduled(cron = "0 0/10 16-23 * * 1-5") // Every minute from
+    @Scheduled(cron = "0 0/5 16-23 * * 1-5") // Every minute from
     public void weekdayLoadJobAfterHours() {
         startJob();
         storeOptionsChainEndOfDayData();
