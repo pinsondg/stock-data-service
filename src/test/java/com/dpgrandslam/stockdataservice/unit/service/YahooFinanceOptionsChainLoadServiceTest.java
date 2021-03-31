@@ -85,7 +85,7 @@ public class YahooFinanceOptionsChainLoadServiceTest {
 
     @Test
     public void testLoadCompleteOptionsChainForExpirationDateWithPriceDataInRange_dateRangeBeforeToday() {
-        Timestamp actual = Timestamp.from(Instant.now().minus(5, ChronoUnit.DAYS));
+        LocalDate actual = LocalDate.now().minusDays(5);
         double strike = 1.0;
         List<HistoricalOption> options = buildHistoricalOptions(actual, "TEST", LocalDate.now(), strike);
 
@@ -94,13 +94,13 @@ public class YahooFinanceOptionsChainLoadServiceTest {
         OptionsChain chain = subject.loadCompleteOptionsChainForExpirationDateWithPriceDataInRange("TEST",
                 LocalDate.now(),
                 LocalDate.now().minusDays(9),
-                LocalDate.now().minusDays(1));
+                LocalDate.now().minusDays(2));
         assertEquals(1, chain.getAllOptions().size());
         Option option = chain.getOption(OptionChainKey.builder().strike(strike).optionType(Option.OptionType.CALL).build());
         assertNotNull(option);
         assertEquals("TEST", option.getTicker());
         assertEquals(1, option.getOptionPriceData().size());
-        assertEquals(actual, option.getOptionPriceData().stream().findFirst().get().getDataObtainedDate());
+        assertEquals(actual, option.getOptionPriceData().stream().findFirst().get().getTradeDate());
 
         verify(historicOptionsDataService, times(1)).findOptions(
                 eq("TEST"), eq(LocalDate.now()));
@@ -110,7 +110,7 @@ public class YahooFinanceOptionsChainLoadServiceTest {
     @Test
     public void testLoadCompleteOptionsChainForExpirationDateWithPriceDataInRange_nullEndDate() {
         LocalDate march15th2021 = LocalDate.of(2021, 3, 5);
-        Timestamp actual = Timestamp.from(Instant.now().minus(4, ChronoUnit.DAYS));
+        LocalDate actual = LocalDate.now().minusDays(4);
         Double strike = 405.0;
         List<HistoricalOption> options = buildHistoricalOptions(actual, "AAPL", march15th2021, strike);
 
@@ -123,8 +123,8 @@ public class YahooFinanceOptionsChainLoadServiceTest {
         Option option = chain.getOption(OptionChainKey.builder().strike(strike).optionType(Option.OptionType.CALL).build());
         assertNotNull(option);
         assertEquals("AAPL", option.getTicker());
-        assertEquals(4, option.getOptionPriceData().size());
-        assertTrue(option.getOptionPriceData().stream().anyMatch(data -> data.getDataObtainedDate().equals(actual)));
+        assertEquals(3, option.getOptionPriceData().size());
+        assertTrue(option.getOptionPriceData().stream().anyMatch(data -> data.getTradeDate().equals(actual)));
 
         verify(historicOptionsDataService, times(1)).findOptions(
                 eq("AAPL"), eq(march15th2021));
@@ -134,7 +134,7 @@ public class YahooFinanceOptionsChainLoadServiceTest {
     @Test
     public void testLoadOptionsChainForExpirationDateWithAllHistoricData() {
         LocalDate march15th2021 = LocalDate.of(2021, 3, 5);
-        Timestamp actual = Timestamp.from(Instant.now().minus(4, ChronoUnit.DAYS));
+        LocalDate actual = LocalDate.now().minusDays(4);
         Double strike = 405.0;
         List<HistoricalOption> options = buildHistoricalOptions(actual, "AAPL", march15th2021, strike);
 
@@ -145,7 +145,7 @@ public class YahooFinanceOptionsChainLoadServiceTest {
         assertNotNull(option);
         assertEquals("AAPL", option.getTicker());
         assertEquals(5, option.getOptionPriceData().size());
-        assertTrue(option.getOptionPriceData().stream().anyMatch(data -> data.getDataObtainedDate().equals(actual)));
+        assertTrue(option.getOptionPriceData().stream().anyMatch(data -> data.getTradeDate().equals(actual)));
 
         verify(historicOptionsDataService, times(1)).findOptions(
                 eq("AAPL"), eq(march15th2021));
@@ -230,12 +230,12 @@ public class YahooFinanceOptionsChainLoadServiceTest {
         verify(timeUtils, atLeastOnce()).getNowAmericaNewYork();
     }
 
-    private List<HistoricalOption> buildHistoricalOptions(Timestamp actual, String ticker, LocalDate expiration, Double strike) {
+    private List<HistoricalOption> buildHistoricalOptions(LocalDate actual, String ticker, LocalDate expiration, Double strike) {
         List<HistoricalOption> options = new ArrayList<>();
         options.add(TestDataFactory.HistoricalOptionMother.noPriceData().ticker(ticker).strike(strike).expiration(expiration).historicalPriceData(new HashSet<>(Arrays.asList(
-                TestDataFactory.OptionPriceDataMother.complete().dataObtainedDate(Timestamp.from(Instant.now().minus(10, ChronoUnit.DAYS))).build(),
-                TestDataFactory.OptionPriceDataMother.complete().dataObtainedDate(actual).build(),
-                TestDataFactory.OptionPriceDataMother.complete().dataObtainedDate(Timestamp.from(Instant.now().minus(10, ChronoUnit.MINUTES))).build(),
+                TestDataFactory.OptionPriceDataMother.complete().tradeDate(LocalDate.now().minus(10, ChronoUnit.DAYS)).build(),
+                TestDataFactory.OptionPriceDataMother.complete().tradeDate(actual).build(),
+                TestDataFactory.OptionPriceDataMother.complete().tradeDate(LocalDate.now().minusDays(1)).build(),
                 TestDataFactory.OptionPriceDataMother.complete().dataObtainedDate(Timestamp.from(Instant.now())).build()
         ))).build());
         return options;
