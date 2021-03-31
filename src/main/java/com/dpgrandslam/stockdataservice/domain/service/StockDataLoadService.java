@@ -12,9 +12,9 @@ public interface StockDataLoadService {
 
     boolean isDataLoadThresholdReached();
 
-    List<? extends EndOfDayStockData> getEndOfDayStockData(String ticker, LocalDate startDate, LocalDate endDate);
+    List<EndOfDayStockData> getEndOfDayStockData(String ticker, LocalDate startDate, LocalDate endDate);
 
-    List<? extends EndOfDayStockData> getMostRecentEndOfDayStockData(String ticker);
+    List<EndOfDayStockData> getMostRecentEndOfDayStockData(String ticker);
 
     LiveStockData getLiveStockData(String ticker);
 

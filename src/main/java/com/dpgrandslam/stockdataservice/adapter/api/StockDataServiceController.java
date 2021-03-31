@@ -1,8 +1,9 @@
 package com.dpgrandslam.stockdataservice.adapter.api;
 
 import com.dpgrandslam.stockdataservice.domain.model.options.OptionsChain;
-import com.dpgrandslam.stockdataservice.domain.model.stock.TrackedStock;
+import com.dpgrandslam.stockdataservice.domain.model.stock.*;
 import com.dpgrandslam.stockdataservice.domain.service.OptionsChainLoadService;
+import com.dpgrandslam.stockdataservice.domain.service.StockDataLoadService;
 import com.dpgrandslam.stockdataservice.domain.service.TrackedStockService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -23,6 +24,9 @@ public class StockDataServiceController {
 
     @Autowired
     private TrackedStockService trackedStockService;
+
+    @Autowired
+    private StockDataLoadService stockDataLoadService;
 
     @GetMapping("/option/{ticker}")
     public ResponseEntity<List<OptionsChain>> getOptionsChain(@PathVariable(name = "ticker") String ticker,
@@ -51,6 +55,27 @@ public class StockDataServiceController {
         } else {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
         }
+    }
+
+    @GetMapping("/stock/{ticker}")
+    public ResponseEntity<List<EndOfDayStockData>> getEndOfDayStockData(@PathVariable String ticker,
+                                                                  Optional<LocalDate> startDate,
+                                                                  Optional<LocalDate> endDate) {
+        if (startDate.isEmpty() && endDate.isEmpty()) {
+            return ResponseEntity.ok(stockDataLoadService.getMostRecentEndOfDayStockData(ticker));
+        }
+        return ResponseEntity.ok(stockDataLoadService.getEndOfDayStockData(ticker, startDate.orElse(LocalDate.MIN),
+                endDate.orElse(LocalDate.now())));
+    }
+
+    @GetMapping("/stock/{ticker}/live")
+    public ResponseEntity<LiveStockData> getLiveStockData(@PathVariable(name = "ticker") String ticker) {
+        return ResponseEntity.ok(stockDataLoadService.getLiveStockData(ticker));
+    }
+
+    @GetMapping("/stock/search")
+    public ResponseEntity<List<? extends StockSearchResult>> searchStock(@RequestParam(name = "q") String query) {
+        return ResponseEntity.ok(stockDataLoadService.searchStock(query));
     }
 
     @GetMapping("/tracked")

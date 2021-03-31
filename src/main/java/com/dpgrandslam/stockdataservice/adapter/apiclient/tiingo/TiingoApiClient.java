@@ -25,7 +25,7 @@ public interface TiingoApiClient {
                                                         @Param("startDate") String startDate,
                                                         @Param("endDate") String endDate);
     @RequestLine("GET /iex/{ticker}")
-    TiingoStockLiveDataResponse getLiveStockData(@Param("ticker") String ticker);
+    List<TiingoStockLiveDataResponse> getLiveStockData(@Param("ticker") String ticker);
 
     @RequestLine("GET /tiingo/daily/{ticker}")
     TiingoMetaDataResponse getStockMetaData(@Param("ticker") String ticker);

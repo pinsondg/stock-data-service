@@ -15,6 +15,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 @Service
@@ -33,18 +34,18 @@ public class TiingoStockService implements StockDataLoadService {
     }
 
     @Override
-    public List<? extends EndOfDayStockData> getEndOfDayStockData(String ticker, LocalDate startDate, LocalDate endDate) {
+    public List<EndOfDayStockData> getEndOfDayStockData(String ticker, LocalDate startDate, LocalDate endDate) {
         return new ArrayList<>(apiClient.getHistoricalInfo(ticker, startDate.toString(), endDate.toString()));
     }
 
     @Override
-    public List<? extends EndOfDayStockData> getMostRecentEndOfDayStockData(String ticker) {
+    public List<EndOfDayStockData> getMostRecentEndOfDayStockData(String ticker) {
         return new ArrayList<>(apiClient.getEndOfDayInfo(ticker));
     }
 
     @Override
     public LiveStockData getLiveStockData(String ticker) {
-        return apiClient.getLiveStockData(ticker);
+        return apiClient.getLiveStockData(ticker).get(0);
     }
 
     @Override

@@ -2,8 +2,13 @@ package com.dpgrandslam.stockdataservice.unit.api;
 
 import com.dpgrandslam.stockdataservice.adapter.api.StockDataServiceController;
 import com.dpgrandslam.stockdataservice.domain.model.options.OptionsChain;
+import com.dpgrandslam.stockdataservice.domain.model.stock.EndOfDayStockData;
+import com.dpgrandslam.stockdataservice.domain.model.stock.LiveStockData;
+import com.dpgrandslam.stockdataservice.domain.model.stock.StockSearchResult;
 import com.dpgrandslam.stockdataservice.domain.model.stock.TrackedStock;
+import com.dpgrandslam.stockdataservice.domain.model.tiingo.TiingoStockSearchResponse;
 import com.dpgrandslam.stockdataservice.domain.service.OptionsChainLoadService;
+import com.dpgrandslam.stockdataservice.domain.service.StockDataLoadService;
 import com.dpgrandslam.stockdataservice.domain.service.TrackedStockService;
 import com.dpgrandslam.stockdataservice.testUtils.TestDataFactory;
 import org.junit.Before;
@@ -30,6 +35,9 @@ public class StockDataServiceControllerTest {
 
     @Mock
     private TrackedStockService trackedStockService;
+
+    @Mock
+    private StockDataLoadService stockDataLoadService;
 
     @InjectMocks
     private StockDataServiceController subject;
@@ -171,4 +179,80 @@ public class StockDataServiceControllerTest {
 
         assertTrue(response.getStatusCode().is4xxClientError());
     }
+
+    @Test
+    public void testGetLiveStockData_callsService() {
+        when(stockDataLoadService.getLiveStockData(anyString())).thenReturn(mock(LiveStockData.class));
+
+        subject.getLiveStockData("TEST");
+
+        verify(stockDataLoadService, times(1)).getLiveStockData(eq("TEST"));
+    }
+
+    @Test
+    public void testSearchStock_callsService() {
+        String testTicker = "TEST";
+        TiingoStockSearchResponse mockResult = mock(TiingoStockSearchResponse.class);
+        List<StockSearchResult> l = new ArrayList<>();
+        l.add(mockResult);
+
+        when(mockResult.getTicker()).thenReturn(testTicker);
+        doReturn(l).when(stockDataLoadService).searchStock(anyString());
+
+        ResponseEntity<List<? extends StockSearchResult>> response = subject.searchStock(testTicker);
+
+        verify(stockDataLoadService, times(1)).searchStock(eq(testTicker));
+        assertEquals(1, Objects.requireNonNull(response.getBody()).size());
+        assertEquals(testTicker, response.getBody().get(0).getTicker());
+    }
+
+    @Test
+    public void testGetEndOfDayData_noDates_getsMostRecentData() {
+        EndOfDayStockData endOfDayStockData = mock(EndOfDayStockData.class);
+
+        when(stockDataLoadService.getMostRecentEndOfDayStockData(anyString())).thenReturn(Collections.singletonList(endOfDayStockData));
+
+        subject.getEndOfDayStockData("TEST", Optional.empty(), Optional.empty());
+
+        verify(stockDataLoadService, times(1)).getMostRecentEndOfDayStockData(eq("TEST"));
+        verify(stockDataLoadService, never()).getEndOfDayStockData(any(), any(), any());
+    }
+
+    @Test
+    public void testGetEndOfDayData_withDates_getsHistoricData() {
+        EndOfDayStockData endOfDayStockData = mock(EndOfDayStockData.class);
+
+        when(stockDataLoadService.getMostRecentEndOfDayStockData(anyString())).thenReturn(Collections.singletonList(endOfDayStockData));
+
+        subject.getEndOfDayStockData("TEST", Optional.of(LocalDate.now()), Optional.of(LocalDate.now()));
+
+        verify(stockDataLoadService, times(0)).getMostRecentEndOfDayStockData(any());
+        verify(stockDataLoadService, times(1)).getEndOfDayStockData(eq("TEST"), eq(LocalDate.now()), eq(LocalDate.now()));
+    }
+
+    @Test
+    public void testGetEndOfDayData_withOnlyEndDate_getsHistoricDataWithMinStart() {
+        EndOfDayStockData endOfDayStockData = mock(EndOfDayStockData.class);
+
+        when(stockDataLoadService.getMostRecentEndOfDayStockData(anyString())).thenReturn(Collections.singletonList(endOfDayStockData));
+
+        subject.getEndOfDayStockData("TEST", Optional.empty(), Optional.of(LocalDate.now()));
+
+        verify(stockDataLoadService, times(0)).getMostRecentEndOfDayStockData(any());
+        verify(stockDataLoadService, times(1)).getEndOfDayStockData(eq("TEST"), eq(LocalDate.MIN), eq(LocalDate.now()));
+    }
+
+    @Test
+    public void testGetEndOfDayData_withOnlyStartDate_getsHistoricDataWithTodayEnd() {
+        EndOfDayStockData endOfDayStockData = mock(EndOfDayStockData.class);
+
+        when(stockDataLoadService.getMostRecentEndOfDayStockData(anyString())).thenReturn(Collections.singletonList(endOfDayStockData));
+
+        subject.getEndOfDayStockData("TEST", Optional.of(LocalDate.now().minusDays(1)), Optional.empty());
+
+        verify(stockDataLoadService, times(0)).getMostRecentEndOfDayStockData(any());
+        verify(stockDataLoadService, times(1)).getEndOfDayStockData(eq("TEST"), eq(LocalDate.now().minusDays(1)), eq(LocalDate.now()));
+    }
+
+
 }
