@@ -1,5 +1,6 @@
 package com.dpgrandslam.stockdataservice.integration.service;
 
+import com.dpgrandslam.stockdataservice.domain.error.OptionsChainLoadException;
 import com.dpgrandslam.stockdataservice.domain.model.options.OptionsChain;
 import com.dpgrandslam.stockdataservice.domain.service.YahooFinanceOptionsChainLoadService;
 import com.dpgrandslam.stockdataservice.integration.client.MockClientTest;
@@ -22,7 +23,7 @@ public class YahooFinanceOptionsChainLoadServiceTest extends MockClientTest {
     private YahooFinanceOptionsChainLoadService subject;
 
     @Test
-    public void testLoadClosestOptionsChain() throws IOException {
+    public void testLoadClosestOptionsChain() throws IOException, OptionsChainLoadException {
         mockServerRule.getClient().when(
                 request()
                         .withMethod("GET")
@@ -40,7 +41,7 @@ public class YahooFinanceOptionsChainLoadServiceTest extends MockClientTest {
     }
 
     @Test(expected = IllegalArgumentException.class)
-    public void testLoadOptionsChain_emptyOptionsChain_throwsException() throws IOException {
+    public void testLoadOptionsChain_emptyOptionsChain_throwsException() throws IOException, OptionsChainLoadException {
         mockServerRule.getClient().when(request()
                 .withMethod("GET")
                 .withPath("/quote/AAPL/options")

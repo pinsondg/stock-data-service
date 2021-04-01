@@ -1,5 +1,6 @@
 package com.dpgrandslam.stockdataservice.acceptance;
 
+import com.dpgrandslam.stockdataservice.domain.error.OptionsChainLoadException;
 import com.dpgrandslam.stockdataservice.domain.model.options.OptionsChain;
 import com.dpgrandslam.stockdataservice.domain.service.YahooFinanceOptionsChainLoadService;
 import org.junit.Ignore;
@@ -17,7 +18,7 @@ public class YahooFinanceOptionsChainServiceTest extends AcceptanceTestBase {
     private YahooFinanceOptionsChainLoadService subject;
 
     @Test
-    public void testGetCompleteOptionsChain() {
+    public void testGetCompleteOptionsChain() throws OptionsChainLoadException {
         List<OptionsChain> chains = subject.loadFullLiveOptionsChain("AAPL");
         List<OptionsChain> chains2 = subject.loadFullLiveOptionsChain("AAL");
         List<OptionsChain> chains3 = subject.loadFullLiveOptionsChain("SPY");
@@ -25,7 +26,7 @@ public class YahooFinanceOptionsChainServiceTest extends AcceptanceTestBase {
     }
 
     @Test
-    public void basicLoadTest() {
+    public void basicLoadTest() throws OptionsChainLoadException {
         String ticker = "SPY";
         OptionsChain chain = subject.loadLiveOptionsChainForClosestExpiration(ticker);
         int callsMade = 0;
