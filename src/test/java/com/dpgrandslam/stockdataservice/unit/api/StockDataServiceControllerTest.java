@@ -123,9 +123,9 @@ public class StockDataServiceControllerTest {
 
         LocalDate expiration = LocalDate.of(2021, 1, 1);
         ResponseEntity response = subject.getOptionsChain("TEST",
-                Optional.of(expiration),
-                Optional.of(now.minusDays(1)),
-                Optional.of(now));
+                Optional.of(expiration.toString()),
+                Optional.of(now.minusDays(1).toString()),
+                Optional.of(now.toString()));
 
         assertTrue(response.getStatusCode().is2xxSuccessful());
 
@@ -144,7 +144,7 @@ public class StockDataServiceControllerTest {
         when(optionsChainLoadService.loadCompleteOptionsChainForExpirationDateWithPriceDataInRange(anyString(), any(), any(), any()))
                 .thenReturn(TestDataFactory.OptionsChainMother.oneOption());
 
-        ResponseEntity response = subject.getOptionsChain("TEST", Optional.of(now), Optional.empty(), Optional.of(end));
+        ResponseEntity response = subject.getOptionsChain("TEST", Optional.of(now.toString()), Optional.empty(), Optional.of(end.toString()));
 
         assertTrue(response.getStatusCode().is2xxSuccessful());
         verify(optionsChainLoadService, times(1)).loadCompleteOptionsChainForExpirationDateWithPriceDataInRange(
@@ -163,7 +163,7 @@ public class StockDataServiceControllerTest {
 
         when(optionsChainLoadService.loadLiveOptionsChainForExpirationDate(anyString(), any())).thenReturn(TestDataFactory.OptionsChainMother.oneOption());
 
-        ResponseEntity response = subject.getOptionsChain("TEST", Optional.of(expiration), Optional.empty(), Optional.empty());
+        ResponseEntity response = subject.getOptionsChain("TEST", Optional.of(expiration.toString()), Optional.empty(), Optional.empty());
 
         assertTrue(response.getStatusCode().is2xxSuccessful());
 
@@ -223,7 +223,7 @@ public class StockDataServiceControllerTest {
     public void testGetEndOfDayData_withDates_getsHistoricData() {
         EndOfDayStockData endOfDayStockData = mock(EndOfDayStockData.class);
 
-        subject.getEndOfDayStockData("TEST", Optional.of(LocalDate.now()), Optional.of(LocalDate.now()));
+        subject.getEndOfDayStockData("TEST", Optional.of(LocalDate.now().toString()), Optional.of(LocalDate.now().toString()));
 
         verify(stockDataLoadService, times(0)).getMostRecentEndOfDayStockData(any());
         verify(stockDataLoadService, times(1)).getEndOfDayStockData(eq("TEST"), eq(LocalDate.now()), eq(LocalDate.now()));
@@ -233,7 +233,7 @@ public class StockDataServiceControllerTest {
     public void testGetEndOfDayData_withOnlyEndDate_getsHistoricDataWithMinStart() {
         EndOfDayStockData endOfDayStockData = mock(EndOfDayStockData.class);
 
-        subject.getEndOfDayStockData("TEST", Optional.empty(), Optional.of(LocalDate.now()));
+        subject.getEndOfDayStockData("TEST", Optional.empty(), Optional.of(LocalDate.now().toString()));
 
         verify(stockDataLoadService, times(0)).getMostRecentEndOfDayStockData(any());
         verify(stockDataLoadService, times(1)).getEndOfDayStockData(eq("TEST"), eq(LocalDate.MIN), eq(LocalDate.now()));
@@ -243,7 +243,7 @@ public class StockDataServiceControllerTest {
     public void testGetEndOfDayData_withOnlyStartDate_getsHistoricDataWithTodayEnd() {
         EndOfDayStockData endOfDayStockData = mock(EndOfDayStockData.class);
 
-        subject.getEndOfDayStockData("TEST", Optional.of(LocalDate.now().minusDays(1)), Optional.empty());
+        subject.getEndOfDayStockData("TEST", Optional.of(LocalDate.now().minusDays(1).toString()), Optional.empty());
 
         verify(stockDataLoadService, times(0)).getMostRecentEndOfDayStockData(any());
         verify(stockDataLoadService, times(1)).getEndOfDayStockData(eq("TEST"), eq(LocalDate.now().minusDays(1)), eq(LocalDate.now()));

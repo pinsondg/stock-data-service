@@ -131,6 +131,7 @@ public abstract class OptionsChainLoadService {
                             && data.getTradeDate().compareTo(endDate) <= 0).collect(Collectors.toList());
             option.setOptionPriceData(filteredData);
         });
+        historicOptions.removeIf(option  -> option.getOptionPriceData() == null || option.getOptionPriceData().isEmpty());
     }
 
     private void combineLiveAndHistoricData(String ticker, List<OptionsChain> fullChain) {

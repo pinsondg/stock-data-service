@@ -11,6 +11,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
@@ -30,24 +31,25 @@ public class StockDataServiceController {
     private StockDataLoadService stockDataLoadService;
 
     @GetMapping("/option/{ticker}")
+    @Transactional
     public ResponseEntity<List<OptionsChain>> getOptionsChain(@PathVariable(name = "ticker") String ticker,
-                                                             @RequestParam(name = "expirationDate") Optional<LocalDate> expirationDate,
-                                                             @RequestParam(name = "startDate") Optional<LocalDate> startDate,
-                                                             @RequestParam(name = "endDate") Optional<LocalDate> endDate) throws OptionsChainLoadException {
+                                                             @RequestParam(name = "expirationDate") Optional<String> expirationDate,
+                                                             @RequestParam(name = "startDate") Optional<String> startDate,
+                                                             @RequestParam(name = "endDate") Optional<String> endDate) throws OptionsChainLoadException {
         List<OptionsChain> retVal = new ArrayList<>();
         if ((startDate.isPresent() || endDate.isPresent()) && expirationDate.isPresent()) {
             retVal.add(optionsChainLoadService.loadCompleteOptionsChainForExpirationDateWithPriceDataInRange(ticker,
-                    expirationDate.get(),
-                    startDate.orElse(LocalDate.MIN),
-                    endDate.orElse(LocalDate.now())));
+                    expirationDate.map(LocalDate::parse).get(),
+                    startDate.map(LocalDate::parse).orElse(LocalDate.MIN),
+                    endDate.map(LocalDate::parse).orElse(LocalDate.now())));
         } else if (startDate.isPresent() || endDate.isPresent()) {
-            optionsChainLoadService.loadFullOptionsChainWithAllDataBetweenDates(
+            retVal = optionsChainLoadService.loadFullOptionsChainWithAllDataBetweenDates(
                     ticker,
-                    startDate.orElse(LocalDate.MIN),
-                    endDate.orElse(LocalDate.now())
+                    startDate.map(LocalDate::parse).orElse(LocalDate.MIN),
+                    endDate.map(LocalDate::parse).orElse(LocalDate.now())
             );
         } else if (expirationDate.isPresent()){
-            retVal.add(optionsChainLoadService.loadLiveOptionsChainForExpirationDate(ticker, expirationDate.get()));
+            retVal.add(optionsChainLoadService.loadLiveOptionsChainForExpirationDate(ticker, expirationDate.map(LocalDate::parse).get()));
         } else {
             retVal = optionsChainLoadService.loadFullLiveOptionsChain(ticker);
         }
@@ -60,13 +62,13 @@ public class StockDataServiceController {
 
     @GetMapping("/stock/{ticker}")
     public ResponseEntity<List<EndOfDayStockData>> getEndOfDayStockData(@PathVariable String ticker,
-                                                                  Optional<LocalDate> startDate,
-                                                                  Optional<LocalDate> endDate) {
+                                                                  Optional<String> startDate,
+                                                                  Optional<String> endDate) {
         if (startDate.isEmpty() && endDate.isEmpty()) {
             return ResponseEntity.ok(stockDataLoadService.getMostRecentEndOfDayStockData(ticker));
         }
-        return ResponseEntity.ok(stockDataLoadService.getEndOfDayStockData(ticker, startDate.orElse(LocalDate.MIN),
-                endDate.orElse(LocalDate.now())));
+        return ResponseEntity.ok(stockDataLoadService.getEndOfDayStockData(ticker, startDate.map(LocalDate::parse).orElse(LocalDate.MIN),
+                endDate.map(LocalDate::parse).orElse(LocalDate.now())));
     }
 
     @GetMapping("/stock/{ticker}/live")
