@@ -1,6 +1,7 @@
 package com.dpgrandslam.stockdataservice.unit.api;
 
 import com.dpgrandslam.stockdataservice.adapter.api.StockDataServiceController;
+import com.dpgrandslam.stockdataservice.domain.error.OptionsChainLoadException;
 import com.dpgrandslam.stockdataservice.domain.model.options.OptionsChain;
 import com.dpgrandslam.stockdataservice.domain.model.stock.EndOfDayStockData;
 import com.dpgrandslam.stockdataservice.domain.model.stock.LiveStockData;
@@ -102,7 +103,7 @@ public class StockDataServiceControllerTest {
     }
 
     @Test
-    public void testGetOptionsChain_noDates_loadsLive() {
+    public void testGetOptionsChain_noDates_loadsLive() throws OptionsChainLoadException {
         when(optionsChainLoadService.loadFullLiveOptionsChain(anyString())).thenReturn(Collections.singletonList(
                 TestDataFactory.OptionsChainMother.oneOption()));
 
@@ -115,7 +116,7 @@ public class StockDataServiceControllerTest {
     }
 
     @Test
-    public void testGetOptionsChain_pastDates_loadsHistoric() {
+    public void testGetOptionsChain_pastDates_loadsHistoric() throws OptionsChainLoadException {
         LocalDate now = LocalDate.now();
         when(optionsChainLoadService.loadCompleteOptionsChainForExpirationDateWithPriceDataInRange(anyString(), any(), any(), any()))
             .thenReturn(TestDataFactory.OptionsChainMother.oneOption());
@@ -136,7 +137,7 @@ public class StockDataServiceControllerTest {
     }
 
     @Test
-    public void testGetOptionsChain_endDateOnly_loadsHistoric() {
+    public void testGetOptionsChain_endDateOnly_loadsHistoric() throws OptionsChainLoadException {
         LocalDate now = LocalDate.now();
         LocalDate end =  now.minusDays(100);
 
@@ -157,7 +158,7 @@ public class StockDataServiceControllerTest {
     }
 
     @Test
-    public void testGetOptionsChain_expirationDate_loadsLiveForExpiration() {
+    public void testGetOptionsChain_expirationDate_loadsLiveForExpiration() throws OptionsChainLoadException {
         LocalDate expiration = LocalDate.now().plusDays(100);
 
         when(optionsChainLoadService.loadLiveOptionsChainForExpirationDate(anyString(), any())).thenReturn(TestDataFactory.OptionsChainMother.oneOption());
@@ -172,7 +173,7 @@ public class StockDataServiceControllerTest {
     }
 
     @Test
-    public void testGetOptionsChain_empty_returnsNotFound() {
+    public void testGetOptionsChain_empty_returnsNotFound() throws OptionsChainLoadException {
         when(optionsChainLoadService.loadFullLiveOptionsChain(anyString())).thenReturn(Collections.emptyList());
 
         ResponseEntity response = subject.getOptionsChain("TEST", Optional.empty(), Optional.empty(), Optional.empty());
@@ -222,8 +223,6 @@ public class StockDataServiceControllerTest {
     public void testGetEndOfDayData_withDates_getsHistoricData() {
         EndOfDayStockData endOfDayStockData = mock(EndOfDayStockData.class);
 
-        when(stockDataLoadService.getMostRecentEndOfDayStockData(anyString())).thenReturn(Collections.singletonList(endOfDayStockData));
-
         subject.getEndOfDayStockData("TEST", Optional.of(LocalDate.now()), Optional.of(LocalDate.now()));
 
         verify(stockDataLoadService, times(0)).getMostRecentEndOfDayStockData(any());
@@ -234,8 +233,6 @@ public class StockDataServiceControllerTest {
     public void testGetEndOfDayData_withOnlyEndDate_getsHistoricDataWithMinStart() {
         EndOfDayStockData endOfDayStockData = mock(EndOfDayStockData.class);
 
-        when(stockDataLoadService.getMostRecentEndOfDayStockData(anyString())).thenReturn(Collections.singletonList(endOfDayStockData));
-
         subject.getEndOfDayStockData("TEST", Optional.empty(), Optional.of(LocalDate.now()));
 
         verify(stockDataLoadService, times(0)).getMostRecentEndOfDayStockData(any());
@@ -245,8 +242,6 @@ public class StockDataServiceControllerTest {
     @Test
     public void testGetEndOfDayData_withOnlyStartDate_getsHistoricDataWithTodayEnd() {
         EndOfDayStockData endOfDayStockData = mock(EndOfDayStockData.class);
-
-        when(stockDataLoadService.getMostRecentEndOfDayStockData(anyString())).thenReturn(Collections.singletonList(endOfDayStockData));
 
         subject.getEndOfDayStockData("TEST", Optional.of(LocalDate.now().minusDays(1)), Optional.empty());
 

@@ -40,7 +40,7 @@ public class YahooFinanceOptionsChainLoadServiceTest extends MockClientTest {
         assertNotNull(optionsChain);
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test(expected = OptionsChainLoadException.class)
     public void testLoadOptionsChain_emptyOptionsChain_throwsException() throws IOException, OptionsChainLoadException {
         mockServerRule.getClient().when(request()
                 .withMethod("GET")

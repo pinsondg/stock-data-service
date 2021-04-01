@@ -83,7 +83,11 @@ public class YahooFinanceOptionsChainLoadService extends OptionsChainLoadService
                 throw new IllegalArgumentException("The expiration date provided (" + expirationDate.toString() + ") is not valid for ticker: " + ticker + ".");
             }
         } catch (Exception e) {
-            throw new OptionsChainLoadException(ticker, document.baseUri(), "Options chain load failure most likely due to too many calls.", e);
+            String uri = "";
+            if (document != null) {
+                uri = document.baseUri();
+            }
+            throw new OptionsChainLoadException(ticker, uri, "Options chain load failure most likely due to too many calls.", e);
         }
         return buildOptionsChain(ticker, expirationDate, document);
     }
