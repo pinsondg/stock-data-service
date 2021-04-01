@@ -32,9 +32,6 @@ public class TestUtils {
         document.select("head").forEach(Node::remove);
         document.select("nav").forEach(Node::remove);
 
-//        FileWriter fileWriter = new FileWriter("text_html_scrub.html");
-        //        fileWriter.write(docAsString);
-
         return document.toString();
     }
 }

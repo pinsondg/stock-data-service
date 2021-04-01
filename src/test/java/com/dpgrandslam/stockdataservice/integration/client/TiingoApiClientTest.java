@@ -34,7 +34,7 @@ public class TiingoApiClientTest extends MockClientTest {
                 Times.exactly(1)
         ).respond(HttpResponse.response()
                 .withStatusCode(200)
-                .withBody(TestUtils.loadHtmlFileAndClean("mocks/tiingo/mock-search-response-apple.json")));
+                .withBody(TestUtils.loadBodyFromTestResourceFile("mocks/tiingo/mock-search-response-apple.json")));
 
         List<TiingoStockSearchResponse> response = subject.searchStock("apple");
 
@@ -51,7 +51,7 @@ public class TiingoApiClientTest extends MockClientTest {
                 Times.exactly(1)
         ).respond(HttpResponse.response()
                 .withStatusCode(200)
-                .withBody(TestUtils.loadHtmlFileAndClean("mocks/tiingo/mock-end-of-day-responce-aapl.json")));
+                .withBody(TestUtils.loadBodyFromTestResourceFile("mocks/tiingo/mock-end-of-day-responce-aapl.json")));
 
         Set<TiingoStockEndOfDayResponse> endOfDayResponse = subject.getEndOfDayInfo("AAPL");
 

@@ -17,7 +17,6 @@ import java.time.LocalDate;
 import static junit.framework.TestCase.assertNotNull;
 import static org.mockserver.model.HttpRequest.request;
 
-@Ignore
 public class YahooFinanceOptionsChainLoadServiceTest extends MockClientTest {
 
     @Autowired
