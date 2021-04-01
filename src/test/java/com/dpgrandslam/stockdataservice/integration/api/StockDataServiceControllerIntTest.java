@@ -5,6 +5,7 @@ import com.dpgrandslam.stockdataservice.domain.service.StockDataLoadService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.Before;
 import org.junit.Test;
+import org.mockserver.matchers.TimeToLive;
 import org.mockserver.matchers.Times;
 import org.mockserver.model.Header;
 import org.mockserver.model.HttpResponse;
@@ -15,8 +16,10 @@ import org.springframework.test.web.servlet.ResultActions;
 
 import java.io.IOException;
 import java.time.LocalDate;
+import java.util.concurrent.TimeUnit;
 
 import static com.dpgrandslam.stockdataservice.testUtils.TestUtils.loadBodyFromTestResourceFile;
+import static com.dpgrandslam.stockdataservice.testUtils.TestUtils.loadHtmlFileAndClean;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -52,11 +55,12 @@ public class StockDataServiceControllerIntTest extends APIIntTestBase {
                         .withMethod("GET")
                         .withPath("/quote/SPY/options")
                         .withQueryStringParameter("p", "SPY"),
-                Times.unlimited()
+                Times.unlimited(),
+                TimeToLive.exactly(TimeUnit.SECONDS, 20L)
         ).respond(HttpResponse.response()
                 .withStatusCode(200)
                 .withHeader("Content-Type", "text/html")
-                .withBody(loadBodyFromTestResourceFile("mocks/yahoofinance/yahoo-finance-spy.html")));
+                .withBody(loadHtmlFileAndClean("mocks/yahoofinance/yahoo-finance-spy.html")));
     }
 
     @Test
