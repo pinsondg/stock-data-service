@@ -52,13 +52,22 @@ public class YahooFinanceOptionsChainLoadService extends OptionsChainLoadService
         List<OptionsChain> optionsChains = Collections.synchronizedList(new ArrayList<>());
         Document document = doCall(ticker);
         try {
-            parseDocumentForExpirationDates(document).stream().parallel().forEach(date -> {
+            List<LocalDate> expirationDates = parseDocumentForExpirationDates(document);
+            for (LocalDate expiration : expirationDates) {
                 try {
-                    optionsChains.add(loadLiveOptionsChainForExpirationDate(ticker, date));
+                    optionsChains.add(loadLiveOptionsChainForExpirationDate(ticker, expiration));
                 } catch (OptionsChainLoadException e) {
-                    log.error("Error adding option to the full chain. Chain will be incomplete.", e);
+                    log.warn("Could not load options chain for ticker {} and date {}. Live data for this option will not be added to the chain.",
+                            ticker, expiration);
                 }
-            });
+            }
+//            parseDocumentForExpirationDates(document).stream().parallel().forEach(date -> {
+//                try {
+//                    optionsChains.add(loadLiveOptionsChainForExpirationDate(ticker, date));
+//                } catch (OptionsChainLoadException e) {
+//                    log.error("Error adding option to the full chain for ticker {} and data {}. Chain will be incomplete.",ticker, date, e);
+//                }
+//            });
             log.info("Loading of options from yahoo-finance for ticker {} complete. Took {} seconds to load all options.", ticker, (System.currentTimeMillis() - startTime) / 1000.0);
         } catch (Exception e) {
             throw new OptionsChainLoadException(ticker, document.baseUri(), "Options chain load failure most likely due to too many calls.", e);
