@@ -3,6 +3,7 @@ package com.dpgrandslam.stockdataservice.domain.service;
 import com.dpgrandslam.stockdataservice.adapter.apiclient.WebpageLoader;
 import com.dpgrandslam.stockdataservice.domain.config.ApiClientConfigurationProperties;
 import com.dpgrandslam.stockdataservice.domain.error.OptionsChainLoadException;
+import com.dpgrandslam.stockdataservice.domain.event.OptionChainParseFailedEvent;
 import com.dpgrandslam.stockdataservice.domain.model.options.LiveOption;
 import com.dpgrandslam.stockdataservice.domain.model.options.Option;
 import com.dpgrandslam.stockdataservice.domain.model.options.OptionsChain;
@@ -12,6 +13,7 @@ import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 
 import java.sql.Timestamp;
@@ -31,16 +33,21 @@ public class YahooFinanceOptionsChainLoadService extends OptionsChainLoadService
     private WebpageLoader basicWebPageLoader;
 
     @Autowired
+    private ApplicationEventPublisher eventPublisher;
+
+    @Autowired
     @Qualifier("YahooFinanceApiClientConfigurationProperties")
     private ApiClientConfigurationProperties clientConfigurationProperties;
 
     @Override
     public OptionsChain loadLiveOptionsChainForClosestExpiration(String ticker) throws OptionsChainLoadException {
         Document document = doCall(ticker);
+        LocalDate expiration = null;
         try {
-            LocalDate expiration = parseDocumentForExpirationDates(document).get(0);
+            expiration = parseDocumentForExpirationDates(document).get(0);
             return buildOptionsChain(ticker, expiration, document);
         } catch (Exception e) {
+            eventPublisher.publishEvent(new OptionChainParseFailedEvent(this, ticker, expiration));
             throw new OptionsChainLoadException(ticker, document.baseUri(), "Options chain load failure most likely due to too many calls.", e);
         }
     }
@@ -87,6 +94,7 @@ public class YahooFinanceOptionsChainLoadService extends OptionsChainLoadService
             if (document != null) {
                 uri = document.baseUri();
             }
+            eventPublisher.publishEvent(new OptionChainParseFailedEvent(this, ticker, expirationDate));
             throw new OptionsChainLoadException(ticker, uri, "Options chain load failure most likely due to too many calls.", e);
         }
         return buildOptionsChain(ticker, expirationDate, document);
