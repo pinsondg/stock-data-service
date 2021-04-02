@@ -60,6 +60,12 @@ public class StockDataServiceController {
         }
     }
 
+    @GetMapping("/option/{ticker}/all")
+    @Transactional
+    public ResponseEntity<List<OptionsChain>> getFullOptionsChain(@PathVariable String ticker) throws OptionsChainLoadException {
+        return ResponseEntity.ok(optionsChainLoadService.loadFullOptionsChainWithAllData(ticker));
+    }
+
     @GetMapping("/stock/{ticker}")
     public ResponseEntity<List<EndOfDayStockData>> getEndOfDayStockData(@PathVariable String ticker,
                                                                   Optional<String> startDate,

@@ -51,7 +51,7 @@ public class TiingoStockService implements StockDataLoadService {
     @Override
     public boolean isTickerValid(String ticker) {
         try {
-            TiingoMetaDataResponse metaDataResponse = apiClient.getStockMetaData(ticker);
+            StockMetaData metaDataResponse = getStockMetaData(ticker);
             return metaDataResponse.isValid();
         } catch (FeignException e) {
             log.warn("Meta data call failed. {}", e.getMessage());

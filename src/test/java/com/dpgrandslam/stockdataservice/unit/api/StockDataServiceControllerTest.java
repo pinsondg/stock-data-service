@@ -249,5 +249,12 @@ public class StockDataServiceControllerTest {
         verify(stockDataLoadService, times(1)).getEndOfDayStockData(eq("TEST"), eq(LocalDate.now().minusDays(1)), eq(LocalDate.now()));
     }
 
+    @Test
+    public void testLoadFullOptionsChain() throws OptionsChainLoadException {
+        subject.getFullOptionsChain("TEST");
+
+        verify(optionsChainLoadService, times(1)).loadFullOptionsChainWithAllData(eq("TEST"));
+    }
+
 
 }

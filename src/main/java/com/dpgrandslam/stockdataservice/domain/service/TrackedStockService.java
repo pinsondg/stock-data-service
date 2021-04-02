@@ -71,7 +71,7 @@ public class TrackedStockService {
         });
     }
 
-    public Optional<TrackedStock> verifyAndBuildTrackedStock(String ticker) {
+    private Optional<TrackedStock> verifyAndBuildTrackedStock(String ticker) {
         StockMetaData stockMetaData = stockDataLoadService.getStockMetaData(ticker);
         TrackedStock trackedStock = new TrackedStock();
         if (stockMetaData != null && stockMetaData.isValid()) {

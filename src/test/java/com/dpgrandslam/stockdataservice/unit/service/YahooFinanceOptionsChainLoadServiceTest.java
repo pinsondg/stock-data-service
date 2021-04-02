@@ -25,10 +25,8 @@ import java.sql.Timestamp;
 import java.time.*;
 import java.time.temporal.ChronoUnit;
 import java.time.temporal.TemporalAdjusters;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.List;
+import java.util.*;
+import java.util.stream.Stream;
 
 import static junit.framework.TestCase.*;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -229,6 +227,28 @@ public class YahooFinanceOptionsChainLoadServiceTest {
 
         assertEquals(monday.with(TemporalAdjusters.previous(DayOfWeek.FRIDAY)), optionsChain.getAllOptions().stream().findFirst().get().getMostRecentPriceData().getTradeDate());
         verify(timeUtils, atLeastOnce()).getNowAmericaNewYork();
+    }
+
+    @Test
+    public void testLoadFullOptionsChainWithAllData() throws OptionsChainLoadException {
+        when(historicOptionsDataService.findOptions(anyString())).thenReturn(Stream.of(TestDataFactory.HistoricalOptionMother
+                .noPriceData().ticker("SPY").expiration(LocalDate.of(2021, 3, 5)).strike(407.5).optionType(Option.OptionType.PUT)
+                .historicalPriceData(Collections.singleton(TestDataFactory.OptionPriceDataMother.complete()
+                        .tradeDate(LocalDate.now().minusDays(100)).build())).build(),
+                TestDataFactory.HistoricalOptionMother.completeWithOnePriceData().ticker("SPY").expiration(LocalDate.of(2025, 3, 5)).build()));
+
+        List<OptionsChain> optionsChains = subject.loadFullOptionsChainWithAllData("SPY");
+
+        Option testSpyOption = optionsChains.stream()
+                .filter(optionsChain -> optionsChain.getTicker().equals("SPY")
+                        && optionsChain.getExpirationDate().equals(LocalDate.of(2021, 3, 5)))
+                .findFirst().get().getOption(407.5, Option.OptionType.PUT);
+        Option testTestOption = optionsChains.stream()
+                .filter(optionsChain -> optionsChain.getTicker().equals("SPY") && optionsChain.getExpirationDate().equals(LocalDate.of(2025, 3, 5)))
+                .findFirst().get().getAllOptions().stream().findFirst().get();
+
+        assertEquals(2, testSpyOption.getOptionPriceData().size());
+        assertEquals(1, testTestOption.getOptionPriceData().size());
     }
 
     private List<HistoricalOption> buildHistoricalOptions(LocalDate actual, String ticker, LocalDate expiration, Double strike) {
