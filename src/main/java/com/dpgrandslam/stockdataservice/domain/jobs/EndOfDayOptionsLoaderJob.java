@@ -21,6 +21,7 @@ import org.springframework.stereotype.Component;
 import javax.annotation.PostConstruct;
 import java.time.LocalDate;
 import java.time.ZoneId;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -80,6 +81,7 @@ public class EndOfDayOptionsLoaderJob implements ApplicationListener<TrackedStoc
         trackedStocks.addAll(trackedStockService.getAllTrackedStocks(true).stream()
                 .filter(trackedStock -> trackedStock.getLastOptionsHistoricDataUpdate() == null || trackedStock.getLastOptionsHistoricDataUpdate().isBefore(timeUtils.getNowAmericaNewYork().toLocalDate()))
                 .collect(Collectors.toList()));
+        retryQueue = new ConcurrentLinkedQueue<>();
     }
 
 //    @Scheduled(cron = "0 * * * * *", zone = "EST")
@@ -121,9 +123,12 @@ public class EndOfDayOptionsLoaderJob implements ApplicationListener<TrackedStoc
 
     @Scheduled(cron = "0 0 16-23 * * 1-6") // Run retry job every hour
     public void retryQueueJob() {
-        if (jobStatus == JobStatus.COMPLETE_WITH_FAILURES && !retryQueue.isEmpty()) {
+        // Copy retry queue so subsequent failures do not get added back
+        List<Pair<String, LocalDate>> retryQueueCopy = new ArrayList<>(retryQueue);
+        if (jobStatus == JobStatus.COMPLETE_WITH_FAILURES && !retryQueueCopy.isEmpty()) {
             jobStatus = JobStatus.RETRY;
-            retryQueue.forEach(failed -> {
+            retryQueueCopy.forEach(failed -> {
+                retryQueue.remove(failed);
                 try {
                     long start = System.currentTimeMillis();
                     log.info("Retrying for option with ticker {} and expiration {}.", failed.getFirst(), failed.getSecond());
@@ -135,9 +140,14 @@ public class EndOfDayOptionsLoaderJob implements ApplicationListener<TrackedStoc
                     log.info("Took {} seconds to process retry for option with ticker {} and expiration {}.",
                             (System.currentTimeMillis() - start) / 1000.0, failed.getFirst(), failed.getSecond());
 
-                    Thread.sleep(10000); // Sleep so we don't make too many calls at once
-                } catch (OptionsChainLoadException | InterruptedException e) {
+                } catch (OptionsChainLoadException e) {
                     log.error("Retry failed for option {}.", failed);
+                } finally {
+                    try {
+                        Thread.sleep(10000); // Sleep so we don't make too many calls at once
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
                 }
             });
         }

@@ -34,7 +34,7 @@ import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 import static com.dpgrandslam.stockdataservice.testUtils.TestUtils.loadHtmlFileAndClean;
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
@@ -122,6 +122,24 @@ public class EndOfDayOptionLoaderJobIntTest {
 
         verify(historicOptionsDataService, times(1)).addOptionsChain(any(OptionsChain.class));
         verify(optionsChainLoadService, times(1)).loadLiveOptionsChainForExpirationDate(eq("TEST"), eq(LocalDate.of(2021, 3, 12)));
+        assertTrue(retryQueue.isEmpty());
+    }
+
+    @Test
+    public void testRetryQueue_failsLoad_doesNotAddBack() throws OptionsChainLoadException {
+        Queue<Pair<String, LocalDate>> retryQueue = new ConcurrentLinkedQueue<>();
+        retryQueue.add(Pair.of("TEST", LocalDate.of(2021, 3, 12)));
+
+        ReflectionTestUtils.setField(subject, "retryQueue", retryQueue);
+        ReflectionTestUtils.setField(subject, "jobStatus", EndOfDayOptionsLoaderJob.JobStatus.COMPLETE_WITH_FAILURES);
+
+        when(webpageLoader.parseUrl(any())).thenReturn(mockErrorDoc);
+
+        subject.retryQueueJob();
+
+        verify(historicOptionsDataService, never()).addOptionsChain(any(OptionsChain.class));
+        verify(optionsChainLoadService, times(1)).loadLiveOptionsChainForExpirationDate(eq("TEST"), eq(LocalDate.of(2021, 3, 12)));
+        assertFalse(retryQueue.isEmpty(), "Retry queue should not be empty.");
     }
 
     @Test
