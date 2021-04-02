@@ -1,3 +1,4 @@
+[![Java CI with Maven](https://github.com/pinsondg/stock-data-service/actions/workflows/master.yml/badge.svg)](https://github.com/pinsondg/stock-data-service/actions/workflows/master.yml)
 # Stock-Data-Service
 Tired of people charging absurd amounts just to access historic stock and options data?
 Well look no further! This is a RESTful, Spring boot service and is your go to for storing and accessing historic
