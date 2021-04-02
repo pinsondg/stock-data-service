@@ -1,6 +1,7 @@
 package com.dpgrandslam.stockdataservice.domain.model.tiingo;
 
 import com.dpgrandslam.stockdataservice.domain.model.stock.LiveStockData;
+import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -17,7 +18,10 @@ public class TiingoStockLiveDataResponse implements LiveStockData {
     private String lastSaleTimestamp;
     private Double last;
     private Integer lastSize;
+
+    @Getter(AccessLevel.PRIVATE)
     private Double tngoLast;
+
     private Double prevClose;
     private Double open;
     private Double high;
@@ -31,7 +35,7 @@ public class TiingoStockLiveDataResponse implements LiveStockData {
 
     @Override
     public Double getMarketPrice() {
-        return tngoLast;
+        return getTngoLast();
     }
 
     @Override

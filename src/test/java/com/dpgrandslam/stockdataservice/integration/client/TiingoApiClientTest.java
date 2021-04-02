@@ -3,6 +3,7 @@ package com.dpgrandslam.stockdataservice.integration.client;
 import com.dpgrandslam.stockdataservice.adapter.apiclient.tiingo.TiingoApiClient;
 import com.dpgrandslam.stockdataservice.domain.model.tiingo.TiingoStockEndOfDayResponse;
 import com.dpgrandslam.stockdataservice.domain.model.tiingo.TiingoStockSearchResponse;
+import com.dpgrandslam.stockdataservice.testUtils.TestUtils;
 import org.junit.Test;
 import org.mockserver.matchers.Times;
 import org.mockserver.model.Header;
@@ -33,7 +34,7 @@ public class TiingoApiClientTest extends MockClientTest {
                 Times.exactly(1)
         ).respond(HttpResponse.response()
                 .withStatusCode(200)
-                .withBody(loadBodyFromTestResourceFile("mocks/tiingo/mock-search-response-apple.json")));
+                .withBody(TestUtils.loadBodyFromTestResourceFile("mocks/tiingo/mock-search-response-apple.json")));
 
         List<TiingoStockSearchResponse> response = subject.searchStock("apple");
 
@@ -50,7 +51,7 @@ public class TiingoApiClientTest extends MockClientTest {
                 Times.exactly(1)
         ).respond(HttpResponse.response()
                 .withStatusCode(200)
-                .withBody(loadBodyFromTestResourceFile("mocks/tiingo/mock-end-of-day-responce-aapl.json")));
+                .withBody(TestUtils.loadBodyFromTestResourceFile("mocks/tiingo/mock-end-of-day-responce-aapl.json")));
 
         Set<TiingoStockEndOfDayResponse> endOfDayResponse = subject.getEndOfDayInfo("AAPL");
 

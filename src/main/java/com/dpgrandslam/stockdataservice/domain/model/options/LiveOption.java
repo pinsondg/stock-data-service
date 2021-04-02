@@ -34,7 +34,9 @@ public class LiveOption extends Option {
     @Override
     public Collection<OptionPriceData> getOptionPriceData() {
         Collection<OptionPriceData> optionPriceData = new HashSet<>();
-        optionPriceData.add(livePriceData);
+        if (livePriceData != null) {
+            optionPriceData.add(livePriceData);
+        }
         return optionPriceData;
     }
 

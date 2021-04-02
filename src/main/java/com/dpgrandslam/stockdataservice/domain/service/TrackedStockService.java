@@ -34,12 +34,11 @@ public class TrackedStockService {
         return trackedStocksRepository.findById(ticker).orElseThrow(() -> new EntityNotFoundException("Not currently tracking stock with ticker: " + ticker));
     }
 
-    public List<TrackedStock> getAllTrackedStocks() {
+    public List<TrackedStock> getAllTrackedStocks(boolean activeOnly) {
+        if (activeOnly) {
+            return trackedStocksRepository.findAllByActiveIsTrue();
+        }
         return trackedStocksRepository.findAll();
-    }
-
-    public List<TrackedStock> getAllActiveTrackedStocks() {
-        return trackedStocksRepository.findAllByActiveIsTrue();
     }
 
     public void setTrackedStockActive(String ticker, boolean isActive) {

@@ -27,7 +27,7 @@ jobs:
             ${{ runner.os }}-maven-
       # Step that runs the tests
       - name: Build with Maven
-        run: mvn clean install
+        run: mvn clean install -Dmockserver.logLevel=OFF
       - name: Beanstalk Deploy
         uses: einaregilsson/beanstalk-deploy@v10
         with:

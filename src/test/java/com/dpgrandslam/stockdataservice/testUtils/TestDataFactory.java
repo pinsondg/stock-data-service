@@ -33,7 +33,11 @@ public class TestDataFactory {
     }
 
     public static class OptionPriceDataMother {
+
+        private static LocalDate tradeDate = LocalDate.now();
+
         public static OptionPriceData.OptionPriceDataBuilder complete() {
+            tradeDate = tradeDate.minusDays(1);
            return OptionPriceData.builder()
                     .dataObtainedDate(Timestamp.from(Instant.now()))
                     .bid(12.0)
@@ -41,6 +45,7 @@ public class TestDataFactory {
                     .marketPrice(11.5)
                     .impliedVolatility(100.0)
                     .openInterest(120)
+                   .tradeDate(tradeDate)
                     .volume(30);
         }
     }
