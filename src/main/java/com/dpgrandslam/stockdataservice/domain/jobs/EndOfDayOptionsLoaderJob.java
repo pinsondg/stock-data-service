@@ -121,26 +121,26 @@ public class EndOfDayOptionsLoaderJob implements ApplicationListener<TrackedStoc
 
     @Scheduled(cron = "0 0 16-23 * * 1-6") // Run retry job every hour
     public void retryQueueJob() {
-        if ((jobStatus == JobStatus.COMPLETE || jobStatus == JobStatus.COMPLETE_WITH_FAILURES) && !retryQueue.isEmpty()) {
+        if (jobStatus == JobStatus.COMPLETE_WITH_FAILURES && !retryQueue.isEmpty()) {
             jobStatus = JobStatus.RETRY;
+            retryQueue.forEach(failed -> {
+                try {
+                    long start = System.currentTimeMillis();
+                    log.info("Retrying for option with ticker {} and expiration {}.", failed.getFirst(), failed.getSecond());
+
+                    OptionsChain optionsChain = optionsChainLoadService.loadLiveOptionsChainForExpirationDate(failed.getFirst(),
+                            failed.getSecond());
+                    historicOptionsDataService.addOptionsChain(optionsChain);
+
+                    log.info("Took {} seconds to process retry for option with ticker {} and expiration {}.",
+                            (System.currentTimeMillis() - start) / 1000.0, failed.getFirst(), failed.getSecond());
+
+                    Thread.sleep(10000); // Sleep so we don't make too many calls at once
+                } catch (OptionsChainLoadException | InterruptedException e) {
+                    log.error("Retry failed for option {}.", failed);
+                }
+            });
         }
-        retryQueue.forEach(failed -> {
-            try {
-                long start = System.currentTimeMillis();
-                log.info("Retrying for option with ticker {} and expiration {}.", failed.getFirst(), failed.getSecond());
-
-                OptionsChain optionsChain = optionsChainLoadService.loadLiveOptionsChainForExpirationDate(failed.getFirst(),
-                        failed.getSecond());
-                historicOptionsDataService.addOptionsChain(optionsChain);
-
-                log.info("Took {} seconds to process retry for option with ticker {} and expiration {}.",
-                        (System.currentTimeMillis() - start) / 1000, failed.getFirst(), failed.getSecond());
-
-                Thread.sleep(10000); // Sleep so we don't make too many calls at once
-            } catch (OptionsChainLoadException | InterruptedException e) {
-                log.error("Retry failed for option {}.", failed);
-            }
-        });
         completeJob();
     }
 
