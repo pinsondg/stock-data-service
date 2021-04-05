@@ -35,6 +35,9 @@ public class EndOfDayOptionsLoaderJob {
 
     private static final int STEPS = 2;
 
+    private static final int MAIN_JOB = 0;
+    private static final int RETRY_JOB = 1;
+
     @Autowired
     private OptionsChainLoadService optionsChainLoadService;
 
@@ -153,7 +156,7 @@ public class EndOfDayOptionsLoaderJob {
                 }
             });
         }
-        completeJob();
+        completeJob(RETRY_JOB);
     }
 
 //    @Scheduled(cron = "5 * * * * 1-5", zone = "EST")
@@ -180,10 +183,10 @@ public class EndOfDayOptionsLoaderJob {
                             trackedStocks.add(current);
                         }
                     } else if (current != null && !current.isActive() && !current.getLastOptionsHistoricDataUpdate().equals(timeUtils.getNowAmericaNewYork().toLocalDate())){
-                        completeJob();
+                        completeJob(MAIN_JOB);
                     }
                 } else {
-                    completeJob();
+                    completeJob(MAIN_JOB);
                     break;
                 }
             }
@@ -192,7 +195,7 @@ public class EndOfDayOptionsLoaderJob {
                     .filter(d -> d.getDate().equals(timeUtils.getNowAmericaNewYork().toLocalDate()))
                     .findFirst()
                     .ifPresent((h) -> log.info("Not running job because today is a holiday ({})", h.getName()));
-            completeJob();
+            completeJob(MAIN_JOB);
         }
     }
 
@@ -202,14 +205,21 @@ public class EndOfDayOptionsLoaderJob {
         }
     }
 
-    private void completeJob() {
-        if (jobStatus.isRunning()) {
+    private void completeJob(int job) {
+        if (job == RETRY_JOB && jobStatus == JobStatus.RETRY) {
+            log.info("Retry Job Complete.");
+            setCompleteJobStatus();
+        } else if (job == MAIN_JOB && jobStatus.isRunning()) {
             log.info("Job finished.");
-            if (retryQueue.isEmpty()) {
-                jobStatus = JobStatus.COMPLETE;
-            } else {
-                jobStatus = JobStatus.COMPLETE_WITH_FAILURES;
-            }
+            setCompleteJobStatus();
+        }
+    }
+
+    private void setCompleteJobStatus() {
+        if (retryQueue.isEmpty()) {
+            jobStatus = JobStatus.COMPLETE;
+        } else {
+            jobStatus = JobStatus.COMPLETE_WITH_FAILURES;
         }
     }
 
