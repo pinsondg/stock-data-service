@@ -145,7 +145,7 @@ public class EndOfDayOptionsLoaderJob {
                             (System.currentTimeMillis() - start) / 1000.0, failed.getFirst(), failed.getSecond());
 
                 } catch (OptionsChainLoadException e) {
-                    log.error("Retry failed for option {}. Adding back to queue.", failed);
+                    log.error("Retry failed for option {}.", failed);
                     retryQueue.add(failed);
                 } finally {
                     try {
@@ -179,8 +179,7 @@ public class EndOfDayOptionsLoaderJob {
                             log.info("Options chain for {} processed successfully.", current.getTicker());
                             log.info("Took {} seconds to process options for {}", (System.currentTimeMillis() - start) / 1000.0, current.getTicker());
                         } catch (OptionsChainLoadException e) {
-                            log.error("Failed to load options chain for tracked stock: {}. Putting back in queue for retry later.", current.getTicker(), e);
-                            trackedStocks.add(current);
+                            log.error("Failed to load options chain for tracked stock: {}.", current.getTicker(), e);
                         }
                     } else if (current != null && !current.isActive() && !current.getLastOptionsHistoricDataUpdate().equals(timeUtils.getNowAmericaNewYork().toLocalDate())){
                         completeJob(MAIN_JOB);

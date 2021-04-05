@@ -36,7 +36,6 @@ public class HistoricOptionsDataService {
                 .orElseThrow(() -> new EntityNotFoundException("Could not find option with id " + id));
     }
 
-    @Transactional
     public HistoricalOption addOption(Option option) {
         Optional<HistoricalOption> found = historicalOptionRepository.findDistinctFirstByExpirationAndTickerAndStrikeAndOptionType(option.getExpiration(),
                 option.getTicker(),
@@ -50,6 +49,7 @@ public class HistoricOptionsDataService {
         }
     }
 
+    @Transactional
     public void addFullOptionsChain(List<OptionsChain> fullOptionsChain) {
         fullOptionsChain.forEach(this::addOptionsChain);
     }
