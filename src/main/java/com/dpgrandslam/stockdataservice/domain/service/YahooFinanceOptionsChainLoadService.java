@@ -68,13 +68,6 @@ public class YahooFinanceOptionsChainLoadService extends OptionsChainLoadService
                             ticker, expiration);
                 }
             }
-//            parseDocumentForExpirationDates(document).stream().parallel().forEach(date -> {
-//                try {
-//                    optionsChains.add(loadLiveOptionsChainForExpirationDate(ticker, date));
-//                } catch (OptionsChainLoadException e) {
-//                    log.error("Error adding option to the full chain for ticker {} and data {}. Chain will be incomplete.",ticker, date, e);
-//                }
-//            });
             log.info("Loading of options from yahoo-finance for ticker {} complete. Took {} seconds to load all options.", ticker, (System.currentTimeMillis() - startTime) / 1000.0);
         } catch (Exception e) {
             throw new OptionsChainLoadException(ticker, document.baseUri(), "Options chain load failure most likely due to too many calls.", e);

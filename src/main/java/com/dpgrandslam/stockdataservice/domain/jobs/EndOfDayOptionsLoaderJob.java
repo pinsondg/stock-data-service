@@ -31,7 +31,7 @@ import java.util.stream.Collectors;
 
 @Component
 @Slf4j
-public class EndOfDayOptionsLoaderJob implements ApplicationListener<TrackedStockAddedEvent> {
+public class EndOfDayOptionsLoaderJob {
 
     private static final int STEPS = 2;
 
@@ -126,6 +126,7 @@ public class EndOfDayOptionsLoaderJob implements ApplicationListener<TrackedStoc
         // Copy retry queue so subsequent failures do not get added back
         List<Pair<String, LocalDate>> retryQueueCopy = new ArrayList<>(retryQueue);
         if (jobStatus == JobStatus.COMPLETE_WITH_FAILURES && !retryQueueCopy.isEmpty()) {
+            log.info("Starting retry job. Retry queue has {} options to retry.", retryQueueCopy.size());
             jobStatus = JobStatus.RETRY;
             retryQueueCopy.forEach(failed -> {
                 retryQueue.remove(failed);
@@ -141,7 +142,8 @@ public class EndOfDayOptionsLoaderJob implements ApplicationListener<TrackedStoc
                             (System.currentTimeMillis() - start) / 1000.0, failed.getFirst(), failed.getSecond());
 
                 } catch (OptionsChainLoadException e) {
-                    log.error("Retry failed for option {}.", failed);
+                    log.error("Retry failed for option {}. Adding back to queue.", failed);
+                    retryQueue.add(failed);
                 } finally {
                     try {
                         Thread.sleep(10000); // Sleep so we don't make too many calls at once
@@ -211,7 +213,7 @@ public class EndOfDayOptionsLoaderJob implements ApplicationListener<TrackedStoc
         }
     }
 
-    @Override
+    @EventListener(TrackedStockAddedEvent.class)
     public void onApplicationEvent(TrackedStockAddedEvent trackedStockAddedEvent) {
         log.info("Adding newly added tracked stocks {} to the queue to run in the next job.", trackedStockAddedEvent.getTrackedStocks()
                 .stream()
@@ -227,7 +229,8 @@ public class EndOfDayOptionsLoaderJob implements ApplicationListener<TrackedStoc
     @EventListener({OptionChainParseFailedEvent.class})
     public void onApplicationEvent(OptionChainParseFailedEvent e) {
         if (jobStatus.isRunning() || jobStatus == JobStatus.COMPLETE_WITH_FAILURES) {
-            log.info("Adding option with ticker {} and expiration date {} to retry queue.", e.getTicker(), e.getExpiration());
+            log.info("Adding option with ticker {} and expiration date {} to retry queue. There are now {}" +
+                    "options in the retry queue.", e.getTicker(), e.getExpiration(), retryQueue.size());
             retryQueue.add(Pair.of(e.getTicker(), e.getExpiration()));
         }
     }
