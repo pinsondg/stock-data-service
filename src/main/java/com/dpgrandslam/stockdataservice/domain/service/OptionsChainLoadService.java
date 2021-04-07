@@ -8,11 +8,13 @@ import com.dpgrandslam.stockdataservice.domain.util.TimeUtils;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
@@ -84,8 +86,7 @@ public abstract class OptionsChainLoadService {
         if (finalStartDate == null)  {
             finalStartDate = LocalDate.MIN;
         }
-        List<Option> historicOptions = historicOptionsDataService.findOptions(ticker, expirationDate)
-                .collect(Collectors.toList());
+        List<Option> historicOptions = new ArrayList<>(historicOptionsDataService.findOptions(ticker, expirationDate));
         filterOptionsDataByDates(finalStartDate, historicOptions, finalEndDate);
         optionsChain.addOptions(historicOptions);
         return optionsChain;
@@ -99,7 +100,7 @@ public abstract class OptionsChainLoadService {
      */
     public OptionsChain loadOptionsChainForExpirationDateWithAllData(String ticker, LocalDate expirationDate) throws OptionsChainLoadException {
         OptionsChain liveOptionsChain = loadLiveOptionsChainForExpirationDate(ticker, expirationDate);
-        liveOptionsChain.addOptions(historicOptionsDataService.findOptions(ticker, expirationDate).collect(Collectors.toList()));
+        liveOptionsChain.addOptions(new ArrayList<>(historicOptionsDataService.findOptions(ticker, expirationDate)));
         return liveOptionsChain;
     }
 

@@ -12,7 +12,7 @@ import java.util.List;
 import static org.junit.Assert.assertNotNull;
 
 @Ignore
-public class YahooFinanceOptionsChainServiceTest extends AcceptanceTestBase {
+public class YahooFinanceOptionsChainServiceTest extends AcceptanceTest {
 
     @Autowired
     private YahooFinanceOptionsChainLoadService subject;

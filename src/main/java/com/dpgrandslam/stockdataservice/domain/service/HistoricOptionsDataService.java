@@ -58,11 +58,11 @@ public class HistoricOptionsDataService {
         optionsChain.getAllOptions().forEach(this::addOption);
     }
 
-    public Stream<HistoricalOption> findOptions(String ticker) {
+    public Set<HistoricalOption> findOptions(String ticker) {
         return historicalOptionRepository.findByTicker(ticker);
     }
 
-    public Stream<HistoricalOption> findOptions(String ticker, LocalDate expiration) {
+    public Set<HistoricalOption> findOptions(String ticker, LocalDate expiration) {
         return historicalOptionRepository.findByExpirationAndTicker(expiration, ticker);
     }
 

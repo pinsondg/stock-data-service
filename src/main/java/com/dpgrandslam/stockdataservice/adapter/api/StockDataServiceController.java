@@ -31,7 +31,6 @@ public class StockDataServiceController {
     private StockDataLoadService stockDataLoadService;
 
     @GetMapping("/option/{ticker}")
-    @Transactional
     public ResponseEntity<List<OptionsChain>> getOptionsChain(@PathVariable(name = "ticker") String ticker,
                                                              @RequestParam(name = "expirationDate") Optional<String> expirationDate,
                                                              @RequestParam(name = "startDate") Optional<String> startDate,
