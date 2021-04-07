@@ -18,6 +18,7 @@ import javax.persistence.EntityNotFoundException;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.*;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static junit.framework.TestCase.assertEquals;
@@ -88,7 +89,7 @@ public class HistoricOptionsDataServiceTest {
     @Test
     public void testFindOptions_expirationAndTicker_callsCorrectMethod() {
         LocalDate now = LocalDate.now(ZoneId.of("America/New_York"));
-        when(historicalOptionRepository.findByExpirationAndTicker(any(), anyString())).thenReturn(Stream.of(TestDataFactory.HistoricalOptionMother.completeWithOnePriceData().build()));
+        when(historicalOptionRepository.findByExpirationAndTicker(any(), anyString())).thenReturn(Stream.of(TestDataFactory.HistoricalOptionMother.completeWithOnePriceData().build()).collect(Collectors.toSet()));
 
         subject.findOptions("TEST", now);
 
@@ -98,7 +99,7 @@ public class HistoricOptionsDataServiceTest {
     @Test
     public void testFindOptions_byTicker_callsCorrectMethod() {
         LocalDate now = LocalDate.now(ZoneId.of("America/New_York"));
-        when(historicalOptionRepository.findByTicker(anyString())).thenReturn(Stream.of(TestDataFactory.HistoricalOptionMother.completeWithOnePriceData().build()));
+        when(historicalOptionRepository.findByTicker(anyString())).thenReturn(Stream.of(TestDataFactory.HistoricalOptionMother.completeWithOnePriceData().build()).collect(Collectors.toSet()));
 
         subject.findOptions("TEST");
 

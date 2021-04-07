@@ -1,6 +1,7 @@
 package com.dpgrandslam.stockdataservice.domain.model.options;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import lombok.*;
 
 import javax.persistence.*;
@@ -14,6 +15,7 @@ import java.util.HashSet;
 @NoArgsConstructor
 @MappedSuperclass
 @ToString
+@JsonIgnoreProperties(ignoreUnknown = true)
 public abstract class Option {
 
     @Column(nullable = false)
