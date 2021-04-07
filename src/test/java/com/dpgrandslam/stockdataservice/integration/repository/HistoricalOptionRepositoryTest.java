@@ -9,7 +9,9 @@ import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -27,12 +29,12 @@ public class HistoricalOptionRepositoryTest extends RepositoryIntTestBase {
 
         assertNotNull(option.getId());
 
-        List<HistoricalOption> found = subject.findByTicker("TEST").collect(Collectors.toList());
+        List<HistoricalOption> found = new ArrayList<>(subject.findByTicker("TEST"));
         assertEquals(1, found.size());
         assertTrue("Historical data should not be empty.", found.stream().anyMatch(item -> item.getHistoricalPriceData() != null && !item.getHistoricalPriceData().isEmpty()));
 
-        Stream<HistoricalOption> nonFound = subject.findByTicker("1234");
-        assertEquals(0, nonFound.count());
+        Set<HistoricalOption> nonFound = subject.findByTicker("1234");
+        assertEquals(0, nonFound.size());
     }
 
     @Test
@@ -40,16 +42,16 @@ public class HistoricalOptionRepositoryTest extends RepositoryIntTestBase {
         subject.save(TestDataFactory.HistoricalOptionMother.noPriceData().expiration(LocalDate.now()).ticker("AAPL").build());
         subject.save(TestDataFactory.HistoricalOptionMother.completeWithOnePriceData().strike(101.5).ticker("AAPL").build());
 
-        Stream<HistoricalOption> found = subject.findByExpirationAndTicker(LocalDate
+        Set<HistoricalOption> found = subject.findByExpirationAndTicker(LocalDate
                 .now(),"AAPL");
 
-        assertEquals(2, found.count());
+        assertEquals(2, found.size());
 
-        Stream<HistoricalOption> notFound = subject.findByExpirationAndTicker(LocalDate.now().minusDays(1), "AAPL");
-        assertEquals(0, notFound.count());
+        Set<HistoricalOption> notFound = subject.findByExpirationAndTicker(LocalDate.now().minusDays(1), "AAPL");
+        assertEquals(0, notFound.size());
 
         notFound = subject.findByExpirationAndTicker(LocalDate.now(), "TEST");
-        assertEquals(0, notFound.count());
+        assertEquals(0, notFound.size());
     }
 
     @Test
@@ -71,8 +73,8 @@ public class HistoricalOptionRepositoryTest extends RepositoryIntTestBase {
         subject.save(TestDataFactory.HistoricalOptionMother.completeWithOnePriceData().optionType(Option.OptionType.CALL).build());
         subject.saveAndFlush(TestDataFactory.HistoricalOptionMother.completeWithOnePriceData().optionType(Option.OptionType.PUT).build());
 
-        Stream<HistoricalOption> results = subject.findByTicker("TEST");
-        assertEquals(2, results.count());
+        Set<HistoricalOption> results = subject.findByTicker("TEST");
+        assertEquals(2, results.size());
     }
 
     @Test

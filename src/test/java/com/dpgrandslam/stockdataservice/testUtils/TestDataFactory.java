@@ -10,21 +10,24 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.Collections;
+import java.util.HashSet;
+import java.util.Set;
 
 public class TestDataFactory {
 
     public static class HistoricalOptionMother {
 
         public static HistoricalOption.HistoricalOptionBuilder completeWithOnePriceData() {
+            Set<OptionPriceData> optionPriceDataSet = new HashSet<>();
+            optionPriceDataSet.add(OptionPriceDataMother
+                    .complete()
+                    .build());
             return HistoricalOption.builder()
                     .optionType(Option.OptionType.CALL)
                     .expiration(LocalDate.now(ZoneId.of("America/New_York")))
                     .ticker("TEST")
                     .strike(12.5)
-                    .historicalPriceData(Collections.singleton(OptionPriceDataMother
-                            .complete()
-                            .build())
-                    );
+                    .historicalPriceData(optionPriceDataSet);
         }
 
         public static HistoricalOption.HistoricalOptionBuilder noPriceData() {
