@@ -1,6 +1,6 @@
 package com.dpgrandslam.stockdataservice.domain.model;
 
-import lombok.Data;
+import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
@@ -12,9 +12,14 @@ import java.time.LocalDate;
 @Entity
 @Table(name = "options_load_retry", indexes = {@Index(name = "idx_optionTick_optionExpr_tradeDate",
         columnList = "option_ticker, option_expiration, trade_date", unique = true)})
+@Builder
+@NoArgsConstructor
+@EqualsAndHashCode
+@AllArgsConstructor
 public class OptionPriceDataLoadRetry {
 
     @Id
+    @GeneratedValue(strategy = GenerationType.AUTO)
     private Long retryId;
 
     @Column(name = "option_ticker")
