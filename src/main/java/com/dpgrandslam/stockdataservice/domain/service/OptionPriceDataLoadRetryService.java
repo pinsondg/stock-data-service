@@ -41,16 +41,21 @@ public class OptionPriceDataLoadRetryService {
         return retryRepository.findAllByOptionTickerAndOptionExpiration(ticker, expiration);
     }
 
-    public OptionPriceDataLoadRetry addRetry(String ticker, LocalDate expiration, LocalDate tradeDate) {
+    public OptionPriceDataLoadRetry addOrUpdateRetry(String ticker, LocalDate expiration, LocalDate tradeDate) {
         log.info("Adding new retry record with ticker [{}], expiration [{}], and tradeDate [{}]",
                 ticker, expiration, tradeDate);
-        OptionPriceDataLoadRetry optionPriceDataLoadRetry = new OptionPriceDataLoadRetry();
-        optionPriceDataLoadRetry.setOptionExpiration(expiration);
-        optionPriceDataLoadRetry.setOptionTicker(ticker);
-        optionPriceDataLoadRetry.setTradeDate(tradeDate);
-        optionPriceDataLoadRetry.setRetryCount(0);
-
-        return retryRepository.save(optionPriceDataLoadRetry);
+        OptionPriceDataLoadRetry existing = retryRepository.findByOptionTickerAndOptionExpirationAndTradeDate(ticker, expiration, tradeDate);
+        if (existing == null) {
+            OptionPriceDataLoadRetry optionPriceDataLoadRetry = new OptionPriceDataLoadRetry();
+            optionPriceDataLoadRetry.setOptionExpiration(expiration);
+            optionPriceDataLoadRetry.setOptionTicker(ticker);
+            optionPriceDataLoadRetry.setTradeDate(tradeDate);
+            optionPriceDataLoadRetry.setRetryCount(0);
+            return retryRepository.save(optionPriceDataLoadRetry);
+        } else {
+            log.debug("Option retry {} already exists. Updating retry count instead.", existing);
+            return updateRetryCount(existing);
+        }
     }
 
     public OptionPriceDataLoadRetry updateRetryCount(OptionPriceDataLoadRetry optionPriceDataLoadRetry) {
@@ -62,9 +67,7 @@ public class OptionPriceDataLoadRetryService {
     public OptionPriceDataLoadRetry updateRetryCount(String ticker, LocalDate expiration, LocalDate tradeDate) {
         OptionPriceDataLoadRetry retry = getRetry(ticker, expiration, tradeDate);
         if (retry != null) {
-            int newCount = retry.getRetryCount() + 1;
-            retry.setRetryCount(newCount);
-            return retryRepository.save(retry);
+            return updateRetryCount(retry);
         } else {
             log.warn("Retry with ticker {}, expiration {}, and tradeDate {} could not be found. Retry count was not updated.",
                     ticker, expiration, tradeDate);

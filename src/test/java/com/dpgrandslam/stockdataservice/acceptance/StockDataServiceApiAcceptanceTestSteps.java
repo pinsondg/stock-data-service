@@ -14,6 +14,7 @@ import io.cucumber.java.After;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
+import org.junit.Ignore;
 import org.mockserver.matchers.Times;
 import org.mockserver.model.HttpResponse;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -30,6 +31,7 @@ import static org.mockserver.model.HttpRequest.request;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+@Ignore
 public class StockDataServiceApiAcceptanceTestSteps extends BaseAcceptanceTestSteps {
 
     private static final String OPTIONS_ENDPOINT_FORMAT = "/data/option/%s";

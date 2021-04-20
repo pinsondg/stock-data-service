@@ -8,12 +8,8 @@ import com.dpgrandslam.stockdataservice.domain.util.TimeUtils;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.transaction.annotation.Transactional;
 
-import java.time.DayOfWeek;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -27,7 +23,7 @@ public abstract class OptionsChainLoadService {
     private HistoricOptionsDataService historicOptionsDataService;
 
     @Autowired
-    private TimeUtils timeUtils;
+    protected TimeUtils timeUtils;
 
     /**
      * Gets the a live OptionChain for a ticker that is for the closest expiration date.
@@ -152,27 +148,6 @@ public abstract class OptionsChainLoadService {
                 fullChain.add(optionsChain);
             }
         });
-    }
-
-    protected LocalDate getLastTradeDate() {
-        LocalDateTime now = timeUtils.getNowAmericaNewYork();
-        // If now is before a weekday at 9:30am set to previous day
-        if (isWeekday(now.getDayOfWeek()) && now.toLocalTime().compareTo(LocalTime.of(9, 30)) < 0) {
-            now = now.minusDays(1);
-        }
-        //If it is a holiday subtract a day
-        if (timeUtils.isStockMarketHoliday(now.toLocalDate())) {
-            now = now.minusDays(1);
-        }
-        //If it is a weekend go until Friday
-        while (now.getDayOfWeek() == DayOfWeek.SUNDAY || now.getDayOfWeek() == DayOfWeek.SATURDAY) {
-            now = now.minusDays(1);
-        }
-        return now.toLocalDate();
-    }
-
-    private boolean isWeekday(DayOfWeek dayOfWeek) {
-        return dayOfWeek != DayOfWeek.SATURDAY && dayOfWeek != DayOfWeek.SUNDAY;
     }
 
 }
