@@ -146,7 +146,7 @@ public class EndOfDayOptionLoaderJobIntTest {
 
         verify(historicOptionsDataService, never()).addOptionsChain(any(OptionsChain.class));
         verify(optionsChainLoadService, times(1)).loadLiveOptionsChainForExpirationDate(eq("TEST"), eq(LocalDate.of(2021, 3, 12)));
-        verify(retryService, times(1)).addOrUpdateRetry(eq("TEST"), eq(LocalDate.of(2021, 3, 12)), eq(timeUtils.getLastTradeDate()));
+        verify(retryService, atLeastOnce()).addOrUpdateRetry(eq("TEST"), any(LocalDate.class), any(LocalDate.class));
         verify(retryService, never()).removeRetry(anyLong());
     }
 
