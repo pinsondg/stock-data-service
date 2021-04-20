@@ -28,7 +28,7 @@ public class HistoricalOption extends Option {
     private Long id;
 
     @OneToMany(cascade = CascadeType.ALL, mappedBy = "option", fetch = FetchType.LAZY, orphanRemoval = true)
-    @OrderBy("dataObtainedDate DESC")
+    @OrderBy("tradeDate DESC")
     @EqualsAndHashCode.Include
     @JsonIgnore
     @ToString.Exclude
