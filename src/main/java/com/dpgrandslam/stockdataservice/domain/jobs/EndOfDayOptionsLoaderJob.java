@@ -3,30 +3,28 @@ package com.dpgrandslam.stockdataservice.domain.jobs;
 import com.dpgrandslam.stockdataservice.domain.error.OptionsChainLoadException;
 import com.dpgrandslam.stockdataservice.domain.event.OptionChainParseFailedEvent;
 import com.dpgrandslam.stockdataservice.domain.event.TrackedStockAddedEvent;
+import com.dpgrandslam.stockdataservice.domain.model.OptionPriceDataLoadRetry;
 import com.dpgrandslam.stockdataservice.domain.model.options.OptionsChain;
 import com.dpgrandslam.stockdataservice.domain.model.stock.TrackedStock;
 import com.dpgrandslam.stockdataservice.domain.service.HistoricOptionsDataService;
+import com.dpgrandslam.stockdataservice.domain.service.OptionPriceDataLoadRetryService;
 import com.dpgrandslam.stockdataservice.domain.service.OptionsChainLoadService;
 import com.dpgrandslam.stockdataservice.domain.service.TrackedStockService;
 import com.dpgrandslam.stockdataservice.domain.util.TimeUtils;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.ApplicationListener;
 import org.springframework.context.event.EventListener;
-import org.springframework.data.util.Pair;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
 import java.time.LocalDate;
 import java.time.ZoneId;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Queue;
+import java.util.Set;
 import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 
 @Component
@@ -50,9 +48,10 @@ public class EndOfDayOptionsLoaderJob {
     @Autowired
     private TimeUtils timeUtils;
 
-    private Queue<TrackedStock> trackedStocks;
+    @Autowired
+    private OptionPriceDataLoadRetryService optionRetryService;
 
-    private Queue<Pair<String, LocalDate>> retryQueue;
+    private Queue<TrackedStock> trackedStocks;
 
     private JobStatus jobStatus;
 
@@ -70,7 +69,6 @@ public class EndOfDayOptionsLoaderJob {
     public EndOfDayOptionsLoaderJob() {
         this.jobStatus = JobStatus.NOT_STARTED;
         this.trackedStocks = new ConcurrentLinkedQueue<>();
-        this.retryQueue = new ConcurrentLinkedQueue<>();
     }
 
     @PostConstruct
@@ -84,7 +82,6 @@ public class EndOfDayOptionsLoaderJob {
         trackedStocks.addAll(trackedStockService.getAllTrackedStocks(true).stream()
                 .filter(trackedStock -> trackedStock.getLastOptionsHistoricDataUpdate() == null || trackedStock.getLastOptionsHistoricDataUpdate().isBefore(timeUtils.getNowAmericaNewYork().toLocalDate()))
                 .collect(Collectors.toList()));
-        retryQueue = new ConcurrentLinkedQueue<>();
     }
 
 //    @Scheduled(cron = "0 * * * * *", zone = "EST")
@@ -126,27 +123,27 @@ public class EndOfDayOptionsLoaderJob {
 
     @Scheduled(cron = "0 0 16-23 * * 1-6") // Run retry job every hour
     public void retryQueueJob() {
-        // Copy retry queue so subsequent failures do not get added back
-        List<Pair<String, LocalDate>> retryQueueCopy = new ArrayList<>(retryQueue);
-        if (jobStatus == JobStatus.COMPLETE_WITH_FAILURES && !retryQueueCopy.isEmpty()) {
-            log.info("Starting retry job. Retry queue has {} options to retry.", retryQueueCopy.size());
+        LocalDate tradeDate = timeUtils.getLastTradeDate();
+        log.info("Getting options in retry table for trade date {}", tradeDate);
+        Set<OptionPriceDataLoadRetry> retrySet = optionRetryService.getAllWithTradeDate(tradeDate);
+        if (jobStatus == JobStatus.COMPLETE_WITH_FAILURES && !retrySet.isEmpty()) {
+            log.info("Starting retry job. Retry queue has {} options to retry.", retrySet.size());
             jobStatus = JobStatus.RETRY;
-            retryQueueCopy.forEach(failed -> {
-                retryQueue.remove(failed);
+            retrySet.forEach(failed -> {
                 try {
                     long start = System.currentTimeMillis();
-                    log.info("Retrying for option with ticker {} and expiration {}.", failed.getFirst(), failed.getSecond());
+                    log.info("Retrying for option with ticker {} and expiration {}.", failed.getOptionTicker(), failed.getOptionExpiration());
 
-                    OptionsChain optionsChain = optionsChainLoadService.loadLiveOptionsChainForExpirationDate(failed.getFirst(),
-                            failed.getSecond());
+                    OptionsChain optionsChain = optionsChainLoadService.loadLiveOptionsChainForExpirationDate(failed.getOptionTicker(),
+                            failed.getOptionExpiration());
                     historicOptionsDataService.addOptionsChain(optionsChain);
 
                     log.info("Took {} seconds to process retry for option with ticker {} and expiration {}.",
-                            (System.currentTimeMillis() - start) / 1000.0, failed.getFirst(), failed.getSecond());
-
+                            (System.currentTimeMillis() - start) / 1000.0, failed.getOptionTicker(), failed.getOptionExpiration());
+                    optionRetryService.removeRetry(failed.getRetryId());
                 } catch (OptionsChainLoadException e) {
                     log.error("Retry failed for option {}.", failed);
-                    retryQueue.add(failed);
+                    optionRetryService.updateRetryCount(failed);
                 } finally {
                     try {
                         Thread.sleep(10000); // Sleep so we don't make too many calls at once
@@ -215,7 +212,7 @@ public class EndOfDayOptionsLoaderJob {
     }
 
     private void setCompleteJobStatus() {
-        if (retryQueue.isEmpty()) {
+        if (optionRetryService.getAllWithTradeDate(timeUtils.getLastTradeDate()).isEmpty()) {
             jobStatus = JobStatus.COMPLETE;
         } else {
             jobStatus = JobStatus.COMPLETE_WITH_FAILURES;
@@ -239,8 +236,8 @@ public class EndOfDayOptionsLoaderJob {
     public void onApplicationEvent(OptionChainParseFailedEvent e) {
         if (jobStatus.isRunning() || jobStatus == JobStatus.COMPLETE_WITH_FAILURES) {
             log.info("Adding option with ticker {} and expiration date {} to retry queue. There are now {}" +
-                    "options in the retry queue.", e.getTicker(), e.getExpiration(), retryQueue.size());
-            retryQueue.add(Pair.of(e.getTicker(), e.getExpiration()));
+                    "options in the retry queue.", e.getTicker(), e.getExpiration(), optionRetryService.getAllWithTradeDate(e.getTradeDate()).size());
+            optionRetryService.addOrUpdateRetry(e.getTicker(), e.getExpiration(), e.getTradeDate());
         }
     }
 }

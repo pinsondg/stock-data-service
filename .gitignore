@@ -31,3 +31,4 @@ build/
 
 ### VS Code ###
 .vscode/
+/.jpb/jpb-settings.xml
