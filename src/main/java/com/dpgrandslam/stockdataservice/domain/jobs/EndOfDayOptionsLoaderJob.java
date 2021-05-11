@@ -124,8 +124,9 @@ public class EndOfDayOptionsLoaderJob {
     @Scheduled(cron = "0 0 16-23 * * 1-6") // Run retry job every hour
     public void retryQueueJob() {
         LocalDate tradeDate = timeUtils.getLastTradeDate();
-        log.info("Getting options in retry table for trade date {}", tradeDate);
+        log.info("Getting options in retry table for trade date {}.", tradeDate);
         Set<OptionPriceDataLoadRetry> retrySet = optionRetryService.getAllWithTradeDate(tradeDate);
+        log.info("Found {} options in retry table for trade date {}.", retrySet.size(),tradeDate);
         if (jobStatus == JobStatus.COMPLETE_WITH_FAILURES && !retrySet.isEmpty()) {
             log.info("Starting retry job. Retry queue has {} options to retry.", retrySet.size());
             jobStatus = JobStatus.RETRY;
@@ -203,7 +204,7 @@ public class EndOfDayOptionsLoaderJob {
 
     private void completeJob(int job) {
         if (job == RETRY_JOB && jobStatus == JobStatus.RETRY) {
-            log.info("Retry Job Complete.");
+            log.info("Retry Job Finished.");
             setCompleteJobStatus();
         } else if (job == MAIN_JOB && jobStatus.isRunning()) {
             log.info("Job finished.");
@@ -213,8 +214,10 @@ public class EndOfDayOptionsLoaderJob {
 
     private void setCompleteJobStatus() {
         if (optionRetryService.getAllWithTradeDate(timeUtils.getLastTradeDate()).isEmpty()) {
+            log.info("Job finished with no failures.");
             jobStatus = JobStatus.COMPLETE;
         } else {
+            log.info("Job finished with failures.");
             jobStatus = JobStatus.COMPLETE_WITH_FAILURES;
         }
     }
