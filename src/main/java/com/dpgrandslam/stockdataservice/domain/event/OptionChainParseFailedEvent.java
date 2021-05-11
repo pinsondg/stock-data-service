@@ -10,11 +10,13 @@ public class OptionChainParseFailedEvent extends ApplicationEvent {
 
     private String ticker;
     private LocalDate expiration;
+    private LocalDate tradeDate;
 
-    public OptionChainParseFailedEvent(Object source, String ticker, LocalDate expiration) {
+    public OptionChainParseFailedEvent(Object source, String ticker, LocalDate expiration, LocalDate tradeDate) {
         super(source);
         this.ticker = ticker;
         this.expiration = expiration;
+        this.tradeDate = tradeDate;
     }
 
 }

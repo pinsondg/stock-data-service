@@ -9,9 +9,7 @@ import org.springframework.util.Assert;
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.ZoneId;
+import java.time.*;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -43,6 +41,23 @@ public class TimeUtils {
         return stockMarketHolidays;
     }
 
+    public LocalDate getLastTradeDate() {
+        LocalDateTime now = this.getNowAmericaNewYork();
+        // If now is before a weekday at 9:30am set to previous day
+        if (isWeekday(now.getDayOfWeek()) && now.toLocalTime().compareTo(LocalTime.of(9, 30)) < 0) {
+            now = now.minusDays(1);
+        }
+        //If it is a holiday subtract a day
+        if (this.isStockMarketHoliday(now.toLocalDate())) {
+            now = now.minusDays(1);
+        }
+        //If it is a weekend go until Friday
+        while (now.getDayOfWeek() == DayOfWeek.SUNDAY || now.getDayOfWeek() == DayOfWeek.SATURDAY) {
+            now = now.minusDays(1);
+        }
+        return now.toLocalDate();
+    }
+
     public boolean isStockMarketHoliday(LocalDate date) {
         List<Holiday> stockMarketHolidays = getStockMarketHolidays();
         if (stockMarketHolidays != null) {
@@ -71,6 +86,10 @@ public class TimeUtils {
             }
         }
         return holidays;
+    }
+
+    private boolean isWeekday(DayOfWeek dayOfWeek) {
+        return dayOfWeek != DayOfWeek.SATURDAY && dayOfWeek != DayOfWeek.SUNDAY;
     }
 }
 
