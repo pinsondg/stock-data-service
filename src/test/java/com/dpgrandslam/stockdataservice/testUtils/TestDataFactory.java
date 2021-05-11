@@ -1,5 +1,6 @@
 package com.dpgrandslam.stockdataservice.testUtils;
 
+import com.dpgrandslam.stockdataservice.domain.model.OptionPriceDataLoadRetry;
 import com.dpgrandslam.stockdataservice.domain.model.options.HistoricalOption;
 import com.dpgrandslam.stockdataservice.domain.model.options.Option;
 import com.dpgrandslam.stockdataservice.domain.model.options.OptionPriceData;
@@ -68,6 +69,17 @@ public class TestDataFactory {
             return OptionsChain.builder()
                     .ticker("TEST")
                     .expirationDate(LocalDate.now(ZoneId.of("America/New_York")));
+        }
+    }
+
+    public static class OptionPriceDataLoadRetryMother {
+
+        public static OptionPriceDataLoadRetry.OptionPriceDataLoadRetryBuilder complete() {
+           return OptionPriceDataLoadRetry.builder()
+                    .optionExpiration(LocalDate.now())
+                    .tradeDate(LocalDate.now())
+                    .optionTicker("TEST")
+                    .retryCount(0);
         }
     }
 }

@@ -47,7 +47,7 @@ public class YahooFinanceOptionsChainLoadService extends OptionsChainLoadService
             expiration = parseDocumentForExpirationDates(document).get(0);
             return buildOptionsChain(ticker, expiration, document);
         } catch (Exception e) {
-            eventPublisher.publishEvent(new OptionChainParseFailedEvent(this, ticker, expiration));
+            eventPublisher.publishEvent(new OptionChainParseFailedEvent(this, ticker, expiration, timeUtils.getLastTradeDate()));
             throw new OptionsChainLoadException(ticker, document.baseUri(), "Options chain load failure most likely due to too many calls.", e);
         }
     }
@@ -87,7 +87,7 @@ public class YahooFinanceOptionsChainLoadService extends OptionsChainLoadService
             if (document != null) {
                 uri = document.baseUri();
             }
-            eventPublisher.publishEvent(new OptionChainParseFailedEvent(this, ticker, expirationDate));
+            eventPublisher.publishEvent(new OptionChainParseFailedEvent(this, ticker, expirationDate, timeUtils.getLastTradeDate()));
             throw new OptionsChainLoadException(ticker, uri, "Options chain load failure most likely due to too many calls.", e);
         }
         return buildOptionsChain(ticker, expirationDate, document);
@@ -162,7 +162,7 @@ public class YahooFinanceOptionsChainLoadService extends OptionsChainLoadService
                     .ifPresent(val -> option.getMostRecentPriceData().setOpenInterest(val.intValue()));
             option.getMostRecentPriceData().setImpliedVolatility(extractPercent(optionRow.selectFirst("td.data-col10").text()));
             option.getMostRecentPriceData().setDataObtainedDate(Timestamp.from(Instant.now()));
-            option.getMostRecentPriceData().setTradeDate(getLastTradeDate());
+            option.getMostRecentPriceData().setTradeDate(timeUtils.getLastTradeDate());
             option.setOptionType(optionType);
             options.add(option);
         });

@@ -7,3 +7,5 @@ databaseChangeLog:
       file: db/changelog/liquibase-initial-create-changeLog.xml
   - include:
       file: db/changelog/schema/liquibase-add-index-20210322.xml
+  - include:
+      file: db/changelog/2021/04/20-01-changelog.xml
