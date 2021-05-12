@@ -122,7 +122,16 @@ public class EndOfDayOptionsLoaderJob {
     }
 
     @Scheduled(cron = "0 0 16-23 * * 1-6") // Run retry job every hour
-    public void retryQueueJob() {
+    public void runRetryBeforeMidnight() {
+        retryQueueJob();
+    }
+
+    @Scheduled(cron = "0 0 0-9 * * 1-7") // Run retry job every hour
+    public void runRetryAfterMidnight() {
+        retryQueueJob();
+    }
+
+    private void retryQueueJob() {
         LocalDate tradeDate = timeUtils.getLastTradeDate();
         log.info("Getting options in retry table for trade date {}.", tradeDate);
         Set<OptionPriceDataLoadRetry> retrySet = optionRetryService.getAllWithTradeDate(tradeDate);
@@ -238,9 +247,9 @@ public class EndOfDayOptionsLoaderJob {
     @EventListener({OptionChainParseFailedEvent.class})
     public void onApplicationEvent(OptionChainParseFailedEvent e) {
         if (jobStatus.isRunning() || jobStatus == JobStatus.COMPLETE_WITH_FAILURES) {
-            log.info("Adding option with ticker {} and expiration date {} to retry queue. There are now {}" +
-                    "options in the retry queue.", e.getTicker(), e.getExpiration(), optionRetryService.getAllWithTradeDate(e.getTradeDate()).size());
             optionRetryService.addOrUpdateRetry(e.getTicker(), e.getExpiration(), e.getTradeDate());
+            log.info("Successfully added option with ticker [{}], expiration date [{}], and trade date [{}] to retry queue. " +
+                    "There are now {} options in the retry queue.", e.getTicker(), e.getExpiration(), e.getTradeDate(), optionRetryService.getAllWithTradeDate(e.getTradeDate()).size());
         }
     }
 }
