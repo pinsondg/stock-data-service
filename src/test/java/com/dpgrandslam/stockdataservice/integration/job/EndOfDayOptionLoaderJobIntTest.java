@@ -161,18 +161,6 @@ public class EndOfDayOptionLoaderJobIntTest {
         verify(optionsChainLoadService, never()).loadLiveOptionsChainForExpirationDate(anyString(), any());
     }
 
-    @Test
-    public void testRetryQueue_jobStatusComplete_doesNotRun() throws OptionsChainLoadException {
-        retryService.addOrUpdateRetry("TEST", LocalDate.now(), timeUtils.getLastTradeDate());
-
-        ReflectionTestUtils.setField(subject, "jobStatus", EndOfDayOptionsLoaderJob.JobStatus.COMPLETE);
-
-        subject.runRetryAfterMidnight();
-
-        verify(historicOptionsDataService, never()).addOptionsChain(any());
-        verify(optionsChainLoadService, never()).loadLiveOptionsChainForExpirationDate(anyString(), any());
-    }
-
     @After
     public void cleanup() {
         retryRepository.deleteAll();

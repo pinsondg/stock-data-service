@@ -97,36 +97,36 @@ public class EndOfDayOptionsLoaderJob {
 
 
     private void resetJob() {
-        if (jobStatus == JobStatus.COMPLETE) {
+        if (jobStatus == JobStatus.COMPLETE || jobStatus == JobStatus.COMPLETE_WITH_FAILURES) {
             log.info("Resetting data load job for next run.");
             reset();
         }
     }
 
-    @Scheduled(cron = "0 * * * * 6") // Every minute on Saturday
+    @Scheduled(cron = "0 * * * * SAT") // Every minute on Saturday
     public void weekendLoadJob() {
         startJob();
         storeOptionsChainEndOfDayData();
     }
 
-    @Scheduled(cron = "0 0/5 0-9 * * 1-5")
+    @Scheduled(cron = "0 0/5 0-9 * * MON-FRI")
     public void weekdayLoadJobBeforeHours() {
         startJob();
         storeOptionsChainEndOfDayData();
     }
 
-    @Scheduled(cron = "0 0/5 16-23 * * 1-5") // Every minute from
+    @Scheduled(cron = "0 0/5 16-23 * * MON-FRI") // Every minute from
     public void weekdayLoadJobAfterHours() {
         startJob();
         storeOptionsChainEndOfDayData();
     }
 
-    @Scheduled(cron = "0 0 16-23 * * 1-6") // Run retry job every hour
+    @Scheduled(cron = "0 0 16-23 * * MON-FRI") // Run retry job every hour
     public void runRetryBeforeMidnight() {
         retryQueueJob();
     }
 
-    @Scheduled(cron = "0 0 0-9 * * 1-7") // Run retry job every hour
+    @Scheduled(cron = "0 0 0-9 * * MON-SAT") // Run retry job every hour
     public void runRetryAfterMidnight() {
         retryQueueJob();
     }
@@ -136,7 +136,7 @@ public class EndOfDayOptionsLoaderJob {
         log.info("Getting options in retry table for trade date {}.", tradeDate);
         Set<OptionPriceDataLoadRetry> retrySet = optionRetryService.getAllWithTradeDate(tradeDate);
         log.info("Found {} options in retry table for trade date {}.", retrySet.size(),tradeDate);
-        if (jobStatus == JobStatus.COMPLETE_WITH_FAILURES && !retrySet.isEmpty()) {
+        if (!retrySet.isEmpty()) {
             log.info("Starting retry job. Retry queue has {} options to retry.", retrySet.size());
             jobStatus = JobStatus.RETRY;
             retrySet.forEach(failed -> {
