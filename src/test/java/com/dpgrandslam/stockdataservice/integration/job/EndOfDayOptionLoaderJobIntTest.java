@@ -126,7 +126,7 @@ public class EndOfDayOptionLoaderJobIntTest {
         doNothing().when(historicOptionsDataService).addOptionsChain(any(OptionsChain.class));
         when(webpageLoader.parseUrl(any())).thenReturn(mockSuccessDoc);
 
-        subject.retryQueueJob();
+        subject.runRetryBeforeMidnight();
 
         verify(historicOptionsDataService, times(1)).addOptionsChain(any(OptionsChain.class));
         verify(optionsChainLoadService, times(1)).loadLiveOptionsChainForExpirationDate(eq("TEST"), eq(LocalDate.of(2021, 3, 12)));
@@ -142,7 +142,7 @@ public class EndOfDayOptionLoaderJobIntTest {
 
         when(webpageLoader.parseUrl(any())).thenReturn(mockErrorDoc);
 
-        subject.retryQueueJob();
+        subject.runRetryBeforeMidnight();
 
         verify(historicOptionsDataService, never()).addOptionsChain(any(OptionsChain.class));
         verify(optionsChainLoadService, times(1)).loadLiveOptionsChainForExpirationDate(eq("TEST"), eq(LocalDate.of(2021, 3, 12)));
@@ -155,7 +155,7 @@ public class EndOfDayOptionLoaderJobIntTest {
         when(retryService.getAllWithTradeDate(any())).thenReturn(Collections.emptySet());
         ReflectionTestUtils.setField(subject, "jobStatus", EndOfDayOptionsLoaderJob.JobStatus.COMPLETE_WITH_FAILURES);
 
-        subject.retryQueueJob();
+        subject.runRetryBeforeMidnight();
 
         verify(historicOptionsDataService, never()).addOptionsChain(any());
         verify(optionsChainLoadService, never()).loadLiveOptionsChainForExpirationDate(anyString(), any());
@@ -167,7 +167,7 @@ public class EndOfDayOptionLoaderJobIntTest {
 
         ReflectionTestUtils.setField(subject, "jobStatus", EndOfDayOptionsLoaderJob.JobStatus.COMPLETE);
 
-        subject.retryQueueJob();
+        subject.runRetryAfterMidnight();
 
         verify(historicOptionsDataService, never()).addOptionsChain(any());
         verify(optionsChainLoadService, never()).loadLiveOptionsChainForExpirationDate(anyString(), any());

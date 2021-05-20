@@ -151,7 +151,7 @@ public class YahooFinanceOptionsChainLoadService extends OptionsChainLoadService
             parseNumberFieldOrLogError(optionRow.selectFirst("td.data-col2").selectFirst("a").text(), "strike", null)
                     .ifPresent(val -> option.setStrike(val.doubleValue()));
             parseNumberFieldOrLogError(optionRow.selectFirst("td.data-col3").text(), "marketPrice", option.getStrike())
-                    .ifPresent(val -> option.getMostRecentPriceData().setMarketPrice(val.doubleValue()));
+                    .ifPresent(val -> option.getMostRecentPriceData().setLastTradePrice(val.doubleValue()));
             parseNumberFieldOrLogError(optionRow.selectFirst("td.data-col4").text(), "bid", option.getStrike())
                     .ifPresent(val -> option.getMostRecentPriceData().setBid(val.doubleValue()));
             parseNumberFieldOrLogError(optionRow.selectFirst("td.data-col5").text(), "ask", option.getStrike())
