@@ -46,7 +46,7 @@ public class TestDataFactory {
                     .dataObtainedDate(Timestamp.from(Instant.now()))
                     .bid(12.0)
                     .ask(11.0)
-                    .marketPrice(11.5)
+                    .lastTradePrice(11.5)
                     .impliedVolatility(100.0)
                     .openInterest(120)
                    .tradeDate(tradeDate)
