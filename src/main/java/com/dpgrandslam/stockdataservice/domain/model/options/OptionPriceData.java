@@ -1,10 +1,13 @@
 package com.dpgrandslam.stockdataservice.domain.model.options;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import lombok.*;
 import org.hibernate.annotations.Cascade;
 
 import javax.persistence.*;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.sql.Timestamp;
 import java.time.LocalDate;
 
@@ -15,6 +18,7 @@ import java.time.LocalDate;
 @AllArgsConstructor
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
 @ToString(exclude = "option")
+@JsonIgnoreProperties(ignoreUnknown = true)
 @Table(indexes = @Index(name = "idk_optionId_tradeDate", columnList = "option_id, trade_date", unique = true))
 public class OptionPriceData {
 
@@ -24,7 +28,7 @@ public class OptionPriceData {
     private Long id;
 
     @EqualsAndHashCode.Include
-    private Double marketPrice;
+    private Double lastTradePrice;
 
     @EqualsAndHashCode.Include
     private Double bid;
@@ -54,4 +58,10 @@ public class OptionPriceData {
     @EqualsAndHashCode.Include
     private LocalDate tradeDate;
 
+    @Transient
+    public double getMarketPrice() {
+        return BigDecimal.valueOf((bid + ask) / 2.0)
+                .setScale(2, RoundingMode.UP)
+                .doubleValue();
+    }
 }
