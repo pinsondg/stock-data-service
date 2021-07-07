@@ -253,6 +253,15 @@ public class YahooFinanceOptionsChainLoadServiceTest {
         assertEquals(1, testTestOption.getOptionPriceData().size());
     }
 
+    @Test
+    public void loadFullOptionsChainWithAllDataBetweenDates_endDateNotToday() throws OptionsChainLoadException {
+        LocalDate endDate = LocalDate.now().minusDays(1);
+
+        subject.loadFullOptionsChainWithAllDataBetweenDates("SPCE", null, endDate);
+
+        verify(webpageLoader, never()).parseUrl(any());
+    }
+
     private Set<HistoricalOption> buildHistoricalOptions(LocalDate actual, String ticker, LocalDate expiration, Double strike) {
         Set<HistoricalOption> options = new HashSet<>();
         options.add(TestDataFactory.HistoricalOptionMother.noPriceData().ticker(ticker).strike(strike).expiration(expiration).historicalPriceData(new HashSet<>(Arrays.asList(

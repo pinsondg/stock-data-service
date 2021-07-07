@@ -2,6 +2,7 @@ package com.dpgrandslam.stockdataservice.unit.api;
 
 import com.dpgrandslam.stockdataservice.adapter.api.StockDataServiceController;
 import com.dpgrandslam.stockdataservice.domain.error.OptionsChainLoadException;
+import com.dpgrandslam.stockdataservice.domain.model.options.Option;
 import com.dpgrandslam.stockdataservice.domain.model.options.OptionsChain;
 import com.dpgrandslam.stockdataservice.domain.model.stock.EndOfDayStockData;
 import com.dpgrandslam.stockdataservice.domain.model.stock.LiveStockData;
@@ -12,6 +13,7 @@ import com.dpgrandslam.stockdataservice.domain.service.OptionsChainLoadService;
 import com.dpgrandslam.stockdataservice.domain.service.StockDataLoadService;
 import com.dpgrandslam.stockdataservice.domain.service.TrackedStockService;
 import com.dpgrandslam.stockdataservice.testUtils.TestDataFactory;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -173,12 +175,13 @@ public class StockDataServiceControllerTest {
     }
 
     @Test
-    public void testGetOptionsChain_empty_returnsNotFound() throws OptionsChainLoadException {
+    public void testGetOptionsChain_empty_returnsNothing() throws OptionsChainLoadException {
         when(optionsChainLoadService.loadFullLiveOptionsChain(anyString())).thenReturn(Collections.emptyList());
 
-        ResponseEntity response = subject.getOptionsChain("TEST", Optional.empty(), Optional.empty(), Optional.empty());
+        ResponseEntity<List<OptionsChain>> response = subject.getOptionsChain("TEST", Optional.empty(), Optional.empty(), Optional.empty());
 
-        assertTrue(response.getStatusCode().is4xxClientError());
+        assertTrue(response.getStatusCode().is2xxSuccessful());
+        assertTrue(response.getBody().isEmpty());
     }
 
     @Test

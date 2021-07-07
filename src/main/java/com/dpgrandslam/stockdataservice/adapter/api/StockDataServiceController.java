@@ -52,11 +52,7 @@ public class StockDataServiceController {
         } else {
             retVal = optionsChainLoadService.loadFullLiveOptionsChain(ticker);
         }
-        if (retVal.size() > 0) {
-            return ResponseEntity.ok(retVal);
-        } else {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
-        }
+        return ResponseEntity.ok(retVal);
     }
 
     @GetMapping("/option/{ticker}/all")
