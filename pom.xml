@@ -15,13 +15,13 @@
     <description>MicroService for getting stock and options data</description>
     <properties>
         <java.version>11</java.version>
-        <feign.version>11.1</feign.version>
+        <feign.version>11.2</feign.version>
         <jsoup.version>1.13.1</jsoup.version>
         <jasypt.version>1.9.3</jasypt.version>
         <caffine.version>3.0.0</caffine.version>
         <validation-api.version>2.0.1.Final</validation-api.version>
         <liquibase-hibernate5.version>3.10.2</liquibase-hibernate5.version>
-        <cucumber.version>6.10.2</cucumber.version>
+        <cucumber.version>6.10.4</cucumber.version>
     </properties>
     <dependencies>
         <dependency>
