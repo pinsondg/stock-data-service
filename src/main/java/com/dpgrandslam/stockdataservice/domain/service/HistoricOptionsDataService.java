@@ -58,20 +58,35 @@ public class HistoricOptionsDataService {
     }
 
     public Set<HistoricalOption> findOptions(String ticker) {
-        return historicalOptionRepository.findByTicker(ticker);
+        log.info("Searching DB for options with ticker: {}", ticker);
+        long start = System.currentTimeMillis();
+        Set<HistoricalOption> options = historicalOptionRepository.findByTicker(ticker);
+        log.info("Took {} ms to load options with ticker: {}", System.currentTimeMillis() - start, ticker);
+        log.info("Found {} options with ticker: {}", options.size(), ticker);
+        return options;
     }
 
     public Set<HistoricalOption> findOptions(String ticker, LocalDate expiration) {
-        return historicalOptionRepository.findByExpirationAndTicker(expiration, ticker);
+        log.info("Searching DB for options with ticker: {} and expiration: {}", ticker, expiration);
+        long start = System.currentTimeMillis();
+        Set<HistoricalOption> options = historicalOptionRepository.findByExpirationAndTicker(expiration, ticker);
+        log.info("Took {} ms to load options with ticker: {} and expiration {}", System.currentTimeMillis() - start, ticker, expiration);
+        log.info("Found {} options with ticker: {} and expiration: {}", options.size(), ticker, expiration);
+        return options;
     }
 
     public HistoricalOption findOption(String ticker, LocalDate expiration, Double strike, Option.OptionType optionType) {
-        return historicalOptionRepository.findDistinctFirstByExpirationAndTickerAndStrikeAndOptionType(expiration, ticker, strike, optionType)
+        log.info("Searching DB for option with ticker: {}, expiration: {}, strike: {}, and optionType: {}", ticker, expiration, strike, optionType.name());
+        long start = System.currentTimeMillis();
+        HistoricalOption option =  historicalOptionRepository.findDistinctFirstByExpirationAndTickerAndStrikeAndOptionType(expiration, ticker, strike, optionType)
                 .orElseThrow(() -> new EntityNotFoundException("Could not find option matching given criteria. " +
                         "Ticker: " + ticker + "," +
                         "Expiration: " + expiration + "," +
                         "Strike: " + strike + "," +
                         "OptionType: " + optionType));
+        log.info("Took {} ms to load option with ticker: {}, expiration: {}, strike: {}, and optionType: {}", System.currentTimeMillis() - start,
+                ticker, expiration, strike, optionType.name());
+        return option;
     }
 
     public HistoricalOption addPriceDataToOption(Long optionId, OptionPriceData optionPriceData) {
