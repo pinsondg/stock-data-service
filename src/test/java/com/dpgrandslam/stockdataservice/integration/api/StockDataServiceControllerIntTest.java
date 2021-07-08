@@ -81,7 +81,7 @@ public class StockDataServiceControllerIntTest extends APIIntTestBase {
         mockMvc.perform(get("/data/option/SPY?endDate=2019-01-01")
                 .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().is2xxSuccessful())
-                .andExpect(jsonPath("[0].allOptions").isEmpty())
+                .andExpect(jsonPath("$").isEmpty())
         .andReturn().getResponse().getContentAsString();
 
 

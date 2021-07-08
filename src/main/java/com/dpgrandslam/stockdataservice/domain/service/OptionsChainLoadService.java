@@ -10,10 +10,7 @@ import lombok.NoArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
@@ -107,9 +104,12 @@ public abstract class OptionsChainLoadService {
     }
 
     public List<OptionsChain> loadFullOptionsChainWithAllDataBetweenDates(String ticker, LocalDate start, LocalDate end) throws OptionsChainLoadException {
-        List<OptionsChain> fullChain = loadFullLiveOptionsChain(ticker);
+        List<OptionsChain> fullChain = new LinkedList<>();
         if (end == null) {
             end = LocalDate.now();
+        }
+        if (end.isAfter(LocalDate.now()) || end.isEqual(LocalDate.now())) {
+            fullChain = loadFullLiveOptionsChain(ticker);
         }
         if (start == null) {
             start = LocalDate.MIN;
