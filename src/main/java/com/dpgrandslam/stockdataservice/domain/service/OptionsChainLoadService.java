@@ -104,7 +104,7 @@ public abstract class OptionsChainLoadService {
     }
 
     public List<OptionsChain> loadFullOptionsChainWithAllDataBetweenDates(String ticker, LocalDate start, LocalDate end) throws OptionsChainLoadException {
-        List<OptionsChain> fullChain = Collections.emptyList();
+        List<OptionsChain> fullChain = new LinkedList<>();
         if (end == null) {
             end = LocalDate.now();
         }
