@@ -17,7 +17,6 @@ import java.util.*;
 
 @Service
 @Slf4j
-@Transactional
 public class HistoricOptionsDataService {
 
     @Autowired
