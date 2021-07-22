@@ -17,7 +17,10 @@ import java.util.Set;
 @Data
 @ToString(callSuper = true)
 @Entity
-@Table(indexes = @Index(name = "idx_strk_expr_tkr_type", columnList = "strike, expiration, ticker, option_type", unique = true))
+@Table(indexes = {
+        @Index(name = "idx_strk_expr_tkr_type", columnList = "strike, expiration, ticker, option_type", unique = true),
+        @Index(name = "idx_tkr", columnList = "ticker")
+})
 public class HistoricalOption extends Option {
 
     @Id
