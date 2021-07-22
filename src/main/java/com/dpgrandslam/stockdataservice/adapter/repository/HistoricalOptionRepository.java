@@ -3,6 +3,8 @@ package com.dpgrandslam.stockdataservice.adapter.repository;
 import com.dpgrandslam.stockdataservice.domain.model.options.HistoricalOption;
 import com.dpgrandslam.stockdataservice.domain.model.options.Option;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDate;
@@ -13,7 +15,8 @@ import java.util.stream.Stream;
 @Repository
 public interface HistoricalOptionRepository extends JpaRepository<HistoricalOption, Long> {
 
-    Set<HistoricalOption> findByTicker(String ticker);
+    @Query("select ho from HistoricalOption ho inner join fetch ho.historicalPriceData where ho.ticker =:ticker")
+    Set<HistoricalOption> findByTicker(@Param("ticker") String ticker);
 
     Set<HistoricalOption> findByExpirationAndTicker(LocalDate expiration, String ticker);
 

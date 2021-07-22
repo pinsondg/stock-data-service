@@ -6,6 +6,7 @@ import com.dpgrandslam.stockdataservice.domain.model.stock.*;
 import com.dpgrandslam.stockdataservice.domain.service.OptionsChainLoadService;
 import com.dpgrandslam.stockdataservice.domain.service.StockDataLoadService;
 import com.dpgrandslam.stockdataservice.domain.service.TrackedStockService;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -19,6 +20,7 @@ import java.util.*;
 
 @Controller
 @RequestMapping("/data")
+@Slf4j
 public class StockDataServiceController {
 
     @Autowired
@@ -35,6 +37,8 @@ public class StockDataServiceController {
                                                              @RequestParam(name = "expirationDate") Optional<String> expirationDate,
                                                              @RequestParam(name = "startDate") Optional<String> startDate,
                                                              @RequestParam(name = "endDate") Optional<String> endDate) throws OptionsChainLoadException {
+        log.info("Received request for options data with ticker: {}, expirationDate: {}, startDate: {}, and endDate: {}",
+                ticker, expirationDate.orElse(null), startDate.orElse(null), endDate.orElse(null));
         List<OptionsChain> retVal = new ArrayList<>();
         if ((startDate.isPresent() || endDate.isPresent()) && expirationDate.isPresent()) {
             retVal.add(optionsChainLoadService.loadCompleteOptionsChainForExpirationDateWithPriceDataInRange(ticker,
@@ -52,11 +56,7 @@ public class StockDataServiceController {
         } else {
             retVal = optionsChainLoadService.loadFullLiveOptionsChain(ticker);
         }
-        if (retVal.size() > 0) {
-            return ResponseEntity.ok(retVal);
-        } else {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
-        }
+        return ResponseEntity.ok(retVal);
     }
 
     @GetMapping("/option/{ticker}/all")
