@@ -7,6 +7,9 @@ import com.dpgrandslam.stockdataservice.testUtils.TestDataFactory;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Slice;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -29,12 +32,12 @@ public class HistoricalOptionRepositoryTest extends RepositoryIntTestBase {
 
         assertNotNull(option.getId());
 
-        List<HistoricalOption> found = new ArrayList<>(subject.findByTicker("TEST"));
-        assertEquals(1, found.size());
+        Slice<HistoricalOption> found = subject.findByTicker("TEST", PageRequest.of(0, 10));
+        assertEquals(1, found.getNumberOfElements());
         assertTrue("Historical data should not be empty.", found.stream().anyMatch(item -> item.getHistoricalPriceData() != null && !item.getHistoricalPriceData().isEmpty()));
 
-        Set<HistoricalOption> nonFound = subject.findByTicker("1234");
-        assertEquals(0, nonFound.size());
+        Slice<HistoricalOption> nonFound = subject.findByTicker("1234", PageRequest.of(0, 10));
+        assertEquals(0, nonFound.getNumberOfElements());
     }
 
     @Test
@@ -42,16 +45,16 @@ public class HistoricalOptionRepositoryTest extends RepositoryIntTestBase {
         subject.save(TestDataFactory.HistoricalOptionMother.noPriceData().expiration(LocalDate.now()).ticker("AAPL").build());
         subject.save(TestDataFactory.HistoricalOptionMother.completeWithOnePriceData().strike(101.5).ticker("AAPL").build());
 
-        Set<HistoricalOption> found = subject.findByExpirationAndTicker(LocalDate
-                .now(),"AAPL");
+        Slice<HistoricalOption> found = subject.findByExpirationAndTicker(LocalDate
+                .now(),"AAPL", PageRequest.of(0, 10));
 
-        assertEquals(2, found.size());
+        assertEquals(2, found.getContent().size());
 
-        Set<HistoricalOption> notFound = subject.findByExpirationAndTicker(LocalDate.now().minusDays(1), "AAPL");
-        assertEquals(0, notFound.size());
+        Slice<HistoricalOption> notFound = subject.findByExpirationAndTicker(LocalDate.now().minusDays(1), "AAPL", PageRequest.of(1, 10));
+        assertEquals(0, notFound.getNumberOfElements());
 
-        notFound = subject.findByExpirationAndTicker(LocalDate.now(), "TEST");
-        assertEquals(0, notFound.size());
+        notFound = subject.findByExpirationAndTicker(LocalDate.now(), "TEST", PageRequest.of(0, 10));
+        assertEquals(0, notFound.getNumberOfElements());
     }
 
     @Test
@@ -73,8 +76,8 @@ public class HistoricalOptionRepositoryTest extends RepositoryIntTestBase {
         subject.save(TestDataFactory.HistoricalOptionMother.completeWithOnePriceData().optionType(Option.OptionType.CALL).build());
         subject.saveAndFlush(TestDataFactory.HistoricalOptionMother.completeWithOnePriceData().optionType(Option.OptionType.PUT).build());
 
-        Set<HistoricalOption> results = subject.findByTicker("TEST");
-        assertEquals(2, results.size());
+        Slice<HistoricalOption> results = subject.findByTicker("TEST", PageRequest.of(0, 10));
+        assertEquals(2, results.getContent().size());
     }
 
     @Test

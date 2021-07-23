@@ -1,6 +1,7 @@
 package com.dpgrandslam.stockdataservice.unit.api;
 
 import com.dpgrandslam.stockdataservice.adapter.api.StockDataServiceController;
+import com.dpgrandslam.stockdataservice.domain.dto.PageableResult;
 import com.dpgrandslam.stockdataservice.domain.error.OptionsChainLoadException;
 import com.dpgrandslam.stockdataservice.domain.model.options.Option;
 import com.dpgrandslam.stockdataservice.domain.model.options.OptionsChain;
@@ -23,6 +24,7 @@ import org.mockito.junit.MockitoJUnitRunner;
 import org.springframework.http.ResponseEntity;
 
 import javax.persistence.EntityNotFoundException;
+import java.awt.print.Pageable;
 import java.time.LocalDate;
 import java.util.*;
 
@@ -109,31 +111,33 @@ public class StockDataServiceControllerTest {
         when(optionsChainLoadService.loadFullLiveOptionsChain(anyString())).thenReturn(Collections.singletonList(
                 TestDataFactory.OptionsChainMother.oneOption()));
 
-        ResponseEntity<List<OptionsChain>> response = subject.getOptionsChain("TEST", Optional.empty(), Optional.empty(), Optional.empty());
+        ResponseEntity<PageableResult<OptionsChain>> response = subject.getOptionsChain("TEST", Optional.empty(), Optional.empty(), Optional.empty(), 1, 100);
 
         verify(optionsChainLoadService, times(1)).loadFullLiveOptionsChain(eq("TEST"));
         verify(optionsChainLoadService, never()).loadLiveOptionsChainForExpirationDate(any(),  any());
-        verify(optionsChainLoadService, never()).loadCompleteOptionsChainForExpirationDateWithPriceDataInRange(any(), any(), any(), any());
+        verify(optionsChainLoadService, never()).loadCompleteOptionsChainForExpirationDateWithPriceDataInRange(any(), any(), any(), any(), any(), any());
         assertTrue(response.getStatusCode().is2xxSuccessful());
     }
 
     @Test
     public void testGetOptionsChain_pastDates_loadsHistoric() throws OptionsChainLoadException {
         LocalDate now = LocalDate.now();
-        when(optionsChainLoadService.loadCompleteOptionsChainForExpirationDateWithPriceDataInRange(anyString(), any(), any(), any()))
+        when(optionsChainLoadService.loadCompleteOptionsChainForExpirationDateWithPriceDataInRange(anyString(), any(), any(), any(), anyInt(), anyInt()))
             .thenReturn(TestDataFactory.OptionsChainMother.oneOption());
 
         LocalDate expiration = LocalDate.of(2021, 1, 1);
         ResponseEntity response = subject.getOptionsChain("TEST",
                 Optional.of(expiration.toString()),
                 Optional.of(now.minusDays(1).toString()),
-                Optional.of(now.toString()));
+                Optional.of(now.toString()),
+                1,
+                100);
 
         assertTrue(response.getStatusCode().is2xxSuccessful());
 
         verify(optionsChainLoadService, times(1))
                 .loadCompleteOptionsChainForExpirationDateWithPriceDataInRange(eq("TEST"),
-                        eq(expiration), eq(now.minusDays(1)), eq(now));
+                        eq(expiration), eq(now.minusDays(1)), eq(now), eq(1), eq(100));
         verify(optionsChainLoadService, never()).loadFullLiveOptionsChain(any());
         verify(optionsChainLoadService, never()).loadLiveOptionsChainForExpirationDate(any() , any());
     }
@@ -143,17 +147,19 @@ public class StockDataServiceControllerTest {
         LocalDate now = LocalDate.now();
         LocalDate end =  now.minusDays(100);
 
-        when(optionsChainLoadService.loadCompleteOptionsChainForExpirationDateWithPriceDataInRange(anyString(), any(), any(), any()))
+        when(optionsChainLoadService.loadCompleteOptionsChainForExpirationDateWithPriceDataInRange(anyString(), any(), any(), any(), anyInt(), anyInt()))
                 .thenReturn(TestDataFactory.OptionsChainMother.oneOption());
 
-        ResponseEntity response = subject.getOptionsChain("TEST", Optional.of(now.toString()), Optional.empty(), Optional.of(end.toString()));
+        ResponseEntity response = subject.getOptionsChain("TEST", Optional.of(now.toString()), Optional.empty(), Optional.of(end.toString()), 1, 100);
 
         assertTrue(response.getStatusCode().is2xxSuccessful());
         verify(optionsChainLoadService, times(1)).loadCompleteOptionsChainForExpirationDateWithPriceDataInRange(
                 eq("TEST"),
                 eq(now),
                 eq(LocalDate.MIN),
-                eq(end)
+                eq(end),
+                eq(1),
+                eq(100)
         );
         verify(optionsChainLoadService, never()).loadFullLiveOptionsChain(any());
         verify(optionsChainLoadService, never()).loadLiveOptionsChainForExpirationDate(any() , any());
@@ -165,12 +171,12 @@ public class StockDataServiceControllerTest {
 
         when(optionsChainLoadService.loadLiveOptionsChainForExpirationDate(anyString(), any())).thenReturn(TestDataFactory.OptionsChainMother.oneOption());
 
-        ResponseEntity response = subject.getOptionsChain("TEST", Optional.of(expiration.toString()), Optional.empty(), Optional.empty());
+        ResponseEntity response = subject.getOptionsChain("TEST", Optional.of(expiration.toString()), Optional.empty(), Optional.empty(), 1, 100);
 
         assertTrue(response.getStatusCode().is2xxSuccessful());
 
         verify(optionsChainLoadService, times(1)).loadLiveOptionsChainForExpirationDate(eq("TEST"), eq(expiration));
-        verify(optionsChainLoadService, never()).loadCompleteOptionsChainForExpirationDateWithPriceDataInRange(any(), any(), any(), any());
+        verify(optionsChainLoadService, never()).loadCompleteOptionsChainForExpirationDateWithPriceDataInRange(any(), any(), any(), any(), any(), any());
         verify(optionsChainLoadService, never()).loadFullLiveOptionsChain(any());
     }
 
@@ -178,10 +184,11 @@ public class StockDataServiceControllerTest {
     public void testGetOptionsChain_empty_returnsNothing() throws OptionsChainLoadException {
         when(optionsChainLoadService.loadFullLiveOptionsChain(anyString())).thenReturn(Collections.emptyList());
 
-        ResponseEntity<List<OptionsChain>> response = subject.getOptionsChain("TEST", Optional.empty(), Optional.empty(), Optional.empty());
+        ResponseEntity<PageableResult<OptionsChain>> response = subject.getOptionsChain("TEST", Optional.empty(),
+                Optional.empty(), Optional.empty(), 1, 100);
 
         assertTrue(response.getStatusCode().is2xxSuccessful());
-        assertTrue(response.getBody().isEmpty());
+        assertTrue(response.getBody().getData().isEmpty());
     }
 
     @Test
@@ -254,9 +261,9 @@ public class StockDataServiceControllerTest {
 
     @Test
     public void testLoadFullOptionsChain() throws OptionsChainLoadException {
-        subject.getFullOptionsChain("TEST");
+        subject.getFullOptionsChain("TEST", 1, 100);
 
-        verify(optionsChainLoadService, times(1)).loadFullOptionsChainWithAllData(eq("TEST"));
+        verify(optionsChainLoadService, times(1)).loadFullOptionsChainWithAllData(eq("TEST"), eq(1), eq(100));
     }
 
 

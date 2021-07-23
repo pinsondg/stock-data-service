@@ -8,6 +8,10 @@ import com.dpgrandslam.stockdataservice.domain.model.options.OptionPriceData;
 import com.dpgrandslam.stockdataservice.domain.model.options.OptionsChain;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Slice;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -56,21 +60,21 @@ public class HistoricOptionsDataService {
         optionsChain.getAllOptions().forEach(this::addOption);
     }
 
-    public Set<HistoricalOption> findOptions(String ticker) {
-        log.info("Searching DB for options with ticker: {}", ticker);
+    public Slice<HistoricalOption> findOptions(String ticker, Integer page, Integer size) {
+        log.info("Searching DB for options with ticker: {} with size {} and page {}", ticker, size, page);
         long start = System.currentTimeMillis();
-        Set<HistoricalOption> options = historicalOptionRepository.findByTicker(ticker);
+        Slice<HistoricalOption> options = historicalOptionRepository.findByTicker(ticker, PageRequest.of(page, size, Sort.by("expiration").descending()));
         log.info("Took {} ms to load options with ticker: {}", System.currentTimeMillis() - start, ticker);
-        log.info("Found {} options with ticker: {}", options.size(), ticker);
+        log.info("Found {} options with ticker: {}", options.getSize(), ticker);
         return options;
     }
 
-    public Set<HistoricalOption> findOptions(String ticker, LocalDate expiration) {
+    public Slice<HistoricalOption> findOptions(String ticker, LocalDate expiration, Integer page, Integer size) {
         log.info("Searching DB for options with ticker: {} and expiration: {}", ticker, expiration);
         long start = System.currentTimeMillis();
-        Set<HistoricalOption> options = historicalOptionRepository.findByExpirationAndTicker(expiration, ticker);
+        Slice<HistoricalOption> options = historicalOptionRepository.findByExpirationAndTicker(expiration, ticker, PageRequest.of(page, size, Sort.by("expiration").descending()));
         log.info("Took {} ms to load options with ticker: {} and expiration {}", System.currentTimeMillis() - start, ticker, expiration);
-        log.info("Found {} options with ticker: {} and expiration: {}", options.size(), ticker, expiration);
+        log.info("Found {} options with ticker: {} and expiration: {}", options.getSize(), ticker, expiration);
         return options;
     }
 

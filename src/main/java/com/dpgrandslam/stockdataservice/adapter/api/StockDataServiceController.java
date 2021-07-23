@@ -1,5 +1,6 @@
 package com.dpgrandslam.stockdataservice.adapter.api;
 
+import com.dpgrandslam.stockdataservice.domain.dto.PageableResult;
 import com.dpgrandslam.stockdataservice.domain.error.OptionsChainLoadException;
 import com.dpgrandslam.stockdataservice.domain.model.options.OptionsChain;
 import com.dpgrandslam.stockdataservice.domain.model.stock.*;
@@ -33,10 +34,12 @@ public class StockDataServiceController {
     private StockDataLoadService stockDataLoadService;
 
     @GetMapping("/option/{ticker}")
-    public ResponseEntity<List<OptionsChain>> getOptionsChain(@PathVariable(name = "ticker") String ticker,
-                                                             @RequestParam(name = "expirationDate") Optional<String> expirationDate,
-                                                             @RequestParam(name = "startDate") Optional<String> startDate,
-                                                             @RequestParam(name = "endDate") Optional<String> endDate) throws OptionsChainLoadException {
+    public ResponseEntity<PageableResult<OptionsChain>> getOptionsChain(@PathVariable(name = "ticker") String ticker,
+                                                                        @RequestParam(name = "expirationDate") Optional<String> expirationDate,
+                                                                        @RequestParam(name = "startDate") Optional<String> startDate,
+                                                                        @RequestParam(name = "endDate") Optional<String> endDate,
+                                                                        @RequestParam(name = "page", defaultValue = "0") Integer page,
+                                                                        @RequestParam(name = "size", defaultValue = "100") Integer size) throws OptionsChainLoadException {
         log.info("Received request for options data with ticker: {}, expirationDate: {}, startDate: {}, and endDate: {}",
                 ticker, expirationDate.orElse(null), startDate.orElse(null), endDate.orElse(null));
         List<OptionsChain> retVal = new ArrayList<>();
@@ -44,25 +47,30 @@ public class StockDataServiceController {
             retVal.add(optionsChainLoadService.loadCompleteOptionsChainForExpirationDateWithPriceDataInRange(ticker,
                     expirationDate.map(LocalDate::parse).get(),
                     startDate.map(LocalDate::parse).orElse(LocalDate.MIN),
-                    endDate.map(LocalDate::parse).orElse(LocalDate.now())));
+                    endDate.map(LocalDate::parse).orElse(LocalDate.now()),
+                    page,
+                    size));
         } else if (startDate.isPresent() || endDate.isPresent()) {
             retVal = optionsChainLoadService.loadFullOptionsChainWithAllDataBetweenDates(
                     ticker,
                     startDate.map(LocalDate::parse).orElse(LocalDate.MIN),
-                    endDate.map(LocalDate::parse).orElse(LocalDate.now())
-            );
+                    endDate.map(LocalDate::parse).orElse(LocalDate.now()),
+                    page,
+                    size);
         } else if (expirationDate.isPresent()){
             retVal.add(optionsChainLoadService.loadLiveOptionsChainForExpirationDate(ticker, expirationDate.map(LocalDate::parse).get()));
         } else {
             retVal = optionsChainLoadService.loadFullLiveOptionsChain(ticker);
         }
-        return ResponseEntity.ok(retVal);
+        return ResponseEntity.ok(PageableResult.fromList(retVal, page + 1));
     }
 
     @GetMapping("/option/{ticker}/all")
     @Transactional
-    public ResponseEntity<List<OptionsChain>> getFullOptionsChain(@PathVariable String ticker) throws OptionsChainLoadException {
-        return ResponseEntity.ok(optionsChainLoadService.loadFullOptionsChainWithAllData(ticker));
+    public ResponseEntity<List<OptionsChain>> getFullOptionsChain(@PathVariable String ticker,
+                                                                  @RequestParam(name = "page", defaultValue = "0") Integer page,
+                                                                  @RequestParam(name = "size", defaultValue = "100") Integer size) throws OptionsChainLoadException {
+        return ResponseEntity.ok(optionsChainLoadService.loadFullOptionsChainWithAllData(ticker, page, size));
     }
 
     @GetMapping("/stock/{ticker}")

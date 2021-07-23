@@ -1,13 +1,16 @@
 package com.dpgrandslam.stockdataservice.domain.service;
 
 import com.dpgrandslam.stockdataservice.domain.error.OptionsChainLoadException;
+import com.dpgrandslam.stockdataservice.domain.model.options.HistoricalOption;
 import com.dpgrandslam.stockdataservice.domain.model.options.Option;
 import com.dpgrandslam.stockdataservice.domain.model.options.OptionPriceData;
 import com.dpgrandslam.stockdataservice.domain.model.options.OptionsChain;
 import com.dpgrandslam.stockdataservice.domain.util.TimeUtils;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Slice;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
@@ -15,6 +18,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
+@Slf4j
 public abstract class OptionsChainLoadService {
 
     @Autowired
@@ -69,7 +73,9 @@ public abstract class OptionsChainLoadService {
     public OptionsChain loadCompleteOptionsChainForExpirationDateWithPriceDataInRange(String ticker,
                                                                                       final LocalDate expirationDate,
                                                                                       final LocalDate priceDataStart,
-                                                                                      final LocalDate priceDataEnd) throws OptionsChainLoadException {
+                                                                                      final LocalDate priceDataEnd,
+                                                                                      final Integer page,
+                                                                                      final Integer size) throws OptionsChainLoadException {
         OptionsChain optionsChain = new OptionsChain(ticker, expirationDate);
         LocalDate finalEndDate = priceDataEnd;
         LocalDate finalStartDate = priceDataStart;
@@ -80,7 +86,7 @@ public abstract class OptionsChainLoadService {
         if (finalStartDate == null)  {
             finalStartDate = LocalDate.MIN;
         }
-        List<Option> historicOptions = new ArrayList<>(historicOptionsDataService.findOptions(ticker, expirationDate));
+        List<Option> historicOptions = new ArrayList<>(historicOptionsDataService.findOptions(ticker, expirationDate, page, size).getContent());
         filterOptionsDataByDates(finalStartDate, historicOptions, finalEndDate);
         optionsChain.addOptions(historicOptions);
         return optionsChain;
@@ -92,19 +98,22 @@ public abstract class OptionsChainLoadService {
      * @param expirationDate the expiration date to load for
      * @return the options chain
      */
-    public OptionsChain loadOptionsChainForExpirationDateWithAllData(String ticker, LocalDate expirationDate) throws OptionsChainLoadException {
+    public OptionsChain loadOptionsChainForExpirationDateWithAllData(String ticker, LocalDate expirationDate, Integer page, Integer size) throws OptionsChainLoadException {
         OptionsChain liveOptionsChain = loadLiveOptionsChainForExpirationDate(ticker, expirationDate);
-        liveOptionsChain.addOptions(new ArrayList<>(historicOptionsDataService.findOptions(ticker, expirationDate)));
+        liveOptionsChain.addOptions(new ArrayList<>(historicOptionsDataService.findOptions(ticker, expirationDate, page, size).getContent()));
         return liveOptionsChain;
     }
 
-    public List<OptionsChain> loadFullOptionsChainWithAllData(String ticker) throws OptionsChainLoadException {
+    public List<OptionsChain> loadFullOptionsChainWithAllData(String ticker, Integer page, Integer size) throws OptionsChainLoadException {
         List<OptionsChain> fullChain = loadFullLiveOptionsChain(ticker);
-        combineLiveAndHistoricData(ticker, fullChain);
+        combineLiveAndHistoricData(ticker, fullChain, page, size);
         return fullChain;
     }
 
-    public List<OptionsChain> loadFullOptionsChainWithAllDataBetweenDates(String ticker, LocalDate start, LocalDate end) throws OptionsChainLoadException {
+    public List<OptionsChain> loadFullOptionsChainWithAllDataBetweenDates(String ticker, LocalDate start,
+                                                                          LocalDate end,
+                                                                          Integer page,
+                                                                          Integer size) throws OptionsChainLoadException {
         List<OptionsChain> fullChain = new LinkedList<>();
         if (end == null) {
             end = LocalDate.now();
@@ -115,7 +124,7 @@ public abstract class OptionsChainLoadService {
         if (start == null) {
             start = LocalDate.MIN;
         }
-        combineLiveAndHistoricData(ticker, fullChain);
+        combineLiveAndHistoricData(ticker, fullChain, page, size);
         LocalDate finalEnd = end;
         LocalDate finalStart = start;
         fullChain.forEach(chain -> filterOptionsDataByDates(finalStart, chain.getAllOptions(), finalEnd));
@@ -132,23 +141,28 @@ public abstract class OptionsChainLoadService {
         historicOptions.removeIf(option  -> option.getOptionPriceData() == null || option.getOptionPriceData().isEmpty());
     }
 
-    private void combineLiveAndHistoricData(String ticker, List<OptionsChain> fullChain) {
-        historicOptionsDataService.findOptions(ticker).forEach(option -> {
-            Optional<OptionsChain> found = fullChain.stream()
-                    .filter(x -> x.getTicker().equalsIgnoreCase(option.getTicker())
-                            && x.getExpirationDate().equals(option.getExpiration()))
-                    .findFirst();
-            if (found.isPresent()) {
-                found.get().addOption(option);
-            } else {
-                OptionsChain optionsChain = OptionsChain.builder()
-                        .expirationDate(option.getExpiration())
-                        .ticker(option.getTicker())
-                        .build();
-                optionsChain.addOption(option);
-                fullChain.add(optionsChain);
-            }
-        });
+    private void combineLiveAndHistoricData(String ticker, List<OptionsChain> fullChain, Integer page, Integer size) {
+        Slice<HistoricalOption> options = historicOptionsDataService.findOptions(ticker, page, size);
+        if (options != null && options.getNumberOfElements() != 0) {
+            options.forEach(option -> {
+                Optional<OptionsChain> found = fullChain.stream()
+                        .filter(x -> x.getTicker().equalsIgnoreCase(option.getTicker())
+                                && x.getExpirationDate().equals(option.getExpiration()))
+                        .findFirst();
+                if (found.isPresent()) {
+                    found.get().addOption(option);
+                } else {
+                    OptionsChain optionsChain = OptionsChain.builder()
+                            .expirationDate(option.getExpiration())
+                            .ticker(option.getTicker())
+                            .build();
+                    optionsChain.addOption(option);
+                    fullChain.add(optionsChain);
+                }
+            });
+        } else {
+            log.info("No options found in DB for ticker: {}, pageNumber: {} and size: {}", ticker, page, size);
+        }
     }
 
 }

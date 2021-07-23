@@ -2,6 +2,8 @@ package com.dpgrandslam.stockdataservice.adapter.repository;
 
 import com.dpgrandslam.stockdataservice.domain.model.options.HistoricalOption;
 import com.dpgrandslam.stockdataservice.domain.model.options.Option;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Slice;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -16,9 +18,9 @@ import java.util.stream.Stream;
 public interface HistoricalOptionRepository extends JpaRepository<HistoricalOption, Long> {
 
     @Query("select ho from HistoricalOption ho inner join fetch ho.historicalPriceData where ho.ticker =:ticker")
-    Set<HistoricalOption> findByTicker(@Param("ticker") String ticker);
+    Slice<HistoricalOption> findByTicker(@Param("ticker") String ticker, Pageable pageable);
 
-    Set<HistoricalOption> findByExpirationAndTicker(LocalDate expiration, String ticker);
+    Slice<HistoricalOption> findByExpirationAndTicker(LocalDate expiration, String ticker, Pageable pageable);
 
 //    @Query("select option from HistoricalOption option inner join OptionPriceData data on option.id = data.option.id where (option.ticker = ?1 and option.expiration = ?2) and (data.dataObtainedDate between ?3 and ?4)")
 //    Stream<HistoricalOption> findByTickerAndExpirationWithDataBetweenDates(String ticker, LocalDate expiration, Timestamp start, Timestamp end);

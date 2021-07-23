@@ -6,6 +6,7 @@ import com.dpgrandslam.stockdataservice.integration.client.MockClientTest;
 import com.dpgrandslam.stockdataservice.testUtils.TestDataFactory;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Slice;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.io.IOException;
@@ -34,9 +35,9 @@ public class HistoricalOptionsDataServiceTest extends MockClientTest {
 
         HistoricalOption saved2 = subject.addOption(testOption2);
 
-        List<HistoricalOption> options = new ArrayList<>(subject.findOptions("TEST"));
-        assertEquals(1, options.size());
-        assertEquals(1, options.get(0).getHistoricalPriceData().size());
+        Slice<HistoricalOption> options = subject.findOptions("TEST", 0, 100);
+        assertEquals(1, options.getContent().size());
+        assertEquals(1, options.getContent().get(0).getHistoricalPriceData().size());
         assertEquals(saved.getId(), saved2.getId());
     }
 }

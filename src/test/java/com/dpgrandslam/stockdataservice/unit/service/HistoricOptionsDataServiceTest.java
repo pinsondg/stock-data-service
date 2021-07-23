@@ -6,6 +6,7 @@ import com.dpgrandslam.stockdataservice.domain.model.options.Option;
 import com.dpgrandslam.stockdataservice.domain.model.options.OptionPriceData;
 import com.dpgrandslam.stockdataservice.domain.service.HistoricOptionsDataService;
 import com.dpgrandslam.stockdataservice.testUtils.TestDataFactory;
+import com.dpgrandslam.stockdataservice.testUtils.TestSlice;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
@@ -13,6 +14,7 @@ import org.mockito.Captor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
+import org.springframework.data.domain.Pageable;
 
 import javax.persistence.EntityNotFoundException;
 import java.time.LocalDate;
@@ -89,21 +91,21 @@ public class HistoricOptionsDataServiceTest {
     @Test
     public void testFindOptions_expirationAndTicker_callsCorrectMethod() {
         LocalDate now = LocalDate.now(ZoneId.of("America/New_York"));
-        when(historicalOptionRepository.findByExpirationAndTicker(any(), anyString())).thenReturn(Stream.of(TestDataFactory.HistoricalOptionMother.completeWithOnePriceData().build()).collect(Collectors.toSet()));
+        when(historicalOptionRepository.findByExpirationAndTicker(any(), anyString(), any(Pageable.class))).thenReturn(TestSlice.from(Stream.of(TestDataFactory.HistoricalOptionMother.completeWithOnePriceData().build()).collect(Collectors.toSet())));
 
-        subject.findOptions("TEST", now);
+        subject.findOptions("TEST", now, 1, 2);
 
-        verify(historicalOptionRepository, times(1)).findByExpirationAndTicker(eq(now), eq("TEST"));
+        verify(historicalOptionRepository, times(1)).findByExpirationAndTicker(eq(now), eq("TEST"), any(Pageable.class));
     }
 
     @Test
     public void testFindOptions_byTicker_callsCorrectMethod() {
         LocalDate now = LocalDate.now(ZoneId.of("America/New_York"));
-        when(historicalOptionRepository.findByTicker(anyString())).thenReturn(Stream.of(TestDataFactory.HistoricalOptionMother.completeWithOnePriceData().build()).collect(Collectors.toSet()));
+        when(historicalOptionRepository.findByTicker(anyString(), any(Pageable.class))).thenReturn(TestSlice.from(Stream.of(TestDataFactory.HistoricalOptionMother.completeWithOnePriceData().build()).collect(Collectors.toSet())));
 
-        subject.findOptions("TEST");
+        subject.findOptions("TEST", 1, 2);
 
-        verify(historicalOptionRepository, times(1)).findByTicker(eq("TEST"));
+        verify(historicalOptionRepository, times(1)).findByTicker(eq("TEST"), any(Pageable.class));
     }
 
     @Test

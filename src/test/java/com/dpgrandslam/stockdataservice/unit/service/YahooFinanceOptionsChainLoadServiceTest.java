@@ -11,6 +11,7 @@ import com.dpgrandslam.stockdataservice.domain.service.HistoricOptionsDataServic
 import com.dpgrandslam.stockdataservice.domain.service.YahooFinanceOptionsChainLoadService;
 import com.dpgrandslam.stockdataservice.domain.util.TimeUtils;
 import com.dpgrandslam.stockdataservice.testUtils.TestDataFactory;
+import com.dpgrandslam.stockdataservice.testUtils.TestSlice;
 import com.dpgrandslam.stockdataservice.testUtils.TestUtils;
 import org.jsoup.Jsoup;
 import org.junit.Before;
@@ -19,6 +20,7 @@ import org.junit.runner.RunWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
+import org.springframework.data.domain.Slice;
 
 import java.io.IOException;
 import java.sql.Timestamp;
@@ -88,14 +90,16 @@ public class YahooFinanceOptionsChainLoadServiceTest {
     public void testLoadCompleteOptionsChainForExpirationDateWithPriceDataInRange_dateRangeBeforeToday() throws OptionsChainLoadException {
         LocalDate actual = LocalDate.now().minusDays(5);
         double strike = 1.0;
-        Set<HistoricalOption> options = buildHistoricalOptions(actual, "TEST", LocalDate.now(), strike);
+        Slice<HistoricalOption> options = buildHistoricalOptions(actual, "TEST", LocalDate.now(), strike);
 
-        when(historicOptionsDataService.findOptions(anyString(), any())).thenReturn(options);
+        when(historicOptionsDataService.findOptions(anyString(), any(), anyInt(), anyInt())).thenReturn(options);
 
         OptionsChain chain = subject.loadCompleteOptionsChainForExpirationDateWithPriceDataInRange("TEST",
                 LocalDate.now(),
                 LocalDate.now().minusDays(9),
-                LocalDate.now().minusDays(2));
+                LocalDate.now().minusDays(2),
+                1,
+                100);
         assertEquals(1, chain.getAllOptions().size());
         Option option = chain.getOption(OptionChainKey.builder().strike(strike).optionType(Option.OptionType.CALL).build());
         assertNotNull(option);
@@ -104,7 +108,7 @@ public class YahooFinanceOptionsChainLoadServiceTest {
         assertEquals(actual, option.getOptionPriceData().stream().findFirst().get().getTradeDate());
 
         verify(historicOptionsDataService, times(1)).findOptions(
-                eq("TEST"), eq(LocalDate.now()));
+                eq("TEST"), eq(LocalDate.now()), eq(1), eq(100));
         verify(webpageLoader, never()).parseUrl(any());
     }
 
@@ -113,14 +117,16 @@ public class YahooFinanceOptionsChainLoadServiceTest {
         LocalDate march15th2021 = LocalDate.of(2021, 3, 5);
         LocalDate actual = LocalDate.now().minusDays(4);
         Double strike = 405.0;
-        Set<HistoricalOption> options = buildHistoricalOptions(actual, "AAPL", march15th2021, strike);
+        Slice<HistoricalOption> options = buildHistoricalOptions(actual, "AAPL", march15th2021, strike);
 
-        when(historicOptionsDataService.findOptions(anyString(), any(LocalDate.class))).thenReturn(options);
+        when(historicOptionsDataService.findOptions(anyString(), any(LocalDate.class), anyInt(), anyInt())).thenReturn(options);
 
         OptionsChain chain = subject.loadCompleteOptionsChainForExpirationDateWithPriceDataInRange("AAPL",
                 march15th2021,
                 LocalDate.now().minusDays(9),
-                null);
+                null,
+                1,
+                100);
         Option option = chain.getOption(OptionChainKey.builder().strike(strike).optionType(Option.OptionType.CALL).build());
         assertNotNull(option);
         assertEquals("AAPL", option.getTicker());
@@ -128,7 +134,7 @@ public class YahooFinanceOptionsChainLoadServiceTest {
         assertTrue(option.getOptionPriceData().stream().anyMatch(data -> data.getTradeDate().equals(actual)));
 
         verify(historicOptionsDataService, times(1)).findOptions(
-                eq("AAPL"), eq(march15th2021));
+                eq("AAPL"), eq(march15th2021), eq(1), eq(100));
         verify(webpageLoader, times(1)).parseUrl(any());
     }
 
@@ -137,11 +143,11 @@ public class YahooFinanceOptionsChainLoadServiceTest {
         LocalDate march15th2021 = LocalDate.of(2021, 3, 5);
         LocalDate actual = LocalDate.now().minusDays(4);
         Double strike = 405.0;
-        Set<HistoricalOption> options = buildHistoricalOptions(actual, "AAPL", march15th2021, strike);
+        Slice<HistoricalOption> options = buildHistoricalOptions(actual, "AAPL", march15th2021, strike);
 
-        when(historicOptionsDataService.findOptions(anyString(), any())).thenReturn(options);
+        when(historicOptionsDataService.findOptions(anyString(), any(), anyInt(), anyInt())).thenReturn(options);
 
-        OptionsChain chain = subject.loadOptionsChainForExpirationDateWithAllData("AAPL", march15th2021);
+        OptionsChain chain = subject.loadOptionsChainForExpirationDateWithAllData("AAPL", march15th2021, 1, 100);
         Option option = chain.getOption(OptionChainKey.builder().strike(strike).optionType(Option.OptionType.CALL).build());
         assertNotNull(option);
         assertEquals("AAPL", option.getTicker());
@@ -149,7 +155,7 @@ public class YahooFinanceOptionsChainLoadServiceTest {
         assertTrue(option.getOptionPriceData().stream().anyMatch(data -> data.getTradeDate().equals(actual)));
 
         verify(historicOptionsDataService, times(1)).findOptions(
-                eq("AAPL"), eq(march15th2021));
+                eq("AAPL"), eq(march15th2021), eq(1), eq(100));
         verify(webpageLoader, times(1)).parseUrl(any());
     }
 
@@ -233,13 +239,13 @@ public class YahooFinanceOptionsChainLoadServiceTest {
 
     @Test
     public void testLoadFullOptionsChainWithAllData() throws OptionsChainLoadException {
-        when(historicOptionsDataService.findOptions(anyString())).thenReturn(Stream.of(TestDataFactory.HistoricalOptionMother
+        when(historicOptionsDataService.findOptions(anyString(), anyInt(), anyInt())).thenReturn(TestSlice.from(Stream.of(TestDataFactory.HistoricalOptionMother
                 .noPriceData().ticker("SPY").expiration(LocalDate.of(2021, 3, 5)).strike(407.5).optionType(Option.OptionType.PUT)
                 .historicalPriceData(Collections.singleton(TestDataFactory.OptionPriceDataMother.complete()
                         .tradeDate(LocalDate.now().minusDays(100)).build())).build(),
-                TestDataFactory.HistoricalOptionMother.completeWithOnePriceData().ticker("SPY").expiration(LocalDate.of(2025, 3, 5)).build()).collect(Collectors.toSet()));
+                TestDataFactory.HistoricalOptionMother.completeWithOnePriceData().ticker("SPY").expiration(LocalDate.of(2025, 3, 5)).build()).collect(Collectors.toSet())));
 
-        List<OptionsChain> optionsChains = subject.loadFullOptionsChainWithAllData("SPY");
+        List<OptionsChain> optionsChains = subject.loadFullOptionsChainWithAllData("SPY", 1, 100);
 
         Option testSpyOption = optionsChains.stream()
                 .filter(optionsChain -> optionsChain.getTicker().equals("SPY")
@@ -257,12 +263,12 @@ public class YahooFinanceOptionsChainLoadServiceTest {
     public void loadFullOptionsChainWithAllDataBetweenDates_endDateNotToday() throws OptionsChainLoadException {
         LocalDate endDate = LocalDate.now().minusDays(1);
 
-        subject.loadFullOptionsChainWithAllDataBetweenDates("SPCE", null, endDate);
+        subject.loadFullOptionsChainWithAllDataBetweenDates("SPCE", null, endDate, 0, 100);
 
         verify(webpageLoader, never()).parseUrl(any());
     }
 
-    private Set<HistoricalOption> buildHistoricalOptions(LocalDate actual, String ticker, LocalDate expiration, Double strike) {
+    private Slice<HistoricalOption> buildHistoricalOptions(LocalDate actual, String ticker, LocalDate expiration, Double strike) {
         Set<HistoricalOption> options = new HashSet<>();
         options.add(TestDataFactory.HistoricalOptionMother.noPriceData().ticker(ticker).strike(strike).expiration(expiration).historicalPriceData(new HashSet<>(Arrays.asList(
                 TestDataFactory.OptionPriceDataMother.complete().tradeDate(LocalDate.now().minus(10, ChronoUnit.DAYS)).build(),
@@ -270,6 +276,6 @@ public class YahooFinanceOptionsChainLoadServiceTest {
                 TestDataFactory.OptionPriceDataMother.complete().tradeDate(LocalDate.now().minusDays(1)).build(),
                 TestDataFactory.OptionPriceDataMother.complete().dataObtainedDate(Timestamp.from(Instant.now())).build()
         ))).build());
-        return options;
+        return TestSlice.from(options);
     }
 }

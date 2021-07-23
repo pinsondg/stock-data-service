@@ -20,6 +20,7 @@ import java.util.concurrent.TimeUnit;
 
 import static com.dpgrandslam.stockdataservice.testUtils.TestUtils.loadBodyFromTestResourceFile;
 import static com.dpgrandslam.stockdataservice.testUtils.TestUtils.loadHtmlFileAndClean;
+import static org.hamcrest.Matchers.is;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -71,7 +72,9 @@ public class StockDataServiceControllerIntTest extends APIIntTestBase {
         verify(optionsChainLoadService, times(1)).loadFullOptionsChainWithAllDataBetweenDates(
                 eq("SPY"),
                 eq(LocalDate.MIN),
-                eq(LocalDate.now().plusDays(3))
+                eq(LocalDate.now().plusDays(3)),
+                eq(0),
+                eq(100)
         );
     }
 
@@ -81,27 +84,32 @@ public class StockDataServiceControllerIntTest extends APIIntTestBase {
         mockMvc.perform(get("/data/option/SPY?endDate=2019-01-01")
                 .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().is2xxSuccessful())
-                .andExpect(jsonPath("$").isEmpty())
+                .andExpect(jsonPath("data").isEmpty())
+                .andExpect(jsonPath("size", is(0)))
         .andReturn().getResponse().getContentAsString();
 
 
         verify(optionsChainLoadService, times(1)).loadFullOptionsChainWithAllDataBetweenDates(
                 eq("SPY"),
                 eq(LocalDate.MIN),
-                eq(LocalDate.of(2019, 1, 1))
+                eq(LocalDate.of(2019, 1, 1)),
+                eq(0),
+                eq(100)
         );
     }
 
     @Test
     public void test_getOptionsChain_withStartDate_jsonStructureCorrect() throws Exception {
-        verifyCorrectJsonStructure_options(mockMvc.perform(get("/data/option/SPY?startDate=2021-03-01")
+        verifyCorrectJsonStructure_options(mockMvc.perform(get("/data/option/SPY?startDate=2021-03-01&size=1000&page=2")
                 .accept(MediaType.APPLICATION_JSON)));
 
 
         verify(optionsChainLoadService, times(1)).loadFullOptionsChainWithAllDataBetweenDates(
                 eq("SPY"),
                 eq(LocalDate.of(2021, 3, 1)),
-                eq(LocalDate.now())
+                eq(LocalDate.now()),
+                eq(2),
+                eq(1000)
         );
     }
 
@@ -122,15 +130,17 @@ public class StockDataServiceControllerIntTest extends APIIntTestBase {
 
     private MvcResult verifyCorrectJsonStructure_options(ResultActions jsonResultActions) throws Exception {
         return jsonResultActions.andExpect(status().is2xxSuccessful())
-                .andExpect(jsonPath("$").isArray())
-                .andExpect(jsonPath("[0].ticker").value("SPY"))
-                .andExpect(jsonPath("[0].expirationDate").value("2021-03-05"))
-                .andExpect(jsonPath("[0].allOptions").isArray())
-                .andExpect(jsonPath("[0].allOptions[0].ticker").isNotEmpty())
-                .andExpect(jsonPath("[0].allOptions[0].strike").isNotEmpty())
-                .andExpect(jsonPath("[0].allOptions[0].optionType").isNotEmpty())
-                .andExpect(jsonPath("[0].allOptions[0].expiration").isNotEmpty())
-                .andExpect(jsonPath("[0].allOptions[0].optionPriceData").isArray())
+                .andExpect(jsonPath("nextPageNumber").exists())
+                .andExpect(jsonPath("size").exists())
+                .andExpect(jsonPath("data").isArray())
+                .andExpect(jsonPath("data[0].ticker").value("SPY"))
+                .andExpect(jsonPath("data[0].expirationDate").value("2021-03-05"))
+                .andExpect(jsonPath("data[0].allOptions").isArray())
+                .andExpect(jsonPath("data[0].allOptions[0].ticker").isNotEmpty())
+                .andExpect(jsonPath("data[0].allOptions[0].strike").isNotEmpty())
+                .andExpect(jsonPath("data[0].allOptions[0].optionType").isNotEmpty())
+                .andExpect(jsonPath("data[0].allOptions[0].expiration").isNotEmpty())
+                .andExpect(jsonPath("data[0].allOptions[0].optionPriceData").isArray())
                 .andReturn();
     }
 }
