@@ -65,7 +65,7 @@ public class HistoricOptionsDataService {
         long start = System.currentTimeMillis();
         Slice<HistoricalOption> options = historicalOptionRepository.findByTicker(ticker, PageRequest.of(page, size, Sort.by("expiration").descending()));
         log.info("Took {} ms to load options with ticker: {}", System.currentTimeMillis() - start, ticker);
-        log.info("Found {} options with ticker: {}", options.getSize(), ticker);
+        log.info("Found {} options with ticker: {}", options.getNumberOfElements(), ticker);
         return options;
     }
 
@@ -74,7 +74,7 @@ public class HistoricOptionsDataService {
         long start = System.currentTimeMillis();
         Slice<HistoricalOption> options = historicalOptionRepository.findByExpirationAndTicker(expiration, ticker, PageRequest.of(page, size, Sort.by("expiration").descending()));
         log.info("Took {} ms to load options with ticker: {} and expiration {}", System.currentTimeMillis() - start, ticker, expiration);
-        log.info("Found {} options with ticker: {} and expiration: {}", options.getSize(), ticker, expiration);
+        log.info("Found {} options with ticker: {} and expiration: {}", options.getNumberOfElements(), ticker, expiration);
         return options;
     }
 
