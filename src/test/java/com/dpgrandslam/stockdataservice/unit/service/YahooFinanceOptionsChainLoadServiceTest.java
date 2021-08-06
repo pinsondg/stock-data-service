@@ -90,7 +90,7 @@ public class YahooFinanceOptionsChainLoadServiceTest {
         double strike = 1.0;
         Set<HistoricalOption> options = buildHistoricalOptions(actual, "TEST", LocalDate.now(), strike);
 
-        when(historicOptionsDataService.findOptions(anyString(), any())).thenReturn(options);
+        when(historicOptionsDataService.findOptions(anyString(), any(), any(LocalDate.class), any(LocalDate.class))).thenReturn(options);
 
         OptionsChain chain = subject.loadCompleteOptionsChainForExpirationDateWithPriceDataInRange("TEST",
                 LocalDate.now(),
@@ -100,11 +100,9 @@ public class YahooFinanceOptionsChainLoadServiceTest {
         Option option = chain.getOption(OptionChainKey.builder().strike(strike).optionType(Option.OptionType.CALL).build());
         assertNotNull(option);
         assertEquals("TEST", option.getTicker());
-        assertEquals(1, option.getOptionPriceData().size());
-        assertEquals(actual, option.getOptionPriceData().stream().findFirst().get().getTradeDate());
 
         verify(historicOptionsDataService, times(1)).findOptions(
-                eq("TEST"), eq(LocalDate.now()));
+                eq("TEST"), eq(LocalDate.now()), eq(LocalDate.now().minusDays(9)), eq(LocalDate.now().minusDays(2)));
         verify(webpageLoader, never()).parseUrl(any());
     }
 
@@ -115,7 +113,7 @@ public class YahooFinanceOptionsChainLoadServiceTest {
         Double strike = 405.0;
         Set<HistoricalOption> options = buildHistoricalOptions(actual, "AAPL", march15th2021, strike);
 
-        when(historicOptionsDataService.findOptions(anyString(), any(LocalDate.class))).thenReturn(options);
+        when(historicOptionsDataService.findOptions(anyString(), any(LocalDate.class), any(LocalDate.class), any(LocalDate.class))).thenReturn(options);
 
         OptionsChain chain = subject.loadCompleteOptionsChainForExpirationDateWithPriceDataInRange("AAPL",
                 march15th2021,
@@ -124,11 +122,10 @@ public class YahooFinanceOptionsChainLoadServiceTest {
         Option option = chain.getOption(OptionChainKey.builder().strike(strike).optionType(Option.OptionType.CALL).build());
         assertNotNull(option);
         assertEquals("AAPL", option.getTicker());
-        assertEquals(3, option.getOptionPriceData().size());
         assertTrue(option.getOptionPriceData().stream().anyMatch(data -> data.getTradeDate().equals(actual)));
 
         verify(historicOptionsDataService, times(1)).findOptions(
-                eq("AAPL"), eq(march15th2021));
+                eq("AAPL"), eq(march15th2021), eq(LocalDate.now().minusDays(9)), eq(LocalDate.now()));
         verify(webpageLoader, times(1)).parseUrl(any());
     }
 
@@ -233,7 +230,7 @@ public class YahooFinanceOptionsChainLoadServiceTest {
 
     @Test
     public void testLoadFullOptionsChainWithAllData() throws OptionsChainLoadException {
-        when(historicOptionsDataService.findOptions(anyString())).thenReturn(Stream.of(TestDataFactory.HistoricalOptionMother
+        when(historicOptionsDataService.findOptions(anyString(), any(LocalDate.class), any(LocalDate.class))).thenReturn(Stream.of(TestDataFactory.HistoricalOptionMother
                 .noPriceData().ticker("SPY").expiration(LocalDate.of(2021, 3, 5)).strike(407.5).optionType(Option.OptionType.PUT)
                 .historicalPriceData(Collections.singleton(TestDataFactory.OptionPriceDataMother.complete()
                         .tradeDate(LocalDate.now().minusDays(100)).build())).build(),
