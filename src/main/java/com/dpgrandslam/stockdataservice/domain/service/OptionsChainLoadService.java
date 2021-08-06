@@ -80,8 +80,7 @@ public abstract class OptionsChainLoadService {
         if (finalStartDate == null)  {
             finalStartDate = LocalDate.MIN;
         }
-        List<Option> historicOptions = new ArrayList<>(historicOptionsDataService.findOptions(ticker, expirationDate));
-        filterOptionsDataByDates(finalStartDate, historicOptions, finalEndDate);
+        List<Option> historicOptions = new ArrayList<>(historicOptionsDataService.findOptions(ticker, expirationDate, finalStartDate, finalEndDate));
         optionsChain.addOptions(historicOptions);
         return optionsChain;
     }
@@ -100,7 +99,7 @@ public abstract class OptionsChainLoadService {
 
     public List<OptionsChain> loadFullOptionsChainWithAllData(String ticker) throws OptionsChainLoadException {
         List<OptionsChain> fullChain = loadFullLiveOptionsChain(ticker);
-        combineLiveAndHistoricData(ticker, fullChain);
+        combineLiveAndHistoricData(ticker, fullChain, LocalDate.MIN, LocalDate.now());
         return fullChain;
     }
 
@@ -115,25 +114,12 @@ public abstract class OptionsChainLoadService {
         if (start == null) {
             start = LocalDate.MIN;
         }
-        combineLiveAndHistoricData(ticker, fullChain);
-        LocalDate finalEnd = end;
-        LocalDate finalStart = start;
-        fullChain.forEach(chain -> filterOptionsDataByDates(finalStart, chain.getAllOptions(), finalEnd));
+        combineLiveAndHistoricData(ticker, fullChain, start, end);
         return fullChain;
     }
 
-    private void filterOptionsDataByDates(LocalDate startDate, Collection<Option> historicOptions, LocalDate endDate) {
-        historicOptions.forEach(option -> {
-            List<OptionPriceData> filteredData = option.getOptionPriceData().stream()
-                    .filter(data -> data.getTradeDate().compareTo(startDate) >= 0
-                            && data.getTradeDate().compareTo(endDate) <= 0).collect(Collectors.toList());
-            option.setOptionPriceData(filteredData);
-        });
-        historicOptions.removeIf(option  -> option.getOptionPriceData() == null || option.getOptionPriceData().isEmpty());
-    }
-
-    private void combineLiveAndHistoricData(String ticker, List<OptionsChain> fullChain) {
-        historicOptionsDataService.findOptions(ticker).forEach(option -> {
+    private void combineLiveAndHistoricData(String ticker, List<OptionsChain> fullChain, LocalDate startDate, LocalDate endDate) {
+        historicOptionsDataService.findOptions(ticker, startDate, endDate).forEach(option -> {
             Optional<OptionsChain> found = fullChain.stream()
                     .filter(x -> x.getTicker().equalsIgnoreCase(option.getTicker())
                             && x.getExpirationDate().equals(option.getExpiration()))

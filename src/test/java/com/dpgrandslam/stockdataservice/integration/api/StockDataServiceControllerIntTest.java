@@ -65,13 +65,13 @@ public class StockDataServiceControllerIntTest extends APIIntTestBase {
 
     @Test
     public void test_getOptionsChain_withEndDate_jsonStructureCorrect() throws Exception {
-        verifyCorrectJsonStructure_options(mockMvc.perform(get("/data/option/SPY?endDate=" + LocalDate.now().plusDays(3).toString())
+        verifyCorrectJsonStructure_options(mockMvc.perform(get("/data/option/SPY?endDate=" + LocalDate.now())
                 .accept(MediaType.APPLICATION_JSON)));
 
         verify(optionsChainLoadService, times(1)).loadFullOptionsChainWithAllDataBetweenDates(
                 eq("SPY"),
                 eq(LocalDate.MIN),
-                eq(LocalDate.now().plusDays(3))
+                eq(LocalDate.now())
         );
     }
 
