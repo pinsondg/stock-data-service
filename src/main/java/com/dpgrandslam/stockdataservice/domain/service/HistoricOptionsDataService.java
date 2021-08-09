@@ -1,7 +1,6 @@
 package com.dpgrandslam.stockdataservice.domain.service;
 
 import com.dpgrandslam.stockdataservice.adapter.repository.HistoricalOptionRepository;
-import com.dpgrandslam.stockdataservice.adapter.repository.OptionPriceDataRepository;
 import com.dpgrandslam.stockdataservice.domain.model.options.HistoricalOption;
 import com.dpgrandslam.stockdataservice.domain.model.options.Option;
 import com.dpgrandslam.stockdataservice.domain.model.options.OptionPriceData;
@@ -73,7 +72,7 @@ public class HistoricOptionsDataService {
         log.info("Searching DB for options with ticker: {}", ticker);
         TimerUtil timerUtil = new TimerUtil();
         timerUtil.start();
-        Set<HistoricalOption> options = historicalOptionRepository.findByTicker(ticker);
+        Set<HistoricalOption> options = historicOptionCache.get(ticker, historicalOptionRepository::findByTicker);
         log.info("Took {} ms to load options with ticker: {}", timerUtil.stop(), ticker);
         log.info("Found {} options with ticker: {}", options.size(), ticker);
         CacheStats cacheStats = historicOptionCache.stats();
