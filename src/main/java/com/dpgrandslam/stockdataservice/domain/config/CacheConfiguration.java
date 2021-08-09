@@ -1,6 +1,7 @@
 package com.dpgrandslam.stockdataservice.domain.config;
 
 import com.dpgrandslam.stockdataservice.domain.model.options.HistoricalOption;
+import com.dpgrandslam.stockdataservice.domain.model.options.OptionPriceData;
 import com.dpgrandslam.stockdataservice.domain.model.tiingo.TiingoStockSearchResponse;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
@@ -26,8 +27,16 @@ public class CacheConfiguration {
     @Bean
     public Cache<String, Set<HistoricalOption>> historicalOptionCache() {
         return Caffeine.newBuilder()
-                .maximumSize(50)
-                .expireAfterWrite(1, TimeUnit.DAYS)
+                .expireAfterWrite(30, TimeUnit.MINUTES)
+                .recordStats()
+                .maximumSize(1_000_000_000)
+                .build();
+    }
+
+    @Bean
+    public Cache<Long, Set<OptionPriceData>> priceDataCache() {
+        return Caffeine.newBuilder()
+                .expireAfterWrite(30, TimeUnit.MINUTES)
                 .build();
     }
 }

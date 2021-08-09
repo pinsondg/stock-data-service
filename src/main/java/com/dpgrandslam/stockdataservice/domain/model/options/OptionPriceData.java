@@ -25,6 +25,7 @@ public class OptionPriceData {
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
     @EqualsAndHashCode.Include
+    @JsonIgnore
     private Long id;
 
     @EqualsAndHashCode.Include

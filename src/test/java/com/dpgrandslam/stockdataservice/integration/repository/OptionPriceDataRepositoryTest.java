@@ -32,7 +32,7 @@ public class OptionPriceDataRepositoryTest extends RepositoryIntTestBase {
     public void testFindByOptionId() {
         HistoricalOption option = historicalOptionRepository.save(TestDataFactory.HistoricalOptionMother.completeWithOnePriceData().build());
 
-        assertEquals(1, subject.findAllByOptionId(option.getId()).count());
+        assertEquals(1, subject.findAllByOptionId(option.getId()).size());
     }
 
     @Test
@@ -50,13 +50,12 @@ public class OptionPriceDataRepositoryTest extends RepositoryIntTestBase {
 
         option = historicalOptionRepository.save(option);
 
-        List<OptionPriceData> found = subject.findAllByOptionIdAndDataObtainedDateBetween(option.getId(),
+        Set<OptionPriceData> found = subject.findAllByOptionIdAndDataObtainedDateBetween(option.getId(),
                 Timestamp.from(Instant.now().minus(5, ChronoUnit.DAYS)),
-                Timestamp.from(Instant.now()))
-                .collect(Collectors.toList());
+                Timestamp.from(Instant.now()));
 
         assertEquals(2, found.size());
-        assertNotNull(found.get(0).getOption());
-        assertEquals(option.getId(), found.get(0).getOption().getId());
+        assertNotNull(found.stream().findFirst().get().getOption());
+        assertEquals(option.getId(), found.stream().findFirst().get().getOption().getId());
     }
 }
