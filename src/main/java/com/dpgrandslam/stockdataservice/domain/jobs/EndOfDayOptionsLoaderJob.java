@@ -11,12 +11,14 @@ import com.dpgrandslam.stockdataservice.domain.service.OptionPriceDataLoadRetryS
 import com.dpgrandslam.stockdataservice.domain.service.OptionsChainLoadService;
 import com.dpgrandslam.stockdataservice.domain.service.TrackedStockService;
 import com.dpgrandslam.stockdataservice.domain.util.TimeUtils;
+import com.dpgrandslam.stockdataservice.domain.util.TimerUtil;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.event.EventListener;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 import javax.annotation.PostConstruct;
 import java.time.LocalDate;
@@ -122,11 +124,13 @@ public class EndOfDayOptionsLoaderJob {
     }
 
     @Scheduled(cron = "0 0 16-23 * * MON-FRI") // Run retry job every hour
+    @Transactional
     public void runRetryBeforeMidnight() {
         retryQueueJob();
     }
 
     @Scheduled(cron = "0 0 0-9 * * MON-SAT") // Run retry job every hour
+    @Transactional
     public void runRetryAfterMidnight() {
         retryQueueJob();
     }
@@ -141,7 +145,8 @@ public class EndOfDayOptionsLoaderJob {
             jobStatus = JobStatus.RETRY;
             retrySet.forEach(failed -> {
                 try {
-                    long start = System.currentTimeMillis();
+                    TimerUtil timerUtil = new TimerUtil();
+                    timerUtil.start();
                     log.info("Retrying for option with ticker {} and expiration {}.", failed.getOptionTicker(), failed.getOptionExpiration());
 
                     OptionsChain optionsChain = optionsChainLoadService.loadLiveOptionsChainForExpirationDate(failed.getOptionTicker(),
@@ -149,7 +154,7 @@ public class EndOfDayOptionsLoaderJob {
                     historicOptionsDataService.addOptionsChain(optionsChain);
 
                     log.info("Took {} seconds to process retry for option with ticker {} and expiration {}.",
-                            (System.currentTimeMillis() - start) / 1000.0, failed.getOptionTicker(), failed.getOptionExpiration());
+                            timerUtil.stop() / 1000.0, failed.getOptionTicker(), failed.getOptionExpiration());
                     optionRetryService.removeRetry(failed.getRetryId());
                 } catch (OptionsChainLoadException e) {
                     log.error("Retry failed for option {}.", failed);
@@ -176,15 +181,15 @@ public class EndOfDayOptionsLoaderJob {
                     if (current != null && jobStatus.isRunning() && current.isActive()
                             && (current.getLastOptionsHistoricDataUpdate() == null || !current.getLastOptionsHistoricDataUpdate().equals(timeUtils.getNowAmericaNewYork().toLocalDate()))) {
                         log.info("Executing update for {}", current);
-                        long start = System.currentTimeMillis();
+                        TimerUtil timerUtil = new TimerUtil();
+                        timerUtil.start();
                         try {
                             List<OptionsChain> fullOptionsChain = optionsChainLoadService
                                     .loadFullLiveOptionsChain(current.getTicker());
                             historicOptionsDataService.addFullOptionsChain(fullOptionsChain);
-                            current.setLastOptionsHistoricDataUpdate(LocalDate.now(ZoneId.of("America/New_York")));
                             trackedStockService.updateOptionUpdatedTimestamp(current.getTicker());
                             log.info("Options chain for {} processed successfully.", current.getTicker());
-                            log.info("Took {} seconds to process options for {}", (System.currentTimeMillis() - start) / 1000.0, current.getTicker());
+                            log.info("Took {} seconds to process options for {}", timerUtil.stop() / 1000.0, current.getTicker());
                         } catch (OptionsChainLoadException e) {
                             log.error("Failed to load options chain for tracked stock: {}.", current.getTicker(), e);
                         }

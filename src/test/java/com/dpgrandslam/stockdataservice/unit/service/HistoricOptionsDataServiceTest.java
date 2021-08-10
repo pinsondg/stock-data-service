@@ -6,6 +6,7 @@ import com.dpgrandslam.stockdataservice.domain.model.options.Option;
 import com.dpgrandslam.stockdataservice.domain.model.options.OptionPriceData;
 import com.dpgrandslam.stockdataservice.domain.service.HistoricOptionsDataService;
 import com.dpgrandslam.stockdataservice.testUtils.TestDataFactory;
+import com.github.benmanes.caffeine.cache.Cache;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
@@ -17,7 +18,10 @@ import org.mockito.junit.MockitoJUnitRunner;
 import javax.persistence.EntityNotFoundException;
 import java.time.LocalDate;
 import java.time.ZoneId;
-import java.util.*;
+import java.util.HashSet;
+import java.util.Optional;
+import java.util.Set;
+import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -31,6 +35,9 @@ public class HistoricOptionsDataServiceTest {
 
     @Mock
     private HistoricalOptionRepository historicalOptionRepository;
+
+    @Mock
+    private Cache<String, Set<HistoricalOption>> historicalOptionCache;
 
     @InjectMocks
     private HistoricOptionsDataService subject;
@@ -97,13 +104,13 @@ public class HistoricOptionsDataServiceTest {
     }
 
     @Test
-    public void testFindOptions_byTicker_callsCorrectMethod() {
+    public void testFindOptions_byTicker_callsCorrectMethod() throws ExecutionException {
         LocalDate now = LocalDate.now(ZoneId.of("America/New_York"));
-        when(historicalOptionRepository.findByTicker(anyString())).thenReturn(Stream.of(TestDataFactory.HistoricalOptionMother.completeWithOnePriceData().build()).collect(Collectors.toSet()));
+        when(historicalOptionCache.get(anyString(), any())).thenReturn(Stream.of(TestDataFactory.HistoricalOptionMother.completeWithOnePriceData().build()).collect(Collectors.toSet()));
 
         subject.findOptions("TEST");
 
-        verify(historicalOptionRepository, times(1)).findByTicker(eq("TEST"));
+        verify(historicalOptionCache, times(1)).get(eq("TEST"), any());
     }
 
     @Test
@@ -128,5 +135,37 @@ public class HistoricOptionsDataServiceTest {
 
         assertEquals(2, saved.getHistoricalPriceData().size());
         assertTrue(saved.getHistoricalPriceData().stream().anyMatch(data -> data.getTradeDate().equals(tomorrow)));
+    }
+
+    @Test
+    public void testFindOptions_betweenDates_returnsCorrect() throws ExecutionException {
+        OptionPriceData priceDataEarly = TestDataFactory.OptionPriceDataMother.complete().tradeDate(LocalDate.now().minusDays(20)).build();
+        OptionPriceData priceData1 = TestDataFactory.OptionPriceDataMother.complete().tradeDate(LocalDate.now().minusDays(5)).build();
+        OptionPriceData priceData2 = TestDataFactory.OptionPriceDataMother.complete().tradeDate(LocalDate.now().minusDays(4)).build();
+        OptionPriceData priceData3 = TestDataFactory.OptionPriceDataMother.complete().tradeDate(LocalDate.now().minusDays(2)).build();
+        OptionPriceData priceData4 = TestDataFactory.OptionPriceDataMother.complete().tradeDate(LocalDate.now().minusDays(1)).build();
+
+        Set<OptionPriceData> priceDataSet = new HashSet<>();
+        priceDataSet.add(priceDataEarly);
+        priceDataSet.add(priceData1);
+        priceDataSet.add(priceData2);
+        priceDataSet.add(priceData3);
+        priceDataSet.add(priceData4);
+
+        HistoricalOption historicalOption1 = TestDataFactory.HistoricalOptionMother.noPriceData().strike(13.0).historicalPriceData(priceDataSet).build();
+        HistoricalOption historicalOption2 = TestDataFactory.HistoricalOptionMother.noPriceData().strike(12.5).build();
+
+        Set<HistoricalOption> retSet = new HashSet<>();
+        retSet.add(historicalOption1);
+        retSet.add(historicalOption2);
+
+        when(historicalOptionCache.get(any(), any())).thenReturn(retSet);
+
+        Set<HistoricalOption> historicalOptions = subject.findOptions("TEST", LocalDate.now().minusDays(5), LocalDate.now().minusDays(2));
+
+        HistoricalOption actual = historicalOptions.stream().findFirst().get();
+
+        assertEquals(1, historicalOptions.size());
+        assertEquals(3, actual.getHistoricalPriceData().size());
     }
 }
