@@ -44,4 +44,10 @@ public class TimerUtil {
     private enum TimerStatus {
         RUNNING, STOPPED
     }
+
+    public static TimerUtil startTimer() {
+        TimerUtil timerUtil = new TimerUtil();
+        timerUtil.start();
+        return timerUtil;
+    }
 }
