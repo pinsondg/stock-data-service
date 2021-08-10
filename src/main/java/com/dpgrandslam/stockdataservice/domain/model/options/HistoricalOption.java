@@ -5,13 +5,11 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
+import org.hibernate.annotations.CacheConcurrencyStrategy;
 
 import javax.persistence.*;
 import java.time.LocalDate;
-import java.util.Collection;
-import java.util.Comparator;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.*;
 
 @EqualsAndHashCode(callSuper = true, onlyExplicitlyIncluded = true)
 @Data
@@ -21,6 +19,7 @@ import java.util.Set;
         @Index(name = "idx_strk_expr_tkr_type", columnList = "strike, expiration, ticker, option_type", unique = true),
         @Index(name = "idx_tkr", columnList = "ticker")
 })
+@org.hibernate.annotations.Cache(usage = CacheConcurrencyStrategy.NONSTRICT_READ_WRITE)
 public class HistoricalOption extends Option {
 
     @Id
@@ -35,10 +34,11 @@ public class HistoricalOption extends Option {
     @EqualsAndHashCode.Include
     @JsonIgnore
     @ToString.Exclude
-    private Set<OptionPriceData> historicalPriceData;
+    @org.hibernate.annotations.Cache(usage = CacheConcurrencyStrategy.NONSTRICT_READ_WRITE)
+    private List<OptionPriceData> historicalPriceData;
 
     public HistoricalOption() {
-        historicalPriceData = new HashSet<>();
+        historicalPriceData = new LinkedList<>();
     }
 
     @Builder
@@ -48,7 +48,7 @@ public class HistoricalOption extends Option {
         super.expiration = expiration;
         super.strike = strike;
         if (historicalPriceData == null) {
-            this.historicalPriceData = new HashSet<>();
+            this.historicalPriceData = new LinkedList<>();
         } else {
             initializeHistoricalPriceData(historicalPriceData);
         }
@@ -70,13 +70,13 @@ public class HistoricalOption extends Option {
 
     @Override
     public void setOptionPriceData(Collection<OptionPriceData> optionPriceData) {
-        historicalPriceData = new HashSet<>(optionPriceData);
+        historicalPriceData = new LinkedList<>(optionPriceData);
     }
 
-    public void initializeHistoricalPriceData(Set<OptionPriceData> priceData) {
+    public void initializeHistoricalPriceData(Collection<OptionPriceData> priceData) {
         priceData.forEach(item -> {
             item.setOption(this);
         });
-        this.historicalPriceData = priceData;
+        this.historicalPriceData = new LinkedList<>(priceData);
     }
 }
