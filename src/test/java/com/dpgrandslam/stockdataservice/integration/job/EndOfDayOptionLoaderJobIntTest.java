@@ -99,7 +99,7 @@ public class EndOfDayOptionLoaderJobIntTest {
         Document mockErrorDoc = Jsoup.parse(loadHtmlFileAndClean("mocks/yahoofinance/yahoo-finance-aapl_error.html"));
         Document mockSuccessDoc = Jsoup.parse(loadHtmlFileAndClean("mocks/yahoofinance/yahoo-finance-aapl_empty-chain.html"));
 
-        ReflectionTestUtils.setField(subject, "jobStatus", EndOfDayOptionsLoaderJob.JobStatus.RUNNING_SCHEDULED);
+        ReflectionTestUtils.setField(subject, "mainJobStatus", EndOfDayOptionsLoaderJob.JobStatus.RUNNING_SCHEDULED);
         ReflectionTestUtils.setField(subject, "trackedStocks", queue);
 
         when(trackedStocksRepository.findById(anyString())).thenReturn(Optional.of(trackedStock));
@@ -114,14 +114,14 @@ public class EndOfDayOptionLoaderJobIntTest {
 
         assertEquals(1, optionsChains.size());
         assertEquals(16, retryService.getAllWithTradeDate(timeUtils.getLastTradeDate()).size());
-        assertEquals(EndOfDayOptionsLoaderJob.JobStatus.COMPLETE_WITH_FAILURES, ReflectionTestUtils.getField(subject, "jobStatus"));
+        assertEquals(EndOfDayOptionsLoaderJob.JobStatus.COMPLETE_WITH_FAILURES, ReflectionTestUtils.getField(subject, "mainJobStatus"));
     }
 
     @Test
     public void testRetryQueue() throws OptionsChainLoadException {
         Long retryId = retryService.addOrUpdateRetry("TEST", LocalDate.of(2021, 3, 12), timeUtils.getLastTradeDate()).getRetryId();
 
-        ReflectionTestUtils.setField(subject, "jobStatus", EndOfDayOptionsLoaderJob.JobStatus.COMPLETE_WITH_FAILURES);
+        ReflectionTestUtils.setField(subject, "mainJobStatus", EndOfDayOptionsLoaderJob.JobStatus.COMPLETE_WITH_FAILURES);
 
         doNothing().when(historicOptionsDataService).addOptionsChain(any(OptionsChain.class));
         when(webpageLoader.parseUrl(any())).thenReturn(mockSuccessDoc);
@@ -138,7 +138,7 @@ public class EndOfDayOptionLoaderJobIntTest {
     public void testRetryQueue_failsLoad_doesNotAddBack() throws OptionsChainLoadException {
         OptionPriceDataLoadRetry retry = retryService.addOrUpdateRetry("TEST", LocalDate.of(2021, 3, 12), timeUtils.getLastTradeDate());
 
-        ReflectionTestUtils.setField(subject, "jobStatus", EndOfDayOptionsLoaderJob.JobStatus.COMPLETE_WITH_FAILURES);
+        ReflectionTestUtils.setField(subject, "mainJobStatus", EndOfDayOptionsLoaderJob.JobStatus.COMPLETE_WITH_FAILURES);
 
         when(webpageLoader.parseUrl(any())).thenReturn(mockErrorDoc);
 
@@ -153,7 +153,7 @@ public class EndOfDayOptionLoaderJobIntTest {
     @Test
     public void testRetryQueue_emptyQueue_doesNotRun() throws OptionsChainLoadException {
         when(retryService.getAllWithTradeDate(any())).thenReturn(Collections.emptySet());
-        ReflectionTestUtils.setField(subject, "jobStatus", EndOfDayOptionsLoaderJob.JobStatus.COMPLETE_WITH_FAILURES);
+        ReflectionTestUtils.setField(subject, "mainJobStatus", EndOfDayOptionsLoaderJob.JobStatus.COMPLETE_WITH_FAILURES);
 
         subject.runRetryBeforeMidnight();
 
