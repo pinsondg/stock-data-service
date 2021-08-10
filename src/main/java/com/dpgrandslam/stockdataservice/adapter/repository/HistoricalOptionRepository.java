@@ -5,9 +5,11 @@ import com.dpgrandslam.stockdataservice.domain.model.options.Option;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.jpa.repository.QueryHints;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import javax.persistence.QueryHint;
 import java.time.LocalDate;
 import java.util.Optional;
 import java.util.Set;
@@ -16,6 +18,7 @@ import java.util.Set;
 public interface HistoricalOptionRepository extends JpaRepository<HistoricalOption, Long> {
 
     @Query("select ho from HistoricalOption ho left join fetch ho.historicalPriceData where ho.ticker =:ticker")
+    @QueryHints(@QueryHint(name = org.hibernate.annotations.QueryHints.CACHEABLE, value = "true"))
     Set<HistoricalOption> findByTicker(@Param("ticker") String ticker);
 
     Set<HistoricalOption> findByExpirationAndTicker(LocalDate expiration, String ticker);

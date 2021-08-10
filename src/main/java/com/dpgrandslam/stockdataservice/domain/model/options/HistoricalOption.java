@@ -5,13 +5,13 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
+import org.hibernate.Hibernate;
 import org.hibernate.annotations.CacheConcurrencyStrategy;
 
 import javax.persistence.*;
 import java.time.LocalDate;
 import java.util.*;
 
-@EqualsAndHashCode(callSuper = true, onlyExplicitlyIncluded = true)
 @Data
 @ToString(callSuper = true)
 @Entity
@@ -19,7 +19,8 @@ import java.util.*;
         @Index(name = "idx_strk_expr_tkr_type", columnList = "strike, expiration, ticker, option_type", unique = true),
         @Index(name = "idx_tkr", columnList = "ticker")
 })
-@org.hibernate.annotations.Cache(usage = CacheConcurrencyStrategy.NONSTRICT_READ_WRITE)
+@Cacheable
+@org.hibernate.annotations.Cache(usage = CacheConcurrencyStrategy.READ_ONLY)
 public class HistoricalOption extends Option {
 
     @Id
@@ -29,12 +30,12 @@ public class HistoricalOption extends Option {
     @JsonIgnore
     private Long id;
 
-    @OneToMany(cascade = CascadeType.ALL, mappedBy = "option", fetch = FetchType.LAZY, orphanRemoval = true)
+    @OneToMany(cascade = CascadeType.ALL, mappedBy = "option", fetch = FetchType.EAGER, orphanRemoval = true)
     @OrderBy("tradeDate DESC")
     @EqualsAndHashCode.Include
     @JsonIgnore
     @ToString.Exclude
-    @org.hibernate.annotations.Cache(usage = CacheConcurrencyStrategy.NONSTRICT_READ_WRITE)
+    @org.hibernate.annotations.Cache(usage = CacheConcurrencyStrategy.READ_ONLY)
     private List<OptionPriceData> historicalPriceData;
 
     public HistoricalOption() {
@@ -78,5 +79,19 @@ public class HistoricalOption extends Option {
             item.setOption(this);
         });
         this.historicalPriceData = new LinkedList<>(priceData);
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || Hibernate.getClass(this) != Hibernate.getClass(o)) return false;
+        HistoricalOption that = (HistoricalOption) o;
+
+        return Objects.equals(id, that.id);
+    }
+
+    @Override
+    public int hashCode() {
+        return 889797582;
     }
 }

@@ -3,6 +3,7 @@ package com.dpgrandslam.stockdataservice.domain.model.options;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import lombok.*;
+import org.hibernate.annotations.CacheConcurrencyStrategy;
 import org.hibernate.annotations.Cascade;
 
 import javax.persistence.*;
@@ -20,6 +21,8 @@ import java.time.LocalDate;
 @ToString(exclude = "option")
 @JsonIgnoreProperties(ignoreUnknown = true)
 @Table(indexes = @Index(name = "idk_optionId_tradeDate", columnList = "option_id, trade_date", unique = true))
+@Cacheable
+@org.hibernate.annotations.Cache(usage = CacheConcurrencyStrategy.READ_ONLY)
 public class OptionPriceData {
 
     @Id
