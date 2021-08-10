@@ -22,7 +22,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import javax.annotation.PostConstruct;
 import java.time.LocalDate;
-import java.time.ZoneId;
 import java.util.List;
 import java.util.Queue;
 import java.util.Set;
@@ -55,21 +54,22 @@ public class EndOfDayOptionsLoaderJob {
 
     private Queue<TrackedStock> trackedStocks;
 
-    private JobStatus jobStatus;
+    private JobStatus mainJobStatus;
+    private JobStatus retryJobStatus;
 
     @Getter
     public enum JobStatus {
-        NOT_STARTED(false), RUNNING_MANUAL(true), RUNNING_SCHEDULED(true), COMPLETE(false), COMPLETE_WITH_FAILURES(false), RETRY(true);
+        NOT_STARTED(false), RUNNING_MANUAL(true), RUNNING_SCHEDULED(true), COMPLETE(false), COMPLETE_WITH_FAILURES(false);
 
         boolean isRunning;
 
-        private JobStatus(boolean isRunning) {
+        JobStatus(boolean isRunning) {
             this.isRunning = isRunning;
         }
     }
 
     public EndOfDayOptionsLoaderJob() {
-        this.jobStatus = JobStatus.NOT_STARTED;
+        this.mainJobStatus = JobStatus.NOT_STARTED;
         this.trackedStocks = new ConcurrentLinkedQueue<>();
     }
 
@@ -79,7 +79,8 @@ public class EndOfDayOptionsLoaderJob {
     }
 
     private void reset() {
-        jobStatus = JobStatus.NOT_STARTED;
+        mainJobStatus = JobStatus.NOT_STARTED;
+        retryJobStatus = JobStatus.NOT_STARTED;
         trackedStocks = new ConcurrentLinkedQueue<>();
         trackedStocks.addAll(trackedStockService.getAllTrackedStocks(true).stream()
                 .filter(trackedStock -> trackedStock.getLastOptionsHistoricDataUpdate() == null || trackedStock.getLastOptionsHistoricDataUpdate().isBefore(timeUtils.getNowAmericaNewYork().toLocalDate()))
@@ -99,7 +100,7 @@ public class EndOfDayOptionsLoaderJob {
 
 
     private void resetJob() {
-        if (jobStatus == JobStatus.COMPLETE || jobStatus == JobStatus.COMPLETE_WITH_FAILURES) {
+        if (mainJobStatus == JobStatus.COMPLETE || mainJobStatus == JobStatus.COMPLETE_WITH_FAILURES) {
             log.info("Resetting data load job for next run.");
             reset();
         }
@@ -142,7 +143,7 @@ public class EndOfDayOptionsLoaderJob {
         log.info("Found {} options in retry table for trade date {}.", retrySet.size(),tradeDate);
         if (!retrySet.isEmpty()) {
             log.info("Starting retry job. Retry queue has {} options to retry.", retrySet.size());
-            jobStatus = JobStatus.RETRY;
+            retryJobStatus = JobStatus.RUNNING_SCHEDULED;
             retrySet.forEach(failed -> {
                 try {
                     TimerUtil timerUtil = new TimerUtil();
@@ -173,16 +174,15 @@ public class EndOfDayOptionsLoaderJob {
 
 //    @Scheduled(cron = "5 * * * * 1-5", zone = "EST")
     private void storeOptionsChainEndOfDayData() {
-        if (jobStatus.isRunning() && !timeUtils.isTodayAmericaNewYorkStockMarketHoliday()) {
+        if (mainJobStatus.isRunning() && !timeUtils.isTodayAmericaNewYorkStockMarketHoliday()) {
             log.info("Starting data load job batch.");
             for (int i = 0; i < STEPS; i++) {
                 if (!trackedStocks.isEmpty()) {
                     TrackedStock current = trackedStocks.poll();
-                    if (current != null && jobStatus.isRunning() && current.isActive()
+                    if (current != null && mainJobStatus.isRunning() && current.isActive()
                             && (current.getLastOptionsHistoricDataUpdate() == null || !current.getLastOptionsHistoricDataUpdate().equals(timeUtils.getNowAmericaNewYork().toLocalDate()))) {
                         log.info("Executing update for {}", current);
-                        TimerUtil timerUtil = new TimerUtil();
-                        timerUtil.start();
+                        TimerUtil timerUtil = TimerUtil.startTimer();
                         try {
                             List<OptionsChain> fullOptionsChain = optionsChainLoadService
                                     .loadFullLiveOptionsChain(current.getTicker());
@@ -211,28 +211,27 @@ public class EndOfDayOptionsLoaderJob {
     }
 
     private void startJob() {
-        if (jobStatus == JobStatus.NOT_STARTED) {
-            jobStatus = JobStatus.RUNNING_SCHEDULED;
+        if (mainJobStatus == JobStatus.NOT_STARTED) {
+            mainJobStatus = JobStatus.RUNNING_SCHEDULED;
         }
     }
 
     private void completeJob(int job) {
-        if (job == RETRY_JOB && jobStatus == JobStatus.RETRY) {
-            log.info("Retry Job Finished.");
-            setCompleteJobStatus();
-        } else if (job == MAIN_JOB && jobStatus.isRunning()) {
-            log.info("Job finished.");
-            setCompleteJobStatus();
-        }
-    }
-
-    private void setCompleteJobStatus() {
-        if (optionRetryService.getAllWithTradeDate(timeUtils.getLastTradeDate()).isEmpty()) {
-            log.info("Job finished with no failures.");
-            jobStatus = JobStatus.COMPLETE;
-        } else {
-            log.info("Job finished with failures.");
-            jobStatus = JobStatus.COMPLETE_WITH_FAILURES;
+        if (job == RETRY_JOB && retryJobStatus.isRunning()) {
+            if (optionRetryService.getAllWithTradeDate(timeUtils.getLastTradeDate()).isEmpty()) {
+                retryJobStatus = JobStatus.COMPLETE;
+            } else {
+                retryJobStatus = JobStatus.COMPLETE_WITH_FAILURES;
+            }
+            log.info("Retry job finished with status: {}", retryJobStatus.name());
+        } else if (job == MAIN_JOB && mainJobStatus.isRunning()) {
+            log.info("Main job finished.");
+            if (optionRetryService.getAllWithTradeDate(timeUtils.getLastTradeDate()).isEmpty()) {
+                mainJobStatus = JobStatus.COMPLETE;
+            } else {
+                mainJobStatus = JobStatus.COMPLETE_WITH_FAILURES;
+            }
+            log.info("Main job finished with status: {}", mainJobStatus.name());
         }
     }
 
@@ -243,15 +242,15 @@ public class EndOfDayOptionsLoaderJob {
                 .map(TrackedStock::getTicker)
                 .collect(Collectors.toList()));
         trackedStocks.addAll(trackedStockAddedEvent.getTrackedStocks());
-        if (jobStatus == JobStatus.COMPLETE) {
+        if (mainJobStatus == JobStatus.COMPLETE) {
             log.info("Setting job status to running for newly added tickers.");
-            jobStatus = JobStatus.RUNNING_MANUAL;
+            mainJobStatus = JobStatus.RUNNING_MANUAL;
         }
     }
 
     @EventListener({OptionChainParseFailedEvent.class})
     public void onApplicationEvent(OptionChainParseFailedEvent e) {
-        if (jobStatus.isRunning() || jobStatus == JobStatus.COMPLETE_WITH_FAILURES) {
+        if (mainJobStatus.isRunning() || mainJobStatus == JobStatus.COMPLETE_WITH_FAILURES) {
             optionRetryService.addOrUpdateRetry(e.getTicker(), e.getExpiration(), e.getTradeDate());
             log.info("Successfully added option with ticker [{}], expiration date [{}], and trade date [{}] to retry queue. " +
                     "There are now {} options in the retry queue.", e.getTicker(), e.getExpiration(), e.getTradeDate(), optionRetryService.getAllWithTradeDate(e.getTradeDate()).size());
