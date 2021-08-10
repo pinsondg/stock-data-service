@@ -64,12 +64,11 @@ public class HistoricOptionsDataServiceTest {
     public void testAddOption_optionExists_addsPriceDataToOption() {
         when(historicalOptionRepository.findDistinctFirstByExpirationAndTickerAndStrikeAndOptionType(any(), anyString(), any(), any()))
                 .thenReturn(Optional.of(TestDataFactory.HistoricalOptionMother.noPriceData().build()));
-        when(historicalOptionRepository.findById(any())).thenReturn(Optional.of(TestDataFactory.HistoricalOptionMother.noPriceData().build()));
 
         subject.addOption(TestDataFactory.HistoricalOptionMother.completeWithOnePriceData().build());
 
         verify(historicalOptionRepository, times(1)).save(historicalOptionAC.capture());
-        verify(historicalOptionRepository, times(1)).findById(any());
+        verify(historicalOptionRepository, never()).findById(any());
 
         HistoricalOption saved = historicalOptionAC.getValue();
         assertEquals(1, saved.getHistoricalPriceData().size());

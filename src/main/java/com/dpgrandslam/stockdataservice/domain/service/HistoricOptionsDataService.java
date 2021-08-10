@@ -47,7 +47,7 @@ public class HistoricOptionsDataService {
                 option.getOptionType());
         if (found.isPresent()) {
             log.debug("Option {} already exists. Adding price data instead.", found.get());
-            ret = addPriceDataToOption(found.get().getId(), option.getOptionPriceData());
+            ret = addPriceDataToOption(found.get(), option.getOptionPriceData());
         } else {
             ret = historicalOptionRepository.save(option.toHistoricalOption());
         }
@@ -119,6 +119,10 @@ public class HistoricOptionsDataService {
         return option;
     }
 
+    public HistoricalOption addPriceDataToOption(HistoricalOption historicalOption, Collection<OptionPriceData> optionPriceData) {
+        return doPriceDataAdd(optionPriceData, TimerUtil.startTimer(), historicalOption);
+    }
+
     public HistoricalOption addPriceDataToOption(Long optionId, OptionPriceData optionPriceData) {
         HistoricalOption option = findById(optionId);
         optionPriceData.setOption(option);
@@ -127,9 +131,13 @@ public class HistoricOptionsDataService {
     }
 
     public HistoricalOption addPriceDataToOption(Long optionId, Collection<OptionPriceData> optionPriceData) {
-        TimerUtil timerUtil = new TimerUtil();
-        timerUtil.start();
+        TimerUtil timerUtil = TimerUtil.startTimer();
         HistoricalOption option = findById(optionId);
+        return doPriceDataAdd(optionPriceData, timerUtil, option);
+    }
+
+    private HistoricalOption doPriceDataAdd(Collection<OptionPriceData> optionPriceData, TimerUtil timerUtil, HistoricalOption option) {
+        HistoricalOption saved = option;
         log.info("Adding new price data {} to option {}", optionPriceData, option);
         Set<OptionPriceData> priceDataCopy = new HashSet<>(optionPriceData);
         priceDataCopy.removeIf(data -> option.getHistoricalPriceData()
@@ -140,10 +148,10 @@ public class HistoricOptionsDataService {
             log.info("Price data for option {} at trade date {} already exists. Skipping addition...", option, optionPriceData.stream().findFirst().get().getTradeDate());
         } else {
             option.getHistoricalPriceData().addAll(priceDataCopy);
-            return historicalOptionRepository.save(option);
+            saved = historicalOptionRepository.save(option);
         }
         log.info("Took {} ms to add price data {} to option {}", timerUtil.stop(), optionPriceData, option);
-        return option;
+        return saved;
     }
 
     public void removeOption(Long optionId) {
