@@ -61,7 +61,7 @@ public class TiingoStockService implements StockDataLoadService {
 
     @Override
     public List<? extends StockSearchResult> searchStock(String query) {
-        return apiClient.searchStock(query);
+        return stockSearchCache.get(query, apiClient::searchStock);
     }
 
     @Override
