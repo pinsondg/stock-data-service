@@ -83,7 +83,7 @@ public class EndOfDayOptionsLoaderJob {
         retryJobStatus = JobStatus.NOT_STARTED;
         trackedStocks = new ConcurrentLinkedQueue<>();
         trackedStocks.addAll(trackedStockService.getAllTrackedStocks(true).stream()
-                .filter(trackedStock -> trackedStock.getLastOptionsHistoricDataUpdate() == null || trackedStock.getLastOptionsHistoricDataUpdate().isBefore(timeUtils.getNowAmericaNewYork().toLocalDate()))
+                .filter(trackedStock -> trackedStock.getLastOptionsHistoricDataUpdate() == null || trackedStock.getLastOptionsHistoricDataUpdate().isBefore(timeUtils.getLastTradeDate()))
                 .collect(Collectors.toList()));
     }
 

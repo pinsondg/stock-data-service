@@ -4,6 +4,7 @@ import com.dpgrandslam.stockdataservice.adapter.repository.TrackedStocksReposito
 import com.dpgrandslam.stockdataservice.domain.event.TrackedStockAddedEvent;
 import com.dpgrandslam.stockdataservice.domain.model.stock.StockMetaData;
 import com.dpgrandslam.stockdataservice.domain.model.stock.TrackedStock;
+import com.dpgrandslam.stockdataservice.domain.util.TimeUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
@@ -30,6 +31,9 @@ public class TrackedStockService {
     @Autowired
     private ApplicationEventPublisher applicationEventPublisher;
 
+    @Autowired
+    private TimeUtils timeUtils;
+
     public TrackedStock findByTicker(String ticker) {
         return trackedStocksRepository.findById(ticker).orElseThrow(() -> new EntityNotFoundException("Not currently tracking stock with ticker: " + ticker));
     }
@@ -49,7 +53,7 @@ public class TrackedStockService {
 
     public void updateOptionUpdatedTimestamp(String ticker)  {
         TrackedStock trackedStock = findByTicker(ticker);
-        trackedStock.setLastOptionsHistoricDataUpdate(LocalDate.now(ZoneId.of("America/New_York")));
+        trackedStock.setLastOptionsHistoricDataUpdate(timeUtils.getLastTradeDate());
         trackedStocksRepository.save(trackedStock);
     }
 
