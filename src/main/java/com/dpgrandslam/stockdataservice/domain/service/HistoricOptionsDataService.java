@@ -6,8 +6,6 @@ import com.dpgrandslam.stockdataservice.domain.model.options.Option;
 import com.dpgrandslam.stockdataservice.domain.model.options.OptionPriceData;
 import com.dpgrandslam.stockdataservice.domain.model.options.OptionsChain;
 import com.dpgrandslam.stockdataservice.domain.util.TimerUtil;
-import com.github.benmanes.caffeine.cache.Cache;
-import com.github.benmanes.caffeine.cache.stats.CacheStats;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -26,8 +24,6 @@ public class HistoricOptionsDataService {
 
     private final HistoricalOptionRepository historicalOptionRepository;
 
-    private final Cache<String, Set<HistoricalOption>> historicOptionCache;
-
     private final ExecutorService executor = Executors.newFixedThreadPool(10);
 
     public List<HistoricalOption> findAll() {
@@ -44,9 +40,8 @@ public class HistoricOptionsDataService {
         timerUtil.start();
         HistoricalOption ret;
         log.info("Adding new option (ticker: {}, strike: {}, expiration: {}, type: {}) to database.", option.getTicker(), option.getStrike(), option.getExpiration(), option.getOptionType());
-        Optional<HistoricalOption> found = historicalOptionRepository.findByTickerStrikeOptionTypeAndExpiration(option.getExpiration(),
+        Optional<HistoricalOption> found = historicalOptionRepository.findByStrikeAndExpirationAndTickerAndOptionType(option.getStrike(), option.getExpiration(),
                 option.getTicker(),
-                option.getStrike(),
                 option.getOptionType());
         if (found.isPresent()) {
             log.debug("Option {} already exists. Adding price data instead.", found.get());
@@ -71,7 +66,7 @@ public class HistoricOptionsDataService {
         optionsChain.getAllOptions()
                 .forEach((option) -> callables.add(() -> addOption(option)));
         try {
-            executor.invokeAll(callables);
+            List<Future<HistoricalOption>> futures = executor.invokeAll(callables);
         } catch (InterruptedException e) {
             log.error("Could not add all options to the chain for option chain with ticker {} and expiration {}",
                     optionsChain.getTicker(),
@@ -86,12 +81,10 @@ public class HistoricOptionsDataService {
 
     public Set<HistoricalOption> findOptions(String ticker) {
         log.info("Searching DB for options with ticker: {}", ticker);
-        TimerUtil timerUtil = new TimerUtil();
-        timerUtil.start();
-        Set<HistoricalOption> options = historicOptionCache.get(ticker, historicalOptionRepository::findByTicker);
+        TimerUtil timerUtil = TimerUtil.startTimer();
+        Set<HistoricalOption> options =  historicalOptionRepository.findByTicker(ticker);
         log.info("Took {} ms to load options with ticker: {}", timerUtil.stop(), ticker);
         log.info("Found {} options with ticker: {}", options.size(), ticker);
-        CacheStats cacheStats = historicOptionCache.stats();
         return options;
     }
 
@@ -124,7 +117,7 @@ public class HistoricOptionsDataService {
     public HistoricalOption findOption(String ticker, LocalDate expiration, Double strike, Option.OptionType optionType) {
         log.info("Searching DB for option with ticker: {}, expiration: {}, strike: {}, and optionType: {}", ticker, expiration, strike, optionType.name());
         long start = System.currentTimeMillis();
-        HistoricalOption option =  historicalOptionRepository.findByTickerStrikeOptionTypeAndExpiration(expiration, ticker, strike, optionType)
+        HistoricalOption option =  historicalOptionRepository.findByStrikeAndExpirationAndTickerAndOptionType(strike, expiration, ticker, optionType)
                 .orElseThrow(() -> new EntityNotFoundException("Could not find option matching given criteria. " +
                         "Ticker: " + ticker + "," +
                         "Expiration: " + expiration + "," +

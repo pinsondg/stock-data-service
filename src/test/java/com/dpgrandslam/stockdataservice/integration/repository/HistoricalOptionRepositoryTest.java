@@ -57,7 +57,7 @@ public class HistoricalOptionRepositoryTest extends RepositoryIntTestBase {
         subject.save(TestDataFactory.HistoricalOptionMother.completeWithOnePriceData().strike(12.5).build());
         subject.save(TestDataFactory.HistoricalOptionMother.completeWithOnePriceData().strike(13.0).build());
 
-        HistoricalOption found = subject.findByTickerStrikeOptionTypeAndExpiration(LocalDate.now(), "TEST", 12.5, Option.OptionType.CALL).orElseGet(() -> {
+        HistoricalOption found = subject.findByStrikeAndExpirationAndTickerAndOptionType(12.5, LocalDate.now(), "TEST", Option.OptionType.CALL).orElseGet(() -> {
             fail("Option not found.");
             return null;
         });
