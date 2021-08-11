@@ -24,7 +24,7 @@ public class HistoricOptionsDataService {
 
     private final HistoricalOptionRepository historicalOptionRepository;
 
-    private final ExecutorService executor = Executors.newFixedThreadPool(10);
+    private final ExecutorService executor = Executors.newFixedThreadPool(2);
 
     public List<HistoricalOption> findAll() {
         return historicalOptionRepository.findAll();

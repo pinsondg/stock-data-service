@@ -11,8 +11,6 @@ spring:
     url: ${DATASOURCE_URL}?currentSchema=${spring.liquibase.default-schema}
     username: ${DATASOURCE_USERNAME}
     password: ${DATASOURCE_PASSWORD}
-    hikari:
-      maximum-pool-size: 15
 
 server:
   port: 5000
