@@ -10,7 +10,6 @@ import org.springframework.stereotype.Repository;
 import java.time.LocalDate;
 import java.util.Optional;
 import java.util.Set;
-import java.util.stream.Stream;
 
 @Repository
 public interface HistoricalOptionRepository extends JpaRepository<HistoricalOption, Long> {
@@ -23,6 +22,6 @@ public interface HistoricalOptionRepository extends JpaRepository<HistoricalOpti
 //    @Query("select option from HistoricalOption option inner join OptionPriceData data on option.id = data.option.id where (option.ticker = ?1 and option.expiration = ?2) and (data.dataObtainedDate between ?3 and ?4)")
 //    Stream<HistoricalOption> findByTickerAndExpirationWithDataBetweenDates(String ticker, LocalDate expiration, Timestamp start, Timestamp end);
 
-    Optional<HistoricalOption> findDistinctFirstByExpirationAndTickerAndStrikeAndOptionType(LocalDate expiration, String ticker, Double strike, Option.OptionType optionType);
+    Optional<HistoricalOption> findByStrikeAndExpirationAndTickerAndOptionType(Double strike, LocalDate expiration, String ticker, Option.OptionType optionType);
 
 }
