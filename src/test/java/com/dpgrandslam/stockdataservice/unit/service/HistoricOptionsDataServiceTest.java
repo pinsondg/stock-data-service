@@ -48,7 +48,7 @@ public class HistoricOptionsDataServiceTest {
     @Test
     public void testAddOption_noOptionExists_addsOption() {
 
-        when(historicalOptionRepository.findDistinctFirstByExpirationAndTickerAndStrikeAndOptionType(any(), any(), any(), any()))
+        when(historicalOptionRepository.findByTickerStrikeOptionTypeAndExpiration(any(), any(), any(), any()))
                 .thenReturn(Optional.empty());
 
         subject.addOption(TestDataFactory.HistoricalOptionMother.completeWithOnePriceData().build());
@@ -62,7 +62,7 @@ public class HistoricOptionsDataServiceTest {
 
     @Test
     public void testAddOption_optionExists_addsPriceDataToOption() {
-        when(historicalOptionRepository.findDistinctFirstByExpirationAndTickerAndStrikeAndOptionType(any(), anyString(), any(), any()))
+        when(historicalOptionRepository.findByTickerStrikeOptionTypeAndExpiration(any(), anyString(), any(), any()))
                 .thenReturn(Optional.of(TestDataFactory.HistoricalOptionMother.noPriceData().build()));
 
         subject.addOption(TestDataFactory.HistoricalOptionMother.completeWithOnePriceData().build());
@@ -77,17 +77,17 @@ public class HistoricOptionsDataServiceTest {
     @Test
     public void testFindOption_optionExists() {
         LocalDate expiration = LocalDate.now(ZoneId.of("America/New_York"));
-        when(historicalOptionRepository.findDistinctFirstByExpirationAndTickerAndStrikeAndOptionType(any(), any(), any(), any()))
+        when(historicalOptionRepository.findByTickerStrikeOptionTypeAndExpiration(any(), any(), any(), any()))
                 .thenReturn(Optional.of(TestDataFactory.HistoricalOptionMother.completeWithOnePriceData().build()));
 
         subject.findOption("TEST", LocalDate.now(ZoneId.of("America/New_York")), 12.5, Option.OptionType.CALL);
 
-        verify(historicalOptionRepository, times(1)).findDistinctFirstByExpirationAndTickerAndStrikeAndOptionType(eq(expiration), eq("TEST"), eq(12.5), eq(Option.OptionType.CALL));
+        verify(historicalOptionRepository, times(1)).findByTickerStrikeOptionTypeAndExpiration(eq(expiration), eq("TEST"), eq(12.5), eq(Option.OptionType.CALL));
     }
 
     @Test(expected = EntityNotFoundException.class)
     public void testFindOption_optionDoesNotExist_throwsException() {
-        when(historicalOptionRepository.findDistinctFirstByExpirationAndTickerAndStrikeAndOptionType(any(), any(), any(), any())).thenReturn(Optional.empty());
+        when(historicalOptionRepository.findByTickerStrikeOptionTypeAndExpiration(any(), any(), any(), any())).thenReturn(Optional.empty());
 
         subject.findOption("TEST", LocalDate.now(ZoneId.of("America/New_York")), 12.5, Option.OptionType.PUT);
     }

@@ -16,6 +16,7 @@ import org.springframework.transaction.annotation.Transactional;
 import javax.persistence.EntityNotFoundException;
 import java.time.LocalDate;
 import java.util.*;
+import java.util.concurrent.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -26,6 +27,8 @@ public class HistoricOptionsDataService {
     private final HistoricalOptionRepository historicalOptionRepository;
 
     private final Cache<String, Set<HistoricalOption>> historicOptionCache;
+
+    private final ExecutorService executor = Executors.newFixedThreadPool(10);
 
     public List<HistoricalOption> findAll() {
         return historicalOptionRepository.findAll();
@@ -41,7 +44,7 @@ public class HistoricOptionsDataService {
         timerUtil.start();
         HistoricalOption ret;
         log.info("Adding new option (ticker: {}, strike: {}, expiration: {}, type: {}) to database.", option.getTicker(), option.getStrike(), option.getExpiration(), option.getOptionType());
-        Optional<HistoricalOption> found = historicalOptionRepository.findDistinctFirstByExpirationAndTickerAndStrikeAndOptionType(option.getExpiration(),
+        Optional<HistoricalOption> found = historicalOptionRepository.findByTickerStrikeOptionTypeAndExpiration(option.getExpiration(),
                 option.getTicker(),
                 option.getStrike(),
                 option.getOptionType());
@@ -61,11 +64,24 @@ public class HistoricOptionsDataService {
     }
 
     public void addOptionsChain(OptionsChain optionsChain) {
-        TimerUtil timerUtil = new TimerUtil();
-        timerUtil.start();
-        log.info("Adding new options chain with ticker {} to database.", optionsChain.getTicker());
-        optionsChain.getAllOptions().forEach(this::addOption);
-        log.info("Took {} ms to add ne options chain with ticker {}.", timerUtil.stop(), optionsChain.getTicker());
+        TimerUtil timerUtil = TimerUtil.startTimer();
+        log.info("Adding new options chain with ticker {} and expiration {} to database.", optionsChain.getTicker(),
+                optionsChain.getExpirationDate());
+        List<Callable<HistoricalOption>> callables = new LinkedList<>();
+        optionsChain.getAllOptions()
+                .forEach((option) -> callables.add(() -> addOption(option)));
+        try {
+            executor.invokeAll(callables);
+        } catch (InterruptedException e) {
+            log.error("Could not add all options to the chain for option chain with ticker {} and expiration {}",
+                    optionsChain.getTicker(),
+                    optionsChain.getExpirationDate(),
+                    e);
+            return;
+        }
+        log.info("Took {} ms to add options chain with ticker {} and expiration {}.", timerUtil.stop(),
+                optionsChain.getTicker(),
+                optionsChain.getExpirationDate());
     }
 
     public Set<HistoricalOption> findOptions(String ticker) {
@@ -108,7 +124,7 @@ public class HistoricOptionsDataService {
     public HistoricalOption findOption(String ticker, LocalDate expiration, Double strike, Option.OptionType optionType) {
         log.info("Searching DB for option with ticker: {}, expiration: {}, strike: {}, and optionType: {}", ticker, expiration, strike, optionType.name());
         long start = System.currentTimeMillis();
-        HistoricalOption option =  historicalOptionRepository.findDistinctFirstByExpirationAndTickerAndStrikeAndOptionType(expiration, ticker, strike, optionType)
+        HistoricalOption option =  historicalOptionRepository.findByTickerStrikeOptionTypeAndExpiration(expiration, ticker, strike, optionType)
                 .orElseThrow(() -> new EntityNotFoundException("Could not find option matching given criteria. " +
                         "Ticker: " + ticker + "," +
                         "Expiration: " + expiration + "," +
