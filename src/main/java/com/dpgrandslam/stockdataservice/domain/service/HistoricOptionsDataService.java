@@ -6,8 +6,6 @@ import com.dpgrandslam.stockdataservice.domain.model.options.Option;
 import com.dpgrandslam.stockdataservice.domain.model.options.OptionPriceData;
 import com.dpgrandslam.stockdataservice.domain.model.options.OptionsChain;
 import com.dpgrandslam.stockdataservice.domain.util.TimerUtil;
-import com.github.benmanes.caffeine.cache.Cache;
-import com.github.benmanes.caffeine.cache.stats.CacheStats;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -16,6 +14,7 @@ import org.springframework.transaction.annotation.Transactional;
 import javax.persistence.EntityNotFoundException;
 import java.time.LocalDate;
 import java.util.*;
+import java.util.concurrent.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -25,7 +24,7 @@ public class HistoricOptionsDataService {
 
     private final HistoricalOptionRepository historicalOptionRepository;
 
-    private final Cache<String, Set<HistoricalOption>> historicOptionCache;
+    private final ExecutorService executor = Executors.newFixedThreadPool(10);
 
     public List<HistoricalOption> findAll() {
         return historicalOptionRepository.findAll();
@@ -41,13 +40,12 @@ public class HistoricOptionsDataService {
         timerUtil.start();
         HistoricalOption ret;
         log.info("Adding new option (ticker: {}, strike: {}, expiration: {}, type: {}) to database.", option.getTicker(), option.getStrike(), option.getExpiration(), option.getOptionType());
-        Optional<HistoricalOption> found = historicalOptionRepository.findDistinctFirstByExpirationAndTickerAndStrikeAndOptionType(option.getExpiration(),
+        Optional<HistoricalOption> found = historicalOptionRepository.findByStrikeAndExpirationAndTickerAndOptionType(option.getStrike(), option.getExpiration(),
                 option.getTicker(),
-                option.getStrike(),
                 option.getOptionType());
         if (found.isPresent()) {
             log.debug("Option {} already exists. Adding price data instead.", found.get());
-            ret = addPriceDataToOption(found.get().getId(), option.getOptionPriceData());
+            ret = addPriceDataToOption(found.get(), option.getOptionPriceData());
         } else {
             ret = historicalOptionRepository.save(option.toHistoricalOption());
         }
@@ -61,21 +59,32 @@ public class HistoricOptionsDataService {
     }
 
     public void addOptionsChain(OptionsChain optionsChain) {
-        TimerUtil timerUtil = new TimerUtil();
-        timerUtil.start();
-        log.info("Adding new options chain with ticker {} to database.", optionsChain.getTicker());
-        optionsChain.getAllOptions().forEach(this::addOption);
-        log.info("Took {} ms to add ne options chain with ticker {}.", timerUtil.stop(), optionsChain.getTicker());
+        TimerUtil timerUtil = TimerUtil.startTimer();
+        log.info("Adding new options chain with ticker {} and expiration {} to database.", optionsChain.getTicker(),
+                optionsChain.getExpirationDate());
+        List<Callable<HistoricalOption>> callables = new LinkedList<>();
+        optionsChain.getAllOptions()
+                .forEach((option) -> callables.add(() -> addOption(option)));
+        try {
+            List<Future<HistoricalOption>> futures = executor.invokeAll(callables);
+        } catch (InterruptedException e) {
+            log.error("Could not add all options to the chain for option chain with ticker {} and expiration {}",
+                    optionsChain.getTicker(),
+                    optionsChain.getExpirationDate(),
+                    e);
+            return;
+        }
+        log.info("Took {} ms to add options chain with ticker {} and expiration {}.", timerUtil.stop(),
+                optionsChain.getTicker(),
+                optionsChain.getExpirationDate());
     }
 
     public Set<HistoricalOption> findOptions(String ticker) {
         log.info("Searching DB for options with ticker: {}", ticker);
-        TimerUtil timerUtil = new TimerUtil();
-        timerUtil.start();
-        Set<HistoricalOption> options = historicOptionCache.get(ticker, historicalOptionRepository::findByTicker);
+        TimerUtil timerUtil = TimerUtil.startTimer();
+        Set<HistoricalOption> options =  historicalOptionRepository.findByTicker(ticker);
         log.info("Took {} ms to load options with ticker: {}", timerUtil.stop(), ticker);
         log.info("Found {} options with ticker: {}", options.size(), ticker);
-        CacheStats cacheStats = historicOptionCache.stats();
         return options;
     }
 
@@ -108,7 +117,7 @@ public class HistoricOptionsDataService {
     public HistoricalOption findOption(String ticker, LocalDate expiration, Double strike, Option.OptionType optionType) {
         log.info("Searching DB for option with ticker: {}, expiration: {}, strike: {}, and optionType: {}", ticker, expiration, strike, optionType.name());
         long start = System.currentTimeMillis();
-        HistoricalOption option =  historicalOptionRepository.findDistinctFirstByExpirationAndTickerAndStrikeAndOptionType(expiration, ticker, strike, optionType)
+        HistoricalOption option =  historicalOptionRepository.findByStrikeAndExpirationAndTickerAndOptionType(strike, expiration, ticker, optionType)
                 .orElseThrow(() -> new EntityNotFoundException("Could not find option matching given criteria. " +
                         "Ticker: " + ticker + "," +
                         "Expiration: " + expiration + "," +
@@ -119,6 +128,10 @@ public class HistoricOptionsDataService {
         return option;
     }
 
+    public HistoricalOption addPriceDataToOption(HistoricalOption historicalOption, Collection<OptionPriceData> optionPriceData) {
+        return doPriceDataAdd(optionPriceData, TimerUtil.startTimer(), historicalOption);
+    }
+
     public HistoricalOption addPriceDataToOption(Long optionId, OptionPriceData optionPriceData) {
         HistoricalOption option = findById(optionId);
         optionPriceData.setOption(option);
@@ -127,9 +140,13 @@ public class HistoricOptionsDataService {
     }
 
     public HistoricalOption addPriceDataToOption(Long optionId, Collection<OptionPriceData> optionPriceData) {
-        TimerUtil timerUtil = new TimerUtil();
-        timerUtil.start();
+        TimerUtil timerUtil = TimerUtil.startTimer();
         HistoricalOption option = findById(optionId);
+        return doPriceDataAdd(optionPriceData, timerUtil, option);
+    }
+
+    private HistoricalOption doPriceDataAdd(Collection<OptionPriceData> optionPriceData, TimerUtil timerUtil, HistoricalOption option) {
+        HistoricalOption saved = option;
         log.info("Adding new price data {} to option {}", optionPriceData, option);
         Set<OptionPriceData> priceDataCopy = new HashSet<>(optionPriceData);
         priceDataCopy.removeIf(data -> option.getHistoricalPriceData()
@@ -140,10 +157,10 @@ public class HistoricOptionsDataService {
             log.info("Price data for option {} at trade date {} already exists. Skipping addition...", option, optionPriceData.stream().findFirst().get().getTradeDate());
         } else {
             option.getHistoricalPriceData().addAll(priceDataCopy);
-            return historicalOptionRepository.save(option);
+            saved = historicalOptionRepository.save(option);
         }
         log.info("Took {} ms to add price data {} to option {}", timerUtil.stop(), optionPriceData, option);
-        return option;
+        return saved;
     }
 
     public void removeOption(Long optionId) {
