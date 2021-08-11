@@ -12,8 +12,7 @@ spring:
     username: ${DATASOURCE_USERNAME}
     password: ${DATASOURCE_PASSWORD}
     hikari:
-      maximum-pool-size: 5
-      minimum-idle: 2
+      maximum-pool-size: 15
 
 server:
   port: 5000
