@@ -9,12 +9,14 @@ import com.dpgrandslam.stockdataservice.domain.util.TimerUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import javax.persistence.EntityNotFoundException;
 import java.time.LocalDate;
 import java.util.*;
-import java.util.concurrent.*;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.stream.Collectors;
 
 @Service
@@ -24,7 +26,7 @@ public class HistoricOptionsDataService {
 
     private final HistoricalOptionRepository historicalOptionRepository;
 
-    private final ExecutorService executor = Executors.newFixedThreadPool(10);
+    private static final ExecutorService EXECUTOR = Executors.newFixedThreadPool(5);
 
     public List<HistoricalOption> findAll() {
         return historicalOptionRepository.findAll();
@@ -35,6 +37,12 @@ public class HistoricOptionsDataService {
                 .orElseThrow(() -> new EntityNotFoundException("Could not find option with id " + id));
     }
 
+    /**
+     * Adds an option to the database, if the option already exists, add the price data instead.
+     *
+     * @param option the option to add
+     * @return the saved entity
+     */
     public HistoricalOption addOption(Option option) {
         TimerUtil timerUtil = new TimerUtil();
         timerUtil.start();
@@ -53,7 +61,6 @@ public class HistoricOptionsDataService {
         return ret;
     }
 
-    @Transactional
     public void addFullOptionsChain(List<OptionsChain> fullOptionsChain) {
         fullOptionsChain.forEach(this::addOptionsChain);
     }
@@ -66,7 +73,7 @@ public class HistoricOptionsDataService {
         optionsChain.getAllOptions()
                 .forEach((option) -> callables.add(() -> addOption(option)));
         try {
-            List<Future<HistoricalOption>> futures = executor.invokeAll(callables);
+            List<Future<HistoricalOption>> futures = EXECUTOR.invokeAll(callables);
         } catch (InterruptedException e) {
             log.error("Could not add all options to the chain for option chain with ticker {} and expiration {}",
                     optionsChain.getTicker(),
@@ -149,7 +156,8 @@ public class HistoricOptionsDataService {
         HistoricalOption saved = option;
         log.info("Adding new price data {} to option {}", optionPriceData, option);
         Set<OptionPriceData> priceDataCopy = new HashSet<>(optionPriceData);
-        priceDataCopy.removeIf(data -> option.getHistoricalPriceData()
+        Set<OptionPriceData> existingPriceData = option.getHistoricalPriceData();
+        priceDataCopy.removeIf(data -> existingPriceData
                 .stream()
                 .anyMatch(x -> data.getTradeDate().equals(x.getTradeDate())));
         priceDataCopy.forEach(data -> data.setOption(option));

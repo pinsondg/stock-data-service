@@ -83,11 +83,10 @@ public class EndOfDayOptionsLoaderJob {
         retryJobStatus = JobStatus.NOT_STARTED;
         trackedStocks = new ConcurrentLinkedQueue<>();
         trackedStocks.addAll(trackedStockService.getAllTrackedStocks(true).stream()
-                .filter(trackedStock -> trackedStock.getLastOptionsHistoricDataUpdate() == null || trackedStock.getLastOptionsHistoricDataUpdate().isBefore(timeUtils.getNowAmericaNewYork().toLocalDate()))
+                .filter(trackedStock -> trackedStock.getLastOptionsHistoricDataUpdate() == null || trackedStock.getLastOptionsHistoricDataUpdate().isBefore(timeUtils.getLastTradeDate()))
                 .collect(Collectors.toList()));
     }
 
-//    @Scheduled(cron = "0 * * * * *", zone = "EST")
     @Scheduled(cron = "0 * 10-15 * * *")
     public void weekdayReset() {
         resetJob();
@@ -172,7 +171,6 @@ public class EndOfDayOptionsLoaderJob {
         completeJob(RETRY_JOB);
     }
 
-//    @Scheduled(cron = "5 * * * * 1-5", zone = "EST")
     private void storeOptionsChainEndOfDayData() {
         if (mainJobStatus.isRunning() && !timeUtils.isTodayAmericaNewYorkStockMarketHoliday()) {
             log.info("Starting data load job batch.");
