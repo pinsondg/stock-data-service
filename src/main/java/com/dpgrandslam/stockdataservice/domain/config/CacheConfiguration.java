@@ -25,7 +25,7 @@ public class CacheConfiguration {
     }
 
     @Bean
-    public Cache<String, Set<HistoricalOption>> historicalOptionCache() {
+    public Cache<String, Set<HistoricalOption.CacheableHistoricalOption>> historicalOptionCache() {
         return Caffeine.newBuilder()
                 .expireAfterWrite(30, TimeUnit.MINUTES)
                 .recordStats()

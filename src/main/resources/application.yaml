@@ -17,7 +17,7 @@ spring:
         #optional - enable SQL statements formatting.
         format_sql: true
         #optional - generate statistics to check if L2/query cache is actually being used.
-        generate_statistics: true
+        generate_statistics: false
         cache:
           #required - turn on L2 cache.
           use_second_level_cache: true

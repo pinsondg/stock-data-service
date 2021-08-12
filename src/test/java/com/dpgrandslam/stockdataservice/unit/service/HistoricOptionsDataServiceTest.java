@@ -9,10 +9,7 @@ import com.dpgrandslam.stockdataservice.testUtils.TestDataFactory;
 import com.github.benmanes.caffeine.cache.Cache;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.mockito.ArgumentCaptor;
-import org.mockito.Captor;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
+import org.mockito.*;
 import org.mockito.junit.MockitoJUnitRunner;
 
 import javax.persistence.EntityNotFoundException;
@@ -71,7 +68,7 @@ public class HistoricOptionsDataServiceTest {
         verify(historicalOptionRepository, never()).findById(any());
 
         HistoricalOption saved = historicalOptionAC.getValue();
-        assertEquals(1, saved.getHistoricalPriceData().size());
+        assertEquals(1, saved.getOptionPriceData().size());
     }
 
     @Test
@@ -105,11 +102,11 @@ public class HistoricOptionsDataServiceTest {
     @Test
     public void testFindOptions_byTicker_callsCorrectMethod() throws ExecutionException {
         LocalDate now = LocalDate.now(ZoneId.of("America/New_York"));
-        when(historicalOptionRepository.findByTicker(anyString())).thenReturn(Stream.of(TestDataFactory.HistoricalOptionMother.completeWithOnePriceData().build()).collect(Collectors.toSet()));
+        when(historicalOptionCache.get(anyString(), any())).thenReturn(Stream.of(TestDataFactory.HistoricalOptionMother.completeWithOnePriceData().build()).collect(Collectors.toSet()));
 
         subject.findOptions("TEST");
 
-        verify(historicalOptionRepository, times(1)).findByTicker(eq("TEST"));
+        verify(historicalOptionCache, times(1)).get(eq("TEST"), any());
     }
 
     @Test
@@ -132,8 +129,8 @@ public class HistoricOptionsDataServiceTest {
 
         HistoricalOption saved = historicalOptionAC.getValue();
 
-        assertEquals(2, saved.getHistoricalPriceData().size());
-        assertTrue(saved.getHistoricalPriceData().stream().anyMatch(data -> data.getTradeDate().equals(tomorrow)));
+        assertEquals(2, saved.getOptionPriceData().size());
+        assertTrue(saved.getOptionPriceData().stream().anyMatch(data -> data.getTradeDate().equals(tomorrow)));
     }
 
     @Test
@@ -158,13 +155,13 @@ public class HistoricOptionsDataServiceTest {
         retSet.add(historicalOption1);
         retSet.add(historicalOption2);
 
-        when(historicalOptionRepository.findByTicker(any())).thenReturn(retSet);
+        when(historicalOptionCache.get(anyString(), any())).thenReturn(retSet);
 
-        Set<HistoricalOption> historicalOptions = subject.findOptions("TEST", LocalDate.now().minusDays(5), LocalDate.now().minusDays(2));
+        Set<? extends Option> historicalOptions = subject.findOptions("TEST", LocalDate.now().minusDays(5), LocalDate.now().minusDays(2));
 
-        HistoricalOption actual = historicalOptions.stream().findFirst().get();
+        HistoricalOption actual = (HistoricalOption) historicalOptions.stream().findFirst().get();
 
         assertEquals(1, historicalOptions.size());
-        assertEquals(3, actual.getHistoricalPriceData().size());
+        assertEquals(3, actual.getOptionPriceData().size());
     }
 }

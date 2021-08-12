@@ -1,10 +1,7 @@
 package com.dpgrandslam.stockdataservice.domain.model.options;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import lombok.Builder;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-import lombok.ToString;
+import lombok.*;
 import org.hibernate.Hibernate;
 import org.hibernate.annotations.CacheConcurrencyStrategy;
 
@@ -12,7 +9,7 @@ import javax.persistence.*;
 import java.time.LocalDate;
 import java.util.*;
 
-@Data
+@EqualsAndHashCode(onlyExplicitlyIncluded = true, callSuper = true)
 @ToString(callSuper = true)
 @Entity
 @Table(indexes = {
@@ -28,6 +25,8 @@ public class HistoricalOption extends Option {
     @Column(name = "option_id")
     @EqualsAndHashCode.Include
     @JsonIgnore
+    @Getter
+    @Setter
     private Long id;
 
     @OneToMany(cascade = CascadeType.ALL, mappedBy = "option", fetch = FetchType.EAGER, orphanRemoval = true)
@@ -81,17 +80,54 @@ public class HistoricalOption extends Option {
         this.historicalPriceData = new LinkedList<>(priceData);
     }
 
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || Hibernate.getClass(this) != Hibernate.getClass(o)) return false;
-        HistoricalOption that = (HistoricalOption) o;
-
-        return Objects.equals(id, that.id);
+    public static HistoricalOption fromCacheableHistoricalOption(CacheableHistoricalOption ho) {
+        HistoricalOption historicalOption = new HistoricalOption();
+        historicalOption.setOptionPriceData(ho.getOptionPriceData());
+        historicalOption.setOptionType(ho.getOptionType());
+        historicalOption.setId(ho.getId());
+        historicalOption.setExpiration(ho.getExpiration());
+        historicalOption.setStrike(ho.getStrike());
+        historicalOption.setTicker(ho.getTicker());
+        return historicalOption;
     }
 
-    @Override
-    public int hashCode() {
-        return 889797582;
+    @EqualsAndHashCode(callSuper = true)
+    @Data
+    public static class CacheableHistoricalOption extends Option {
+
+        private List<OptionPriceData> optionPriceData;
+        private Long id;
+
+        private CacheableHistoricalOption(HistoricalOption historicalOption) {
+            super(historicalOption.getTicker(),
+                    historicalOption.getOptionType(),
+                    historicalOption.getExpiration(),
+                    historicalOption.getStrike());
+            this.id = historicalOption.id;
+            setOptionPriceData(historicalOption.getOptionPriceData());
+        }
+
+        @Override
+        public Collection<OptionPriceData> getOptionPriceData() {
+            return optionPriceData;
+        }
+
+        @Override
+        public OptionPriceData getMostRecentPriceData() {
+            return optionPriceData.stream()
+                    .min(Comparator.comparing(OptionPriceData::getDataObtainedDate))
+                    .orElse(null);
+        }
+
+        @Override
+        public void setOptionPriceData(Collection<OptionPriceData> optionPriceData) {
+            List<OptionPriceData> opd = new LinkedList<>(optionPriceData);
+            opd.forEach(d -> d.setOption(null));
+            this.optionPriceData = opd;
+        }
+
+        public static CacheableHistoricalOption fromHistoricalOption(HistoricalOption historicalOption) {
+            return new CacheableHistoricalOption(historicalOption);
+        }
     }
 }

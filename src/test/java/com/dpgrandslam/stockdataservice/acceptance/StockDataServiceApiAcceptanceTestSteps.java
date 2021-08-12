@@ -49,11 +49,11 @@ public class StockDataServiceApiAcceptanceTestSteps extends BaseAcceptanceTestSt
         optionPriceDataSet.add(TestDataFactory.OptionPriceDataMother.complete().build());
         optionPriceDataSet.add(TestDataFactory.OptionPriceDataMother.complete().build());
         savedOption = TestDataFactory.HistoricalOptionMother.noPriceData().historicalPriceData(optionPriceDataSet).ticker(ticker).build();
-        savedOption.getHistoricalPriceData().add(TestDataFactory.OptionPriceDataMother.complete().build());
+        savedOption.getOptionPriceData().add(TestDataFactory.OptionPriceDataMother.complete().build());
         savedOption = historicalOptionRepository.saveAndFlush(savedOption);
         assertNotNull(savedOption.getId());
         assertNotNull("Option should have price data.", savedOption.getOptionPriceData());
-        assertFalse("Option should have price data.", savedOption.getHistoricalPriceData().isEmpty());
+        assertFalse("Option should have price data.", savedOption.getOptionPriceData().isEmpty());
     }
 
     @When("^a successful API call is made to /data/option/([^\"]*) with an end date of today$")
