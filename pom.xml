@@ -18,7 +18,7 @@
         <feign.version>11.5</feign.version>
         <jsoup.version>1.13.1</jsoup.version>
         <jasypt.version>1.9.3</jasypt.version>
-        <caffine.version>3.0.2</caffine.version>
+        <caffine.version>3.0.3</caffine.version>
         <validation-api.version>2.0.1.Final</validation-api.version>
         <liquibase-hibernate5.version>3.10.2</liquibase-hibernate5.version>
         <cucumber.version>6.10.4</cucumber.version>
