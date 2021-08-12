@@ -21,8 +21,7 @@ public class HistoricalOptionsDataServiceTest extends MockClientTest {
     private HistoricOptionsDataService subject;
 
     @Test
-    @Transactional
-    public void testAddOptions() throws IOException {
+    public void testAddOptions() throws IOException, InterruptedException {
         HistoricalOption testOption1 = TestDataFactory.HistoricalOptionMother.noPriceData().ticker("TEST").build();
 
         HistoricalOption saved = subject.addOption(testOption1);
