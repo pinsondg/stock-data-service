@@ -2,8 +2,6 @@ package com.dpgrandslam.stockdataservice.domain.model.options;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.*;
-import org.hibernate.Hibernate;
-import org.hibernate.annotations.CacheConcurrencyStrategy;
 
 import javax.persistence.*;
 import java.time.LocalDate;
@@ -16,8 +14,6 @@ import java.util.*;
         @Index(name = "idx_strk_expr_tkr_type", columnList = "strike, expiration, ticker, option_type", unique = true),
         @Index(name = "idx_tkr", columnList = "ticker")
 })
-@Cacheable
-@org.hibernate.annotations.Cache(usage = CacheConcurrencyStrategy.READ_ONLY)
 public class HistoricalOption extends Option {
 
     @Id
@@ -34,7 +30,6 @@ public class HistoricalOption extends Option {
     @EqualsAndHashCode.Include
     @JsonIgnore
     @ToString.Exclude
-    @org.hibernate.annotations.Cache(usage = CacheConcurrencyStrategy.READ_ONLY)
     private List<OptionPriceData> historicalPriceData;
 
     public HistoricalOption() {

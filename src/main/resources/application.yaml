@@ -20,7 +20,7 @@ spring:
         generate_statistics: false
         cache:
           #required - turn on L2 cache.
-          use_second_level_cache: true
+          use_second_level_cache: false
           #optional - turn on query cache.
           use_query_cache: true
           region:
