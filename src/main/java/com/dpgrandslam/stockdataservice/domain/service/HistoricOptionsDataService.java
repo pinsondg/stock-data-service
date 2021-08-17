@@ -18,6 +18,8 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.stream.Collectors;
+import com.github.benmanes.caffeine.cache.Cache;
+
 
 @Service
 @Slf4j
@@ -25,6 +27,8 @@ import java.util.stream.Collectors;
 public class HistoricOptionsDataService {
 
     private final HistoricalOptionRepository historicalOptionRepository;
+
+    private final Cache<String, Set<HistoricalOption.CacheableHistoricalOption>> historicalOptionCache;
 
     private static final ExecutorService EXECUTOR = Executors.newFixedThreadPool(5);
 
@@ -86,13 +90,22 @@ public class HistoricOptionsDataService {
                 optionsChain.getExpirationDate());
     }
 
+    /**
+     * Finds options for the given ticker. Uses a cache to find them faster.
+     * @param ticker the ticker
+     * @return a set of options
+     */
+    //This method is very weird. Not sure why, but the cache only works this way...
     public Set<HistoricalOption> findOptions(String ticker) {
         log.info("Searching DB for options with ticker: {}", ticker);
         TimerUtil timerUtil = TimerUtil.startTimer();
-        Set<HistoricalOption> options =  historicalOptionRepository.findByTicker(ticker);
+        Set<HistoricalOption.CacheableHistoricalOption> options =  historicalOptionCache.get(ticker, t -> {
+            Set<HistoricalOption> o = historicalOptionRepository.findByTicker(t);
+            return o.stream().map(HistoricalOption.CacheableHistoricalOption::fromHistoricalOption).collect(Collectors.toSet());
+        });
         log.info("Took {} ms to load options with ticker: {}", timerUtil.stop(), ticker);
         log.info("Found {} options with ticker: {}", options.size(), ticker);
-        return options;
+        return options.stream().map(HistoricalOption::fromCacheableHistoricalOption).collect(Collectors.toSet());
     }
 
     /**
@@ -142,7 +155,7 @@ public class HistoricOptionsDataService {
     public HistoricalOption addPriceDataToOption(Long optionId, OptionPriceData optionPriceData) {
         HistoricalOption option = findById(optionId);
         optionPriceData.setOption(option);
-        option.getHistoricalPriceData().add(optionPriceData);
+        option.getOptionPriceData().add(optionPriceData);
         return historicalOptionRepository.save(option);
     }
 
@@ -156,15 +169,14 @@ public class HistoricOptionsDataService {
         HistoricalOption saved = option;
         log.info("Adding new price data {} to option {}", optionPriceData, option);
         Set<OptionPriceData> priceDataCopy = new HashSet<>(optionPriceData);
-        Set<OptionPriceData> existingPriceData = option.getHistoricalPriceData();
-        priceDataCopy.removeIf(data -> existingPriceData
+        priceDataCopy.removeIf(data -> option.getOptionPriceData()
                 .stream()
                 .anyMatch(x -> data.getTradeDate().equals(x.getTradeDate())));
         priceDataCopy.forEach(data -> data.setOption(option));
         if (priceDataCopy.size() == 0) {
             log.info("Price data for option {} at trade date {} already exists. Skipping addition...", option, optionPriceData.stream().findFirst().get().getTradeDate());
         } else {
-            option.getHistoricalPriceData().addAll(priceDataCopy);
+            option.getOptionPriceData().addAll(priceDataCopy);
             saved = historicalOptionRepository.save(option);
         }
         log.info("Took {} ms to add price data {} to option {}", timerUtil.stop(), optionPriceData, option);
@@ -188,9 +200,9 @@ public class HistoricOptionsDataService {
             throw new IllegalArgumentException("End date cannot be after today.");
         }
         if (historicalOptions != null && !historicalOptions.isEmpty()) {
-            historicalOptions.forEach(ho -> ho.getHistoricalPriceData().removeIf(priceData -> !((startDate.isEqual(priceData.getTradeDate()) || endDate.isEqual(priceData.getTradeDate()))
+            historicalOptions.forEach(ho -> ho.getOptionPriceData().removeIf(priceData -> !((startDate.isEqual(priceData.getTradeDate()) || endDate.isEqual(priceData.getTradeDate()))
                     || (startDate.isBefore(priceData.getTradeDate()) && endDate.isAfter(priceData.getTradeDate())))));
-            return historicalOptions.stream().filter(x -> !x.getHistoricalPriceData().isEmpty()).collect(Collectors.toSet());
+            return historicalOptions.stream().filter(x -> !x.getOptionPriceData().isEmpty()).collect(Collectors.toSet());
         }
         return Collections.emptySet();
     }

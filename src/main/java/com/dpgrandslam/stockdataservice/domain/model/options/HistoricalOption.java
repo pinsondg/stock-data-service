@@ -1,26 +1,23 @@
 package com.dpgrandslam.stockdataservice.domain.model.options;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import lombok.Builder;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-import lombok.ToString;
+import lombok.*;
+import org.hibernate.Hibernate;
+import org.hibernate.annotations.CacheConcurrencyStrategy;
 
 import javax.persistence.*;
 import java.time.LocalDate;
-import java.util.Collection;
-import java.util.Comparator;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.*;
 
-@EqualsAndHashCode(callSuper = true, onlyExplicitlyIncluded = true)
-@Data
+@EqualsAndHashCode(onlyExplicitlyIncluded = true, callSuper = true)
 @ToString(callSuper = true)
 @Entity
 @Table(indexes = {
         @Index(name = "idx_strk_expr_tkr_type", columnList = "strike, expiration, ticker, option_type", unique = true),
         @Index(name = "idx_tkr", columnList = "ticker")
 })
+@Cacheable
+@org.hibernate.annotations.Cache(usage = CacheConcurrencyStrategy.READ_ONLY)
 public class HistoricalOption extends Option {
 
     @Id
@@ -28,6 +25,8 @@ public class HistoricalOption extends Option {
     @Column(name = "option_id")
     @EqualsAndHashCode.Include
     @JsonIgnore
+    @Getter
+    @Setter
     private Long id;
 
     @OneToMany(cascade = CascadeType.ALL, mappedBy = "option", fetch = FetchType.LAZY, orphanRemoval = true)
@@ -35,10 +34,11 @@ public class HistoricalOption extends Option {
     @EqualsAndHashCode.Include
     @JsonIgnore
     @ToString.Exclude
-    private Set<OptionPriceData> historicalPriceData;
+    @org.hibernate.annotations.Cache(usage = CacheConcurrencyStrategy.READ_ONLY)
+    private List<OptionPriceData> historicalPriceData;
 
     public HistoricalOption() {
-        historicalPriceData = new HashSet<>();
+        historicalPriceData = new LinkedList<>();
     }
 
     @Builder
@@ -48,7 +48,7 @@ public class HistoricalOption extends Option {
         super.expiration = expiration;
         super.strike = strike;
         if (historicalPriceData == null) {
-            this.historicalPriceData = new HashSet<>();
+            this.historicalPriceData = new LinkedList<>();
         } else {
             initializeHistoricalPriceData(historicalPriceData);
         }
@@ -70,13 +70,64 @@ public class HistoricalOption extends Option {
 
     @Override
     public void setOptionPriceData(Collection<OptionPriceData> optionPriceData) {
-        historicalPriceData = new HashSet<>(optionPriceData);
+        historicalPriceData = new LinkedList<>(optionPriceData);
     }
 
-    public void initializeHistoricalPriceData(Set<OptionPriceData> priceData) {
+    public void initializeHistoricalPriceData(Collection<OptionPriceData> priceData) {
         priceData.forEach(item -> {
             item.setOption(this);
         });
-        this.historicalPriceData = priceData;
+        this.historicalPriceData = new LinkedList<>(priceData);
+    }
+
+    public static HistoricalOption fromCacheableHistoricalOption(CacheableHistoricalOption ho) {
+        HistoricalOption historicalOption = new HistoricalOption();
+        historicalOption.setOptionPriceData(ho.getOptionPriceData());
+        historicalOption.setOptionType(ho.getOptionType());
+        historicalOption.setId(ho.getId());
+        historicalOption.setExpiration(ho.getExpiration());
+        historicalOption.setStrike(ho.getStrike());
+        historicalOption.setTicker(ho.getTicker());
+        return historicalOption;
+    }
+
+    @EqualsAndHashCode(callSuper = true)
+    @Data
+    public static class CacheableHistoricalOption extends Option {
+
+        private List<OptionPriceData> optionPriceData;
+        private Long id;
+
+        private CacheableHistoricalOption(HistoricalOption historicalOption) {
+            super(historicalOption.getTicker(),
+                    historicalOption.getOptionType(),
+                    historicalOption.getExpiration(),
+                    historicalOption.getStrike());
+            this.id = historicalOption.id;
+            setOptionPriceData(historicalOption.getOptionPriceData());
+        }
+
+        @Override
+        public Collection<OptionPriceData> getOptionPriceData() {
+            return optionPriceData;
+        }
+
+        @Override
+        public OptionPriceData getMostRecentPriceData() {
+            return optionPriceData.stream()
+                    .min(Comparator.comparing(OptionPriceData::getDataObtainedDate))
+                    .orElse(null);
+        }
+
+        @Override
+        public void setOptionPriceData(Collection<OptionPriceData> optionPriceData) {
+            List<OptionPriceData> opd = new LinkedList<>(optionPriceData);
+            opd.forEach(d -> d.setOption(null));
+            this.optionPriceData = opd;
+        }
+
+        public static CacheableHistoricalOption fromHistoricalOption(HistoricalOption historicalOption) {
+            return new CacheableHistoricalOption(historicalOption);
+        }
     }
 }

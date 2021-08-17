@@ -88,9 +88,9 @@ public class YahooFinanceOptionsChainLoadServiceTest {
     public void testLoadCompleteOptionsChainForExpirationDateWithPriceDataInRange_dateRangeBeforeToday() throws OptionsChainLoadException {
         LocalDate actual = LocalDate.now().minusDays(5);
         double strike = 1.0;
-        Set<HistoricalOption> options = buildHistoricalOptions(actual, "TEST", LocalDate.now(), strike);
+        Set<? extends Option> options = buildHistoricalOptions(actual, "TEST", LocalDate.now(), strike);
 
-        when(historicOptionsDataService.findOptions(anyString(), any(), any(LocalDate.class), any(LocalDate.class))).thenReturn(options);
+        when(historicOptionsDataService.findOptions(anyString(), any(), any(LocalDate.class), any(LocalDate.class))).then((x) -> options.stream().collect(Collectors.toSet()));
 
         OptionsChain chain = subject.loadCompleteOptionsChainForExpirationDateWithPriceDataInRange("TEST",
                 LocalDate.now(),
@@ -113,7 +113,7 @@ public class YahooFinanceOptionsChainLoadServiceTest {
         Double strike = 405.0;
         Set<HistoricalOption> options = buildHistoricalOptions(actual, "AAPL", march15th2021, strike);
 
-        when(historicOptionsDataService.findOptions(anyString(), any(LocalDate.class), any(LocalDate.class), any(LocalDate.class))).thenReturn(options);
+        when(historicOptionsDataService.findOptions(anyString(), any(LocalDate.class), any(LocalDate.class), any(LocalDate.class))).then(x -> options.stream().collect(Collectors.toSet()));
 
         OptionsChain chain = subject.loadCompleteOptionsChainForExpirationDateWithPriceDataInRange("AAPL",
                 march15th2021,
@@ -136,7 +136,7 @@ public class YahooFinanceOptionsChainLoadServiceTest {
         Double strike = 405.0;
         Set<HistoricalOption> options = buildHistoricalOptions(actual, "AAPL", march15th2021, strike);
 
-        when(historicOptionsDataService.findOptions(anyString(), any())).thenReturn(options);
+        when(historicOptionsDataService.findOptions(anyString(), any())).then(x -> options.stream().collect(Collectors.toSet()));
 
         OptionsChain chain = subject.loadOptionsChainForExpirationDateWithAllData("AAPL", march15th2021);
         Option option = chain.getOption(OptionChainKey.builder().strike(strike).optionType(Option.OptionType.CALL).build());
@@ -230,11 +230,13 @@ public class YahooFinanceOptionsChainLoadServiceTest {
 
     @Test
     public void testLoadFullOptionsChainWithAllData() throws OptionsChainLoadException {
-        when(historicOptionsDataService.findOptions(anyString(), any(LocalDate.class), any(LocalDate.class))).thenReturn(Stream.of(TestDataFactory.HistoricalOptionMother
+        Set<HistoricalOption> options = new HashSet<>();
+        options.add(TestDataFactory.HistoricalOptionMother
                 .noPriceData().ticker("SPY").expiration(LocalDate.of(2021, 3, 5)).strike(407.5).optionType(Option.OptionType.PUT)
                 .historicalPriceData(Collections.singleton(TestDataFactory.OptionPriceDataMother.complete()
-                        .tradeDate(LocalDate.now().minusDays(100)).build())).build(),
-                TestDataFactory.HistoricalOptionMother.completeWithOnePriceData().ticker("SPY").expiration(LocalDate.of(2025, 3, 5)).build()).collect(Collectors.toSet()));
+                        .tradeDate(LocalDate.now().minusDays(100)).build())).build());
+        options.add(TestDataFactory.HistoricalOptionMother.completeWithOnePriceData().ticker("SPY").expiration(LocalDate.of(2025, 3, 5)).build());
+        doReturn(options.stream().collect(Collectors.toSet())).when(historicOptionsDataService).findOptions(anyString(), any(LocalDate.class), any(LocalDate.class));
 
         List<OptionsChain> optionsChains = subject.loadFullOptionsChainWithAllData("SPY");
 

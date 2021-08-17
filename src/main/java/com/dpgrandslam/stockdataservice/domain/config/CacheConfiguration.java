@@ -25,18 +25,11 @@ public class CacheConfiguration {
     }
 
     @Bean
-    public Cache<String, Set<HistoricalOption>> historicalOptionCache() {
+    public Cache<String, Set<HistoricalOption.CacheableHistoricalOption>> historicalOptionCache() {
         return Caffeine.newBuilder()
                 .expireAfterWrite(30, TimeUnit.MINUTES)
                 .recordStats()
-                .maximumSize(1_000_000_000)
-                .build();
-    }
-
-    @Bean
-    public Cache<Long, Set<OptionPriceData>> priceDataCache() {
-        return Caffeine.newBuilder()
-                .expireAfterWrite(30, TimeUnit.MINUTES)
+                .maximumSize(10)
                 .build();
     }
 }

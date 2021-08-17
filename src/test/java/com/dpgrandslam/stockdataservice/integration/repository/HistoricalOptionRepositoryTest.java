@@ -29,7 +29,7 @@ public class HistoricalOptionRepositoryTest extends RepositoryIntTestBase {
 
         List<HistoricalOption> found = new ArrayList<>(subject.findByTicker("TEST"));
         assertEquals(1, found.size());
-        assertTrue("Historical data should not be empty.", found.stream().anyMatch(item -> item.getHistoricalPriceData() != null && !item.getHistoricalPriceData().isEmpty()));
+        assertTrue("Historical data should not be empty.", found.stream().anyMatch(item -> item.getOptionPriceData() != null && !item.getOptionPriceData().isEmpty()));
 
         Set<HistoricalOption> nonFound = subject.findByTicker("1234");
         assertEquals(0, nonFound.size());
@@ -63,7 +63,7 @@ public class HistoricalOptionRepositoryTest extends RepositoryIntTestBase {
         });
         assertEquals(12.5, found.getStrike(), 0.01);
         assertNotNull(found.getMostRecentPriceData());
-        assertEquals(1, found.getHistoricalPriceData().size());
+        assertEquals(1, found.getOptionPriceData().size());
     }
 
     @Test
