@@ -32,11 +32,4 @@ public class CacheConfiguration {
                 .maximumSize(10)
                 .build();
     }
-
-    @Bean
-    public Cache<Long, Set<OptionPriceData>> priceDataCache() {
-        return Caffeine.newBuilder()
-                .expireAfterWrite(30, TimeUnit.MINUTES)
-                .build();
-    }
 }
