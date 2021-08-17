@@ -96,7 +96,7 @@ public class HistoricOptionsDataService {
      * @return a set of options
      */
     //This method is very weird. Not sure why, but the cache only works this way...
-    public Set<? extends Option> findOptions(String ticker) {
+    public Set<HistoricalOption> findOptions(String ticker) {
         log.info("Searching DB for options with ticker: {}", ticker);
         TimerUtil timerUtil = TimerUtil.startTimer();
         Set<HistoricalOption.CacheableHistoricalOption> options =  historicalOptionCache.get(ticker, t -> {
@@ -116,11 +116,11 @@ public class HistoricOptionsDataService {
      * @param endDate the end date
      * @return a set of option that has the data between the dates
      */
-    public Set<? extends Option> findOptions(String ticker, final LocalDate startDate, final LocalDate endDate) {
+    public Set<HistoricalOption> findOptions(String ticker, final LocalDate startDate, final LocalDate endDate) {
         return filterPriceDataBetweenDates(findOptions(ticker), startDate, endDate);
     }
 
-    public Set<? extends Option> findOptions(String ticker, LocalDate expiration) {
+    public Set<HistoricalOption> findOptions(String ticker, LocalDate expiration) {
         log.info("Searching DB for options with ticker: {} and expiration: {}", ticker, expiration);
         TimerUtil timerUtil = new TimerUtil();
         timerUtil.start();
@@ -130,11 +130,11 @@ public class HistoricOptionsDataService {
         return options;
     }
 
-    public Set<? extends Option> findOptions(String ticker, LocalDate expiration, LocalDate startDate, LocalDate endDate) {
+    public Set<HistoricalOption> findOptions(String ticker, LocalDate expiration, LocalDate startDate, LocalDate endDate) {
         return filterPriceDataBetweenDates(findOptions(ticker, expiration), startDate, endDate);
     }
 
-    public Option findOption(String ticker, LocalDate expiration, Double strike, Option.OptionType optionType) {
+    public HistoricalOption findOption(String ticker, LocalDate expiration, Double strike, Option.OptionType optionType) {
         log.info("Searching DB for option with ticker: {}, expiration: {}, strike: {}, and optionType: {}", ticker, expiration, strike, optionType.name());
         long start = System.currentTimeMillis();
         HistoricalOption option =  historicalOptionRepository.findByStrikeAndExpirationAndTickerAndOptionType(strike, expiration, ticker, optionType)
@@ -195,7 +195,7 @@ public class HistoricOptionsDataService {
         return historicalOptionRepository.saveAndFlush(historicalOption);
     }
 
-    private Set<? extends Option> filterPriceDataBetweenDates(Set<? extends Option> historicalOptions, LocalDate startDate, LocalDate endDate) {
+    private Set<HistoricalOption> filterPriceDataBetweenDates(Set<HistoricalOption> historicalOptions, LocalDate startDate, LocalDate endDate) {
         if (endDate.isAfter(LocalDate.now())) {
             throw new IllegalArgumentException("End date cannot be after today.");
         }

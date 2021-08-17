@@ -34,7 +34,7 @@ public class HistoricOptionsDataServiceTest {
     private HistoricalOptionRepository historicalOptionRepository;
 
     @Mock
-    private Cache<String, Set<HistoricalOption>> historicalOptionCache;
+    private Cache<String, Set<HistoricalOption.CacheableHistoricalOption>> historicalOptionCache;
 
     @InjectMocks
     private HistoricOptionsDataService subject;
@@ -102,7 +102,7 @@ public class HistoricOptionsDataServiceTest {
     @Test
     public void testFindOptions_byTicker_callsCorrectMethod() throws ExecutionException {
         LocalDate now = LocalDate.now(ZoneId.of("America/New_York"));
-        when(historicalOptionCache.get(anyString(), any())).thenReturn(Stream.of(TestDataFactory.HistoricalOptionMother.completeWithOnePriceData().build()).collect(Collectors.toSet()));
+        when(historicalOptionCache.get(anyString(), any())).thenReturn(Stream.of(HistoricalOption.CacheableHistoricalOption.fromHistoricalOption(TestDataFactory.HistoricalOptionMother.completeWithOnePriceData().build())).collect(Collectors.toSet()));
 
         subject.findOptions("TEST");
 
@@ -155,9 +155,9 @@ public class HistoricOptionsDataServiceTest {
         retSet.add(historicalOption1);
         retSet.add(historicalOption2);
 
-        when(historicalOptionCache.get(anyString(), any())).thenReturn(retSet);
+        when(historicalOptionCache.get(anyString(), any())).thenReturn(retSet.stream().map(HistoricalOption.CacheableHistoricalOption::fromHistoricalOption).collect(Collectors.toSet()));
 
-        Set<? extends Option> historicalOptions = subject.findOptions("TEST", LocalDate.now().minusDays(5), LocalDate.now().minusDays(2));
+        Set<HistoricalOption> historicalOptions = subject.findOptions("TEST", LocalDate.now().minusDays(5), LocalDate.now().minusDays(2));
 
         HistoricalOption actual = (HistoricalOption) historicalOptions.stream().findFirst().get();
 
