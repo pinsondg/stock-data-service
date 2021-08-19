@@ -52,7 +52,7 @@ public class EndOfDayOptionsLoaderJob {
     @Autowired
     private OptionPriceDataLoadRetryService optionRetryService;
 
-    private Queue<TrackedStock> trackedStocks;
+    private Queue<String> trackedStocks;
 
     private JobStatus mainJobStatus;
     private JobStatus retryJobStatus;
@@ -82,8 +82,9 @@ public class EndOfDayOptionsLoaderJob {
         mainJobStatus = JobStatus.NOT_STARTED;
         retryJobStatus = JobStatus.NOT_STARTED;
         trackedStocks = new ConcurrentLinkedQueue<>();
-        trackedStocks.addAll(trackedStockService.getAllTrackedStocks(true).stream()
-                .filter(trackedStock -> trackedStock.getLastOptionsHistoricDataUpdate() == null || trackedStock.getLastOptionsHistoricDataUpdate().isBefore(timeUtils.getLastTradeDate()))
+        // Put all tracked stock tickers into queue for processing by batch
+        trackedStocks.addAll(trackedStockService.getAllTrackedStocks(false).stream()
+                .map(TrackedStock::getTicker)
                 .collect(Collectors.toList()));
     }
 
@@ -135,6 +136,9 @@ public class EndOfDayOptionsLoaderJob {
         retryQueueJob();
     }
 
+    /**
+     * A retry job that trys again for any failed reads.
+     */
     private void retryQueueJob() {
         LocalDate tradeDate = timeUtils.getLastTradeDate();
         log.info("Getting options in retry table for trade date {}.", tradeDate);
@@ -171,14 +175,21 @@ public class EndOfDayOptionsLoaderJob {
         completeJob(RETRY_JOB);
     }
 
+    /**
+     * The main job that reads options end of day data from the options chain and stores it into
+     * the database.
+     */
     private void storeOptionsChainEndOfDayData() {
         if (mainJobStatus.isRunning() && !timeUtils.isTodayAmericaNewYorkStockMarketHoliday()) {
             log.info("Starting data load job batch.");
             for (int i = 0; i < STEPS; i++) {
                 if (!trackedStocks.isEmpty()) {
-                    TrackedStock current = trackedStocks.poll();
+                    // Get current status of tracked stock.
+                    TrackedStock current = trackedStockService.findByTicker(trackedStocks.poll());
+                    // If the current is null or not active or already updated today, do nothing.
                     if (current != null && mainJobStatus.isRunning() && current.isActive()
-                            && (current.getLastOptionsHistoricDataUpdate() == null || !current.getLastOptionsHistoricDataUpdate().equals(timeUtils.getNowAmericaNewYork().toLocalDate()))) {
+                            && (current.getLastOptionsHistoricDataUpdate() == null || !current.getLastOptionsHistoricDataUpdate().equals(timeUtils.getLastTradeDate()))) {
+                        // Do options data load and put into database
                         log.info("Executing update for {}", current);
                         TimerUtil timerUtil = TimerUtil.startTimer();
                         try {
@@ -191,8 +202,6 @@ public class EndOfDayOptionsLoaderJob {
                         } catch (OptionsChainLoadException e) {
                             log.error("Failed to load options chain for tracked stock: {}.", current.getTicker(), e);
                         }
-                    } else if (current != null && !current.isActive() && !current.getLastOptionsHistoricDataUpdate().equals(timeUtils.getNowAmericaNewYork().toLocalDate())){
-                        completeJob(MAIN_JOB);
                     }
                 } else {
                     completeJob(MAIN_JOB);
@@ -239,7 +248,7 @@ public class EndOfDayOptionsLoaderJob {
                 .stream()
                 .map(TrackedStock::getTicker)
                 .collect(Collectors.toList()));
-        trackedStocks.addAll(trackedStockAddedEvent.getTrackedStocks());
+        trackedStocks.addAll(trackedStockAddedEvent.getTrackedStocks().stream().map(TrackedStock::getTicker).collect(Collectors.toSet()));
         if (mainJobStatus == JobStatus.COMPLETE) {
             log.info("Setting job status to running for newly added tickers.");
             mainJobStatus = JobStatus.RUNNING_MANUAL;
