@@ -93,8 +93,8 @@ public class EndOfDayOptionLoaderJobIntTest {
         TrackedStock trackedStock = new TrackedStock();
         trackedStock.setTicker("TEST");
         trackedStock.setActive(true);
-        Queue<TrackedStock> queue = new ConcurrentLinkedQueue<>();
-        queue.add(trackedStock);
+        Queue<String> queue = new ConcurrentLinkedQueue<>();
+        queue.add(trackedStock.getTicker());
 
         Document mockErrorDoc = Jsoup.parse(loadHtmlFileAndClean("mocks/yahoofinance/yahoo-finance-aapl_error.html"));
         Document mockSuccessDoc = Jsoup.parse(loadHtmlFileAndClean("mocks/yahoofinance/yahoo-finance-aapl_empty-chain.html"));
