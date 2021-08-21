@@ -59,7 +59,7 @@ public class OptionsChain {
             Option currentData = options.get(option.getOptionChainKey());
             // If it is a live option, convert to historic option
             if (currentData instanceof LiveOption) {
-                currentData = ((LiveOption) currentData).toHistoricalOption();
+                currentData = currentData.toHistoricalOption();
                 options.put(option.getOptionChainKey(), currentData);
             }
             // Add new data

@@ -1,6 +1,7 @@
 package com.dpgrandslam.stockdataservice.integration.service;
 
 import com.dpgrandslam.stockdataservice.domain.model.options.HistoricalOption;
+import com.dpgrandslam.stockdataservice.domain.model.options.Option;
 import com.dpgrandslam.stockdataservice.domain.service.HistoricOptionsDataService;
 import com.dpgrandslam.stockdataservice.integration.client.MockClientTest;
 import com.dpgrandslam.stockdataservice.testUtils.TestDataFactory;
@@ -21,22 +22,21 @@ public class HistoricalOptionsDataServiceTest extends MockClientTest {
     private HistoricOptionsDataService subject;
 
     @Test
-    @Transactional
-    public void testAddOptions() throws IOException {
+    public void testAddOptions() throws IOException, InterruptedException {
         HistoricalOption testOption1 = TestDataFactory.HistoricalOptionMother.noPriceData().ticker("TEST").build();
 
         HistoricalOption saved = subject.addOption(testOption1);
 
         assertNotNull(saved.getId());
-        assertEquals(0, saved.getHistoricalPriceData().size());
+        assertEquals(0, saved.getOptionPriceData().size());
 
         HistoricalOption testOption2 = TestDataFactory.HistoricalOptionMother.completeWithOnePriceData().ticker("TEST").build();
 
         HistoricalOption saved2 = subject.addOption(testOption2);
 
-        List<HistoricalOption> options = new ArrayList<>(subject.findOptions("TEST"));
+        List<Option> options = new ArrayList<>(subject.findOptions("TEST"));
         assertEquals(1, options.size());
-        assertEquals(1, options.get(0).getHistoricalPriceData().size());
+        assertEquals(1, options.get(0).getOptionPriceData().size());
         assertEquals(saved.getId(), saved2.getId());
     }
 }

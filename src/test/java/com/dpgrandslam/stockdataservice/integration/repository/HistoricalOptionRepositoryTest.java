@@ -12,8 +12,6 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import static org.junit.Assert.*;
 
@@ -31,7 +29,7 @@ public class HistoricalOptionRepositoryTest extends RepositoryIntTestBase {
 
         List<HistoricalOption> found = new ArrayList<>(subject.findByTicker("TEST"));
         assertEquals(1, found.size());
-        assertTrue("Historical data should not be empty.", found.stream().anyMatch(item -> item.getHistoricalPriceData() != null && !item.getHistoricalPriceData().isEmpty()));
+        assertTrue("Historical data should not be empty.", found.stream().anyMatch(item -> item.getOptionPriceData() != null && !item.getOptionPriceData().isEmpty()));
 
         Set<HistoricalOption> nonFound = subject.findByTicker("1234");
         assertEquals(0, nonFound.size());
@@ -59,13 +57,13 @@ public class HistoricalOptionRepositoryTest extends RepositoryIntTestBase {
         subject.save(TestDataFactory.HistoricalOptionMother.completeWithOnePriceData().strike(12.5).build());
         subject.save(TestDataFactory.HistoricalOptionMother.completeWithOnePriceData().strike(13.0).build());
 
-        HistoricalOption found = subject.findDistinctFirstByExpirationAndTickerAndStrikeAndOptionType(LocalDate.now(), "TEST", 12.5, Option.OptionType.CALL).orElseGet(() -> {
+        HistoricalOption found = subject.findByStrikeAndExpirationAndTickerAndOptionType(12.5, LocalDate.now(), "TEST", Option.OptionType.CALL).orElseGet(() -> {
             fail("Option not found.");
             return null;
         });
         assertEquals(12.5, found.getStrike(), 0.01);
         assertNotNull(found.getMostRecentPriceData());
-        assertEquals(1, found.getHistoricalPriceData().size());
+        assertEquals(1, found.getOptionPriceData().size());
     }
 
     @Test
