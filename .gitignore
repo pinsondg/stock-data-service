@@ -35,3 +35,5 @@ build/
 
 ### Local DBs ###
 *.db
+
+venv
