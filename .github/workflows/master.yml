@@ -6,6 +6,8 @@ name: Java CI with Maven
 on:
   push:
     branches: [ master ]
+  pull_request:
+    branches: [ master ]
 
 jobs:
   build_deploy:
@@ -18,6 +20,9 @@ jobs:
         uses: actions/setup-java@v1
         with:
           java-version: 11
+      - name: Install Dependencies
+        shell: bash
+        run: sudo apt-get update && sudo apt-get install -y -qq zip
       # Step that does that actual cache save and restore
       - uses: actions/cache@v1
         with:
@@ -26,10 +31,20 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-maven-
       # Step that runs the tests
-      - name: Build with Maven
-        run: mvn clean install -Dmockserver.logLevel=OFF
+      - name: Build with Maven and Generate Test Report
+        run: |
+             mvn clean install -Dmockserver.logLevel=OFF
+             mvn surefire-report:report-only
+             mvn site -DgenerateReports=false
+             zip -r test_results.zip ${{ github.workspace }}/target/site/
+      - name: Save Testing Report
+        uses: actions/upload-artifact@v2
+        with:
+          name: test_results.zip
+          path: ${{ github.workspace }}/test_results.zip
       - name: Beanstalk Deploy
         uses: einaregilsson/beanstalk-deploy@v10
+        if: ${{ github.event_name == 'push' }}
         with:
           # AWS Access Key
           aws_access_key: ${{ secrets.AWS_ACCESS_KEY_ID }}
