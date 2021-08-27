@@ -249,7 +249,7 @@ public class EndOfDayOptionsLoaderJob {
                 .map(TrackedStock::getTicker)
                 .collect(Collectors.toList()));
         trackedStocks.addAll(trackedStockAddedEvent.getTrackedStocks().stream().map(TrackedStock::getTicker).collect(Collectors.toSet()));
-        if (mainJobStatus == JobStatus.COMPLETE) {
+        if (mainJobStatus == JobStatus.COMPLETE || mainJobStatus == JobStatus.COMPLETE_WITH_FAILURES) {
             log.info("Setting job status to running for newly added tickers.");
             mainJobStatus = JobStatus.RUNNING_MANUAL;
         }
