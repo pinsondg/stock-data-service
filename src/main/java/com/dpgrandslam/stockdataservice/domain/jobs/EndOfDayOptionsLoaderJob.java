@@ -200,7 +200,8 @@ public class EndOfDayOptionsLoaderJob {
                             log.info("Options chain for {} processed successfully.", current.getTicker());
                             log.info("Took {} seconds to process options for {}", timerUtil.stop() / 1000.0, current.getTicker());
                         } catch (OptionsChainLoadException e) {
-                            log.error("Failed to load options chain for tracked stock: {}.", current.getTicker(), e);
+                            log.error("Failed to load options chain for tracked stock: {}. Adding back to queue.", current.getTicker(), e);
+                            trackedStocks.add(current.getTicker());
                         }
                     }
                 } else {
