@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.3.xsd"
+        objectQuotingStrategy="QUOTE_ONLY_RESERVED_WORDS">
+    <changeSet id="1630447202633-6" author="dpgra (generated)">
+        <createIndex indexName="IDX_OPTIONID_TRADEDATE" tableName="option_price_data" unique="true">
+            <column name="option_id"/>
+            <column name="trade_date"/>
+        </createIndex>
+    </changeSet>
+    <changeSet id="1630447202633-9" author="dpgra (generated)">
+        <createIndex indexName="IDX_TKR" tableName="historical_option">
+            <column name="ticker"/>
+        </createIndex>
+    </changeSet>
+    <changeSet id="1630447202633-10" author="dpgra (generated)">
+        <addForeignKeyConstraint baseColumnNames="option_id" baseTableName="option_price_data"
+                                 constraintName="FK_OPTIONPRICEDATA_ON_OPTION" referencedColumnNames="option_id"
+                                 referencedTableName="historical_option"/>
+
+        <createIndex indexName="IDX_OPTIONID" tableName="option_price_data">
+            <column name="option_id"/>
+        </createIndex>
+    </changeSet>
+
+</databaseChangeLog>

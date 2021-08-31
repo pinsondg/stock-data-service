@@ -19,7 +19,10 @@ import java.time.LocalDate;
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
 @ToString(exclude = "option")
 @JsonIgnoreProperties(ignoreUnknown = true)
-@Table(indexes = @Index(name = "idk_optionId_tradeDate", columnList = "option_id, trade_date", unique = true))
+@Table(indexes = {
+        @Index(name = "idx_optionId_tradeDate", columnList = "option_id, trade_date", unique = true),
+        @Index(name = "idx_optionId", columnList = "option_id")
+})
 public class OptionPriceData {
 
     @Id
