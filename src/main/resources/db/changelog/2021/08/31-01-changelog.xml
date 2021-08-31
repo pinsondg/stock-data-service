@@ -12,10 +12,6 @@
         </createIndex>
     </changeSet>
     <changeSet id="1630447202633-10" author="dpgra (generated)">
-        <addForeignKeyConstraint baseColumnNames="option_id" baseTableName="option_price_data"
-                                 constraintName="FK_OPTIONPRICEDATA_ON_OPTION" referencedColumnNames="option_id"
-                                 referencedTableName="historical_option"/>
-
         <createIndex indexName="IDX_OPTIONID" tableName="option_price_data">
             <column name="option_id"/>
         </createIndex>
