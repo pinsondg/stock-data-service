@@ -83,7 +83,8 @@ public class EndOfDayOptionsLoaderJob {
         retryJobStatus = JobStatus.NOT_STARTED;
         trackedStocks = new ConcurrentLinkedQueue<>();
         // Put all tracked stock tickers into queue for processing by batch
-        trackedStocks.addAll(trackedStockService.getAllTrackedStocks(false).stream()
+        trackedStocks.addAll(trackedStockService.getAllTrackedStocks(true).stream()
+                .filter(trackedStock -> trackedStock.getLastOptionsHistoricDataUpdate() == null || trackedStock.getLastOptionsHistoricDataUpdate().isBefore(timeUtils.getLastTradeDate()))
                 .map(TrackedStock::getTicker)
                 .collect(Collectors.toList()));
     }
@@ -203,8 +204,6 @@ public class EndOfDayOptionsLoaderJob {
                             log.error("Failed to load options chain for tracked stock: {}. Adding back to queue.", current.getTicker(), e);
                             trackedStocks.add(current.getTicker());
                         }
-                    } else {
-                        i--; // Skip this one
                     }
                 } else {
                     completeJob(MAIN_JOB);
