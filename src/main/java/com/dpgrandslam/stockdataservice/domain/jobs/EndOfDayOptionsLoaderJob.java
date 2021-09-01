@@ -203,6 +203,8 @@ public class EndOfDayOptionsLoaderJob {
                             log.error("Failed to load options chain for tracked stock: {}. Adding back to queue.", current.getTicker(), e);
                             trackedStocks.add(current.getTicker());
                         }
+                    } else {
+                        i--; // Skip this one
                     }
                 } else {
                     completeJob(MAIN_JOB);
