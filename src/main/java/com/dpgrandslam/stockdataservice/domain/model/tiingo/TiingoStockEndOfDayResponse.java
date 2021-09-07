@@ -19,7 +19,7 @@ public class TiingoStockEndOfDayResponse implements EndOfDayStockData {
     private Integer volume;
     private Double adjOpen;
     private Double adjClose;
-    private Double adjVolume;
+    private Integer adjVolume;
     private Double divCash;
     private Double splitFactor;
 
@@ -28,5 +28,4 @@ public class TiingoStockEndOfDayResponse implements EndOfDayStockData {
         DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ISO_DATE_TIME;
         return LocalDate.parse(date, dateTimeFormatter);
     }
-
 }

@@ -8,11 +8,19 @@ public interface EndOfDayStockData {
 
     Double getOpen();
 
+    Double getAdjOpen();
+
     Double getHigh();
 
     Double getLow();
 
     Double getClose();
 
+    Double getAdjClose();
+
     Integer getVolume();
+
+    Integer getAdjVolume();
+
+    Double getSplitFactor();
 }
