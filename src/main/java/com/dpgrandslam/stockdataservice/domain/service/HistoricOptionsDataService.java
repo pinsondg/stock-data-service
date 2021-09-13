@@ -61,7 +61,7 @@ public class HistoricOptionsDataService {
         } else {
             ret = historicalOptionRepository.save(option.toHistoricalOption());
         }
-        log.info("Took {} ms to add option (ticker: {}, strike: {}, expiration: {}, type: {})", timerUtil.stop(), option.getTicker(), option.getStrike(), option.getExpiration(), option.getOptionType());
+        log.debug("Took {} ms to add option (ticker: {}, strike: {}, expiration: {}, type: {})", timerUtil.stop(), option.getTicker(), option.getStrike(), option.getExpiration(), option.getOptionType());
         return ret;
     }
 
@@ -85,7 +85,7 @@ public class HistoricOptionsDataService {
                     e);
             return;
         }
-        log.info("Took {} ms to add options chain with ticker {} and expiration {}.", timerUtil.stop(),
+        log.debug("Took {} ms to add options chain with ticker {} and expiration {}.", timerUtil.stop(),
                 optionsChain.getTicker(),
                 optionsChain.getExpirationDate());
     }
@@ -103,8 +103,8 @@ public class HistoricOptionsDataService {
             Set<HistoricalOption> o = historicalOptionRepository.findByTicker(t);
             return o.stream().map(HistoricalOption.CacheableHistoricalOption::fromHistoricalOption).collect(Collectors.toSet());
         });
-        log.info("Took {} ms to load options with ticker: {}", timerUtil.stop(), ticker);
-        log.info("Found {} options with ticker: {}", options.size(), ticker);
+        log.debug("Took {} ms to load options with ticker: {}", timerUtil.stop(), ticker);
+        log.debug("Found {} options with ticker: {}", options.size(), ticker);
         return options.stream().map(HistoricalOption::fromCacheableHistoricalOption).collect(Collectors.toSet());
     }
 
@@ -125,8 +125,8 @@ public class HistoricOptionsDataService {
         TimerUtil timerUtil = new TimerUtil();
         timerUtil.start();
         Set<HistoricalOption> options = historicalOptionRepository.findByExpirationAndTicker(expiration, ticker);
-        log.info("Took {} ms to load options with ticker: {} and expiration {}", timerUtil.stop(), ticker, expiration);
-        log.info("Found {} options with ticker: {} and expiration: {}", options.size(), ticker, expiration);
+        log.debug("Took {} ms to load options with ticker: {} and expiration {}", timerUtil.stop(), ticker, expiration);
+        log.debug("Found {} options with ticker: {} and expiration: {}", options.size(), ticker, expiration);
         return options;
     }
 
@@ -143,7 +143,7 @@ public class HistoricOptionsDataService {
                         "Expiration: " + expiration + "," +
                         "Strike: " + strike + "," +
                         "OptionType: " + optionType));
-        log.info("Took {} ms to load option with ticker: {}, expiration: {}, strike: {}, and optionType: {}", System.currentTimeMillis() - start,
+        log.debug("Took {} ms to load option with ticker: {}, expiration: {}, strike: {}, and optionType: {}", System.currentTimeMillis() - start,
                 ticker, expiration, strike, optionType.name());
         return option;
     }
@@ -179,7 +179,7 @@ public class HistoricOptionsDataService {
             option.getOptionPriceData().addAll(priceDataCopy);
             saved = historicalOptionRepository.save(option);
         }
-        log.info("Took {} ms to add price data {} to option {}", timerUtil.stop(), optionPriceData, option);
+        log.debug("Took {} ms to add price data {} to option {}", timerUtil.stop(), optionPriceData, option);
         return saved;
     }
 

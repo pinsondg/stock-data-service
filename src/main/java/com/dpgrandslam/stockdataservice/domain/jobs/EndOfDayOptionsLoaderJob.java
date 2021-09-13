@@ -107,7 +107,7 @@ public class EndOfDayOptionsLoaderJob {
         }
     }
 
-    @Scheduled(cron = "0 * * * * SAT") // Every minute on Saturday
+    @Scheduled(cron = "0 0/5 * * * SAT") // Every minute on Saturday
     public void weekendLoadJob() {
         startJob();
         storeOptionsChainEndOfDayData();
