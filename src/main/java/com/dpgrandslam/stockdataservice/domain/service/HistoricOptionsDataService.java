@@ -7,16 +7,14 @@ import com.dpgrandslam.stockdataservice.domain.model.options.OptionPriceData;
 import com.dpgrandslam.stockdataservice.domain.model.options.OptionsChain;
 import com.dpgrandslam.stockdataservice.domain.util.TimerUtil;
 import lombok.RequiredArgsConstructor;
+import lombok.Synchronized;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import javax.persistence.EntityNotFoundException;
 import java.time.LocalDate;
 import java.util.*;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
+import java.util.concurrent.*;
 import java.util.stream.Collectors;
 import com.github.benmanes.caffeine.cache.Cache;
 
@@ -30,7 +28,7 @@ public class HistoricOptionsDataService {
 
     private final Cache<String, Set<HistoricalOption.CacheableHistoricalOption>> historicalOptionCache;
 
-    private static final ExecutorService EXECUTOR = Executors.newFixedThreadPool(5);
+    private static final ExecutorService EXECUTOR = Executors.newCachedThreadPool();
 
     public List<HistoricalOption> findAll() {
         return historicalOptionRepository.findAll();
@@ -69,16 +67,17 @@ public class HistoricOptionsDataService {
         fullOptionsChain.forEach(this::addOptionsChain);
     }
 
+    @Synchronized
     public void addOptionsChain(OptionsChain optionsChain) {
         TimerUtil timerUtil = TimerUtil.startTimer();
         log.info("Adding new options chain with ticker {} and expiration {} to database.", optionsChain.getTicker(),
                 optionsChain.getExpirationDate());
-        List<Callable<HistoricalOption>> callables = new LinkedList<>();
-        optionsChain.getAllOptions()
-                .forEach((option) -> callables.add(() -> addOption(option)));
+        CompletableFuture<?>[] cfs = new CompletableFuture<?>[optionsChain.getAllOptions().size()];
+        List<CompletableFuture<HistoricalOption>> futures = new LinkedList<>();
+        optionsChain.getAllOptions().forEach(option -> futures.add(CompletableFuture.supplyAsync(() -> addOption(option), EXECUTOR)));
         try {
-            List<Future<HistoricalOption>> futures = EXECUTOR.invokeAll(callables);
-        } catch (InterruptedException e) {
+            CompletableFuture.allOf(futures.toArray(cfs)).thenRun(() -> log.info("Options chain with ticker {} and expiration {} added successfully.", optionsChain.getTicker(), optionsChain.getExpirationDate())).get();
+        } catch (InterruptedException | ExecutionException e) {
             log.error("Could not add all options to the chain for option chain with ticker {} and expiration {}",
                     optionsChain.getTicker(),
                     optionsChain.getExpirationDate(),
