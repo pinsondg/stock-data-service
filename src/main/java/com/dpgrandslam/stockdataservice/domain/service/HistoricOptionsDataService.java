@@ -49,7 +49,7 @@ public class HistoricOptionsDataService {
         TimerUtil timerUtil = new TimerUtil();
         timerUtil.start();
         HistoricalOption ret;
-        log.info("Adding new option (ticker: {}, strike: {}, expiration: {}, type: {}) to database.", option.getTicker(), option.getStrike(), option.getExpiration(), option.getOptionType());
+        log.debug("Adding new option (ticker: {}, strike: {}, expiration: {}, type: {}) to database.", option.getTicker(), option.getStrike(), option.getExpiration(), option.getOptionType());
         Optional<HistoricalOption> found = historicalOptionRepository.findByStrikeAndExpirationAndTickerAndOptionType(option.getStrike(), option.getExpiration(),
                 option.getTicker(),
                 option.getOptionType());
@@ -166,14 +166,14 @@ public class HistoricOptionsDataService {
 
     private HistoricalOption doPriceDataAdd(Collection<OptionPriceData> optionPriceData, TimerUtil timerUtil, HistoricalOption option) {
         HistoricalOption saved = option;
-        log.info("Adding new price data {} to option {}", optionPriceData, option);
+        log.debug("Adding new price data {} to option {}", optionPriceData, option);
         Set<OptionPriceData> priceDataCopy = new HashSet<>(optionPriceData);
         priceDataCopy.removeIf(data -> option.getOptionPriceData()
                 .stream()
                 .anyMatch(x -> data.getTradeDate().equals(x.getTradeDate())));
         priceDataCopy.forEach(data -> data.setOption(option));
         if (priceDataCopy.size() == 0) {
-            log.info("Price data for option {} at trade date {} already exists. Skipping addition...", option, optionPriceData.stream().findFirst().get().getTradeDate());
+            log.debug("Price data for option {} at trade date {} already exists. Skipping addition...", option, optionPriceData.stream().findFirst().get().getTradeDate());
         } else {
             option.getOptionPriceData().addAll(priceDataCopy);
             saved = historicalOptionRepository.save(option);
