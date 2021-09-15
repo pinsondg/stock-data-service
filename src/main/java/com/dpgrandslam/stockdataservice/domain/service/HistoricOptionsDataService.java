@@ -28,7 +28,7 @@ public class HistoricOptionsDataService {
 
     private final Cache<String, Set<HistoricalOption.CacheableHistoricalOption>> historicalOptionCache;
 
-    private static final ExecutorService EXECUTOR = Executors.newFixedThreadPool(10);
+    private static final ExecutorService EXECUTOR = Executors.newFixedThreadPool(3);
 
     public List<HistoricalOption> findAll() {
         return historicalOptionRepository.findAll();
