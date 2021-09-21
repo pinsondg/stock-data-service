@@ -27,7 +27,6 @@ import java.time.temporal.ChronoUnit;
 import java.time.temporal.TemporalAdjusters;
 import java.util.*;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import static junit.framework.TestCase.*;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -55,7 +54,7 @@ public class YahooFinanceOptionsChainLoadServiceTest {
 
     @Before
     public void setup() throws IOException {
-        when(clientConfigurationProperties.getUrl()).thenReturn(TEST_URL);
+        when(clientConfigurationProperties.getUrlAndPort()).thenReturn(TEST_URL + ":8080");
         when(webpageLoader.parseUrl(anyString())).thenReturn(Jsoup.parse(TestUtils
                 .loadResourceFile("mocks/yahoofinance/yahoo-finance-spy.html"), "UTF-8"));
         when(timeUtils.getNowAmericaNewYork()).thenCallRealMethod();
@@ -65,7 +64,7 @@ public class YahooFinanceOptionsChainLoadServiceTest {
 
     @Test
     public void testLoadOptionsChainForClosestExpiration_noPortInUrl() throws OptionsChainLoadException {
-        when(clientConfigurationProperties.getPort()).thenReturn(null);
+        when(clientConfigurationProperties.getUrlAndPort()).thenReturn(TEST_URL);
         OptionsChain optionsChain = subject.loadLiveOptionsChainForClosestExpiration("test");
 
         assertEquals("TEST", optionsChain.getTicker());
@@ -78,8 +77,6 @@ public class YahooFinanceOptionsChainLoadServiceTest {
 
     @Test
     public void testLoadOptionsChainForClosestExpiration_portInUrl() throws OptionsChainLoadException {
-        when(clientConfigurationProperties.getPort()).thenReturn(8080);
-
         subject.loadLiveOptionsChainForClosestExpiration("test");
         verify(webpageLoader, times(1)).parseUrl(eq(TEST_URL + ":8080/quote/TEST/options?p=TEST"));
     }

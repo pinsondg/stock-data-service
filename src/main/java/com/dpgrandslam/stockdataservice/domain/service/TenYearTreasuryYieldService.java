@@ -1,6 +1,6 @@
 package com.dpgrandslam.stockdataservice.domain.service;
 
-import com.dpgrandslam.stockdataservice.adapter.apiclient.BasicWebPageLoader;
+import com.dpgrandslam.stockdataservice.adapter.apiclient.WebpageLoader;
 import com.dpgrandslam.stockdataservice.domain.config.ApiClientConfigurationProperties;
 import com.dpgrandslam.stockdataservice.domain.error.TreasuryYieldLoadException;
 import com.dpgrandslam.stockdataservice.domain.model.stock.YahooFinanceTenYearTreasuryYield;
@@ -23,7 +23,7 @@ import java.time.format.DateTimeFormatter;
 @Slf4j
 public class TenYearTreasuryYieldService {
 
-    private final BasicWebPageLoader webPageLoader;
+    private final WebpageLoader basicWebPageLoader;
     private final Cache<LocalDate, YahooFinanceTenYearTreasuryYield> treasuryYieldCache;
 
     @Autowired
@@ -35,7 +35,7 @@ public class TenYearTreasuryYieldService {
                 + convertDate(date) + "&period2=" + convertDate(date.plusDays(1))
                 + "&interval=1d&filter=history&frequency=1d&includeAdjustedClose=true";
         try {
-            return treasuryYieldCache.get(date, (d) -> parseDocument(webPageLoader.parseUrl(url)));
+            return treasuryYieldCache.get(date, (d) -> parseDocument(basicWebPageLoader.parseUrl(url)));
         } catch (Exception e) {
             log.error("Error parsing document at url {}", url);
             throw new TreasuryYieldLoadException(date);
