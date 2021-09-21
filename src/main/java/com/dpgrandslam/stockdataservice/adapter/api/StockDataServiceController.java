@@ -5,8 +5,10 @@ import com.dpgrandslam.stockdataservice.domain.model.options.OptionsChain;
 import com.dpgrandslam.stockdataservice.domain.model.stock.*;
 import com.dpgrandslam.stockdataservice.domain.service.OptionsChainLoadService;
 import com.dpgrandslam.stockdataservice.domain.service.StockDataLoadService;
+import com.dpgrandslam.stockdataservice.domain.service.TenYearTreasuryYieldService;
 import com.dpgrandslam.stockdataservice.domain.service.TrackedStockService;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.tomcat.jni.Local;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -31,6 +33,9 @@ public class StockDataServiceController {
 
     @Autowired
     private StockDataLoadService stockDataLoadService;
+
+    @Autowired
+    private TenYearTreasuryYieldService treasuryYieldService;
 
     @GetMapping("/option/{ticker}")
     public ResponseEntity<List<OptionsChain>> getOptionsChain(@PathVariable(name = "ticker") String ticker,
@@ -115,5 +120,11 @@ public class StockDataServiceController {
     public ResponseEntity addTrackedStocks(@RequestBody List<String> tickers) {
         trackedStockService.addTrackedStocks(tickers);
         return ResponseEntity.status(HttpStatus.CREATED).build();
+    }
+
+    @GetMapping("/treasury-yield")
+    public ResponseEntity<YahooFinanceTenYearTreasuryYield> getTreasuryYield(@RequestParam Optional<String> date) {
+        return ResponseEntity.ok(treasuryYieldService.getTreasuryYieldForDate(date.map(LocalDate::parse)
+                .orElse(LocalDate.now())));
     }
 }

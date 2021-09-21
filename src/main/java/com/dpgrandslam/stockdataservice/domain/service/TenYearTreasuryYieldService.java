@@ -2,6 +2,7 @@ package com.dpgrandslam.stockdataservice.domain.service;
 
 import com.dpgrandslam.stockdataservice.adapter.apiclient.BasicWebPageLoader;
 import com.dpgrandslam.stockdataservice.domain.config.ApiClientConfigurationProperties;
+import com.dpgrandslam.stockdataservice.domain.error.TreasuryYieldLoadException;
 import com.dpgrandslam.stockdataservice.domain.model.stock.YahooFinanceTenYearTreasuryYield;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -29,13 +30,13 @@ public class TenYearTreasuryYieldService {
 
     public YahooFinanceTenYearTreasuryYield getTreasuryYieldForDate(LocalDate date) {
         String url = clientConfigurationProperties.getUrlAndPort() + "/quote/%5ETNX/history?period1="
-                + convertDate(date) + "&period2=" + convertDate(date)
+                + convertDate(date) + "&period2=" + convertDate(date.plusDays(1))
                 + "&interval=1d&filter=history&frequency=1d&includeAdjustedClose=true";
         try {
             return parseDocument(webPageLoader.parseUrl(url));
         } catch (Exception e) {
             log.error("Error parsing document at url {}", url);
-            throw e;
+            throw new TreasuryYieldLoadException(date);
         }
     }
 
