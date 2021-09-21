@@ -4,6 +4,7 @@ import com.dpgrandslam.stockdataservice.adapter.apiclient.BasicWebPageLoader;
 import com.dpgrandslam.stockdataservice.domain.config.ApiClientConfigurationProperties;
 import com.dpgrandslam.stockdataservice.domain.error.TreasuryYieldLoadException;
 import com.dpgrandslam.stockdataservice.domain.model.stock.YahooFinanceTenYearTreasuryYield;
+import com.github.benmanes.caffeine.cache.Cache;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.jsoup.nodes.Document;
@@ -23,17 +24,18 @@ import java.time.format.DateTimeFormatter;
 public class TenYearTreasuryYieldService {
 
     private final BasicWebPageLoader webPageLoader;
+    private final Cache<LocalDate, YahooFinanceTenYearTreasuryYield> treasuryYieldCache;
 
     @Autowired
     @Qualifier("YahooFinanceApiClientConfigurationProperties")
     private ApiClientConfigurationProperties clientConfigurationProperties;
 
     public YahooFinanceTenYearTreasuryYield getTreasuryYieldForDate(LocalDate date) {
-        String url = clientConfigurationProperties.getUrlAndPort() + "/quote/%5ETNX/history?period1="
+        final String url = clientConfigurationProperties.getUrlAndPort() + "/quote/%5ETNX/history?period1="
                 + convertDate(date) + "&period2=" + convertDate(date.plusDays(1))
                 + "&interval=1d&filter=history&frequency=1d&includeAdjustedClose=true";
         try {
-            return parseDocument(webPageLoader.parseUrl(url));
+            return treasuryYieldCache.get(date, (d) -> parseDocument(webPageLoader.parseUrl(url)));
         } catch (Exception e) {
             log.error("Error parsing document at url {}", url);
             throw new TreasuryYieldLoadException(date);
