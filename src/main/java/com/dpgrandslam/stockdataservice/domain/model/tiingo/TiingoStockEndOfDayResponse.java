@@ -1,6 +1,7 @@
 package com.dpgrandslam.stockdataservice.domain.model.tiingo;
 
 import com.dpgrandslam.stockdataservice.domain.model.stock.EndOfDayStockData;
+import lombok.Builder;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
@@ -8,6 +9,7 @@ import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 
 @Data
+@Builder
 @EqualsAndHashCode
 public class TiingoStockEndOfDayResponse implements EndOfDayStockData {
 

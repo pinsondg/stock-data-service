@@ -12,4 +12,12 @@ public class ApiClientConfigurationProperties {
     private Integer port;
     private String authType;
 
+    public String getUrlAndPort() {
+        String url = this.getUrl();
+        if (this.getPort() != null) {
+            url += ":" + this.getPort();
+        }
+        return url;
+    }
+
 }
