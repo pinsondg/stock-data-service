@@ -108,20 +108,12 @@ public class YahooFinanceOptionsChainLoadService extends OptionsChainLoadService
     }
 
     private Document doCall(String ticker, LocalDate expirationDate) {
-        String fullUrl = getYahooFinanceUrl() + "/quote/" + ticker.toUpperCase() + "/options?p=" + ticker.toUpperCase();
+        String fullUrl = clientConfigurationProperties.getUrlAndPort() + "/quote/" + ticker.toUpperCase() + "/options?p=" + ticker.toUpperCase();
         if (expirationDate != null) {
             fullUrl += "&date=" + expirationDate.atStartOfDay().toInstant(ZoneOffset.UTC).getEpochSecond();
         }
 
         return basicWebPageLoader.parseUrl(fullUrl);
-    }
-
-    private String getYahooFinanceUrl() {
-        String url = clientConfigurationProperties.getUrl();
-        if (clientConfigurationProperties.getPort() != null) {
-            url += ":" + clientConfigurationProperties.getPort();
-        }
-        return url;
     }
 
     private OptionsChain buildOptionsChain(String ticker, LocalDate expirationDate, Document document) {
