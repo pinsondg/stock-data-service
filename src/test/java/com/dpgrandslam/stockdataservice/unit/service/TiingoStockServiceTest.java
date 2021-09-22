@@ -1,25 +1,33 @@
 package com.dpgrandslam.stockdataservice.unit.service;
 
 import com.dpgrandslam.stockdataservice.adapter.apiclient.tiingo.TiingoApiClient;
+import com.dpgrandslam.stockdataservice.domain.config.CacheConfiguration;
 import com.dpgrandslam.stockdataservice.domain.model.stock.EndOfDayStockData;
 import com.dpgrandslam.stockdataservice.domain.model.stock.LiveStockData;
 import com.dpgrandslam.stockdataservice.domain.model.tiingo.TiingoMetaDataResponse;
 import com.dpgrandslam.stockdataservice.domain.model.tiingo.TiingoStockEndOfDayResponse;
 import com.dpgrandslam.stockdataservice.domain.model.tiingo.TiingoStockLiveDataResponse;
 import com.dpgrandslam.stockdataservice.domain.service.TiingoStockService;
+import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.Caffeine;
 import feign.FeignException;
 import feign.Request;
 import feign.Response;
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Spy;
 import org.mockito.junit.MockitoJUnitRunner;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import java.time.LocalDate;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 import static junit.framework.TestCase.*;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -43,16 +51,52 @@ public class TiingoStockServiceTest {
     @Mock
     private TiingoMetaDataResponse tiingoMetaDataResponse;
 
+    private Cache<CacheConfiguration.HistoricOptionsDataCacheKey, List<EndOfDayStockData>> historicCacheSpy;
+
+    @Before
+    public void setup() {
+        Cache<CacheConfiguration.HistoricOptionsDataCacheKey, List<EndOfDayStockData>> historicCache = Caffeine
+                .newBuilder().expireAfterWrite(1, TimeUnit.DAYS)
+                .build();
+        historicCacheSpy = spy(historicCache);
+        ReflectionTestUtils.setField(subject, "endOfDayStockDataCache", historicCacheSpy);
+    }
+
     @Test
     public void testGetEndOfDayStockData() {
-        when(mockEndOfDayStockData.getVolume()).thenReturn(100);
-        when(apiClient.getHistoricalInfo(anyString(), anyString(), anyString())).thenReturn(Collections.singletonList(mockEndOfDayStockData));
+        List<TiingoStockEndOfDayResponse> endOfDayStockDataList = new LinkedList<>();
+        TiingoStockEndOfDayResponse endOfDayStockData1 = TiingoStockEndOfDayResponse.builder()
+                .date(LocalDate.now().minusDays(1).atStartOfDay().toString()).build();
+        TiingoStockEndOfDayResponse endOfDayStockData2 = TiingoStockEndOfDayResponse.builder()
+                .date(LocalDate.now().minusDays(5).atStartOfDay().toString()).build();
+        TiingoStockEndOfDayResponse endOfDayStockData3 = TiingoStockEndOfDayResponse.builder()
+                .date(LocalDate.now().minusDays(7).atStartOfDay().toString()).build();
+        TiingoStockEndOfDayResponse endOfDayStockData4 = TiingoStockEndOfDayResponse.builder()
+                .date(LocalDate.now().minusDays(10).atStartOfDay().toString()).build();
+        endOfDayStockDataList.add(endOfDayStockData1);
+        endOfDayStockDataList.add(endOfDayStockData2);
+        endOfDayStockDataList.add(endOfDayStockData3);
+        endOfDayStockDataList.add(endOfDayStockData4);
 
-        List<EndOfDayStockData> result = subject.getEndOfDayStockData("TEST", LocalDate.now().minusDays(2), LocalDate.now());
 
-        verify(apiClient, times(1)).getHistoricalInfo(eq("TEST"), eq(LocalDate.now().minusDays(2).toString()), eq(LocalDate.now().toString()));
+        when(apiClient.getHistoricalInfo(anyString(), anyString(), anyString())).thenReturn(endOfDayStockDataList);
 
-        assertEquals(100, result.get(0).getVolume().intValue());
+        List<EndOfDayStockData> actual = subject.getEndOfDayStockData("SPY", LocalDate.now().minusDays(10), LocalDate.now().minusDays(1));
+        assertEquals(4, actual.size());
+
+        actual = subject.getEndOfDayStockData("SPY", LocalDate.now().minusDays(7), LocalDate.now().minusDays(5));
+        assertEquals(2, actual.size());
+
+        actual = subject.getEndOfDayStockData("SPY", LocalDate.now().minusDays(10), LocalDate.now().minusDays(5));
+        assertEquals(3, actual.size());
+
+        actual = subject.getEndOfDayStockData("SPY", LocalDate.now().minusDays(7), LocalDate.now().minusDays(1));
+        assertEquals(3, actual.size());
+
+        verify(apiClient, times(1)).getHistoricalInfo(eq("SPY"),
+                eq(LocalDate.now().minusDays(10).toString()),
+                eq(LocalDate.now().minusDays(1).toString()));
+        verify(historicCacheSpy, times(4)).get(any(), any());
     }
 
     @Test
