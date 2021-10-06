@@ -5,7 +5,9 @@ import com.dpgrandslam.stockdataservice.adapter.apiclient.WebpageLoader;
 import com.dpgrandslam.stockdataservice.adapter.repository.OptionPriceDataLoadRetryRepository;
 import com.dpgrandslam.stockdataservice.adapter.repository.TrackedStocksRepository;
 import com.dpgrandslam.stockdataservice.domain.error.OptionsChainLoadException;
+import com.dpgrandslam.stockdataservice.domain.event.TrackedStockAddedEvent;
 import com.dpgrandslam.stockdataservice.domain.jobs.EndOfDayOptionsLoaderJob;
+import com.dpgrandslam.stockdataservice.domain.model.Holiday;
 import com.dpgrandslam.stockdataservice.domain.model.OptionPriceDataLoadRetry;
 import com.dpgrandslam.stockdataservice.domain.model.options.OptionsChain;
 import com.dpgrandslam.stockdataservice.domain.model.stock.TrackedStock;
@@ -31,10 +33,7 @@ import org.springframework.test.util.ReflectionTestUtils;
 
 import java.io.IOException;
 import java.time.LocalDate;
-import java.util.Collections;
-import java.util.List;
-import java.util.Optional;
-import java.util.Queue;
+import java.util.*;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 import static com.dpgrandslam.stockdataservice.testUtils.TestUtils.loadHtmlFileAndClean;
@@ -159,6 +158,43 @@ public class EndOfDayOptionLoaderJobIntTest {
 
         verify(historicOptionsDataService, never()).addOptionsChain(any());
         verify(optionsChainLoadService, never()).loadLiveOptionsChainForExpirationDate(anyString(), any());
+    }
+
+    @Test
+    public void test_jobHoliday_doesNotRun() throws OptionsChainLoadException {
+        Holiday holiday = new Holiday("Test Holiday", LocalDate.now());
+        List<Holiday> mockHolidays = Collections.singletonList(holiday);
+        when(timeUtils.isTodayAmericaNewYorkStockMarketHoliday()).thenReturn(true);
+        when(timeUtils.getStockMarketHolidays()).thenReturn(mockHolidays);
+        when(timeUtils.getNowAmericaNewYork()).thenCallRealMethod();
+
+        ReflectionTestUtils.setField(subject, "mainJobStatus", EndOfDayOptionsLoaderJob.JobStatus.RUNNING_SCHEDULED);
+
+        subject.weekdayLoadJobBeforeHours();
+
+        verify(timeUtils, times(2)).isTodayAmericaNewYorkStockMarketHoliday();
+        verify(timeUtils, times(1)).getStockMarketHolidays();
+        verify(historicOptionsDataService, never()).addFullOptionsChain(any());
+        verify(optionsChainLoadService, never()).loadFullLiveOptionsChain(any());
+        verify(trackedStockService, never()).updateOptionUpdatedTimestamp(any());
+        verify(trackedStockService, never()).findByTicker(any());
+    }
+
+    @Test
+    public void testTrackStockAddedEvent() {
+        ReflectionTestUtils.setField(subject, "mainJobStatus", EndOfDayOptionsLoaderJob.JobStatus.COMPLETE);
+        TrackedStock trackedStock = new TrackedStock();
+        trackedStock.setActive(true);
+        trackedStock.setTicker("TEST");
+        trackedStock.setName("Test");
+        TrackedStockAddedEvent trackedStockAddedEvent = new TrackedStockAddedEvent(this, Collections.singletonList(trackedStock));
+        subject.onApplicationEvent(trackedStockAddedEvent);
+
+        Queue<String> trackedStocks = (Queue<String>) ReflectionTestUtils.getField(subject, "trackedStocks");
+        assertNotNull(trackedStocks);
+        assertEquals(1, trackedStocks.size());
+        assertEquals("TEST", trackedStocks.peek());
+        assertEquals(EndOfDayOptionsLoaderJob.JobStatus.RUNNING_MANUAL, ReflectionTestUtils.getField(subject, "mainJobStatus"));
     }
 
     @After
