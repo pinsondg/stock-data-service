@@ -19,6 +19,6 @@ public class OptionsChainLoadException extends Exception {
 
     @Override
     public String getMessage() {
-        return "Could not load options chain for ticker "  + ticker + " at URL " + sourceUrl + ". " + super.getMessage();
+        return ("Could not load options chain for ticker " + ticker + " at URL " + sourceUrl + ". " + super.getMessage()).trim();
     }
 }

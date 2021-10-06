@@ -3,6 +3,7 @@ package com.dpgrandslam.stockdataservice.unit.service;
 import com.dpgrandslam.stockdataservice.adapter.repository.OptionPriceDataLoadRetryRepository;
 import com.dpgrandslam.stockdataservice.domain.model.OptionPriceDataLoadRetry;
 import com.dpgrandslam.stockdataservice.domain.service.OptionPriceDataLoadRetryService;
+import org.apache.tomcat.jni.Local;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
@@ -151,5 +152,20 @@ public class OptionPriceDataLoadRetryServiceTest {
         verify(retryRepository, times(1)).delete(retryCaptor.capture());
 
         assertEquals("TEST", retryCaptor.getValue().getOptionTicker());
+    }
+
+    @Test
+    public void testUpdateRetryCount_byCriteria() {
+        when(retryRepository.findByOptionTickerAndOptionExpirationAndTradeDate(any(), any(), any())).thenReturn(mockRetryRecord);
+        when(mockRetryRecord.getRetryCount()).thenReturn(1);
+        doCallRealMethod().when(mockRetryRecord).setRetryCount(anyInt());
+        when(retryRepository.save(any(OptionPriceDataLoadRetry.class))).thenReturn(mockRetryRecord);
+
+        subject.updateRetryCount("TEST", LocalDate.now(), LocalDate.now().plusDays(1));
+
+        verify(mockRetryRecord, times(1)).getRetryCount();
+        verify(mockRetryRecord, times(1)).setRetryCount(eq(2));
+        verify(retryRepository, times(1)).save(eq(mockRetryRecord));
+        verify(retryRepository, times(1)).findByOptionTickerAndOptionExpirationAndTradeDate(eq("TEST"), eq(LocalDate.now()), eq(LocalDate.now().plusDays(1)));
     }
 }
