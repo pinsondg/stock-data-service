@@ -21,7 +21,7 @@
         <caffine.version>3.0.4</caffine.version>
         <validation-api.version>2.0.1.Final</validation-api.version>
         <liquibase-hibernate5.version>3.10.2</liquibase-hibernate5.version>
-        <cucumber.version>6.11.0</cucumber.version>
+        <cucumber.version>7.0.0</cucumber.version>
         <jacoco.line-coverage>0.80</jacoco.line-coverage>
     </properties>
     <dependencies>
