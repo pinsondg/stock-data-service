@@ -1,5 +1,6 @@
 package com.dpgrandslam.stockdataservice.unit.service;
 
+import com.dpgrandslam.stockdataservice.adapter.repository.HistoricalOptionJDBCRepository;
 import com.dpgrandslam.stockdataservice.adapter.repository.HistoricalOptionRepository;
 import com.dpgrandslam.stockdataservice.domain.model.options.HistoricalOption;
 import com.dpgrandslam.stockdataservice.domain.model.options.Option;
@@ -32,6 +33,9 @@ public class HistoricOptionsDataServiceTest {
 
     @Mock
     private HistoricalOptionRepository historicalOptionRepository;
+
+    @Mock
+    private HistoricalOptionJDBCRepository historicalOptionJDBCRepository;
 
     @Mock
     private Cache<String, Set<HistoricalOption.CacheableHistoricalOption>> historicalOptionCache;
@@ -155,13 +159,15 @@ public class HistoricOptionsDataServiceTest {
         retSet.add(historicalOption1);
         retSet.add(historicalOption2);
 
-        when(historicalOptionCache.get(anyString(), any())).thenReturn(retSet.stream().map(HistoricalOption.CacheableHistoricalOption::fromHistoricalOption).collect(Collectors.toSet()));
+        when(historicalOptionJDBCRepository.findByTickerBetweenDates(anyString(), any(), any())).thenReturn(retSet);
 
         Set<HistoricalOption> historicalOptions = subject.findOptions("TEST", LocalDate.now().minusDays(5), LocalDate.now().minusDays(2));
 
         HistoricalOption actual = (HistoricalOption) historicalOptions.stream().findFirst().get();
 
-        assertEquals(1, historicalOptions.size());
-        assertEquals(3, actual.getOptionPriceData().size());
+        verify(historicalOptionJDBCRepository, times(1)).findByTickerBetweenDates(eq("TEST"), eq(LocalDate.now().minusDays(5)), eq(LocalDate.now().minusDays(2)));
+
+        assertEquals(3, historicalOptions.size());
+        assertEquals(4, actual.getOptionPriceData().size());
     }
 }
