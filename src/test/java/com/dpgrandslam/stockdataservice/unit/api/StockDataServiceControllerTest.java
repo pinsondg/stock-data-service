@@ -152,7 +152,7 @@ public class StockDataServiceControllerTest {
         verify(optionsChainLoadService, times(1)).loadCompleteOptionsChainForExpirationDateWithPriceDataInRange(
                 eq("TEST"),
                 eq(now),
-                eq(LocalDate.MIN),
+                eq(LocalDate.of(1900, 1, 1)),
                 eq(end)
         );
         verify(optionsChainLoadService, never()).loadFullLiveOptionsChain(any());
