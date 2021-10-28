@@ -167,7 +167,6 @@ public class HistoricOptionsDataServiceTest {
 
         verify(historicalOptionJDBCRepository, times(1)).findByTickerBetweenDates(eq("TEST"), eq(LocalDate.now().minusDays(5)), eq(LocalDate.now().minusDays(2)));
 
-        assertEquals(3, historicalOptions.size());
-        assertEquals(4, actual.getOptionPriceData().size());
+        assertEquals(2, historicalOptions.size());
     }
 }
