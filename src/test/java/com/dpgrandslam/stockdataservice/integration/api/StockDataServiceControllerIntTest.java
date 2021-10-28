@@ -70,7 +70,7 @@ public class StockDataServiceControllerIntTest extends APIIntTestBase {
 
         verify(optionsChainLoadService, times(1)).loadFullOptionsChainWithAllDataBetweenDates(
                 eq("SPY"),
-                eq(LocalDate.MIN),
+                eq(LocalDate.of(1900, 1, 1)),
                 eq(LocalDate.now())
         );
     }
@@ -87,7 +87,7 @@ public class StockDataServiceControllerIntTest extends APIIntTestBase {
 
         verify(optionsChainLoadService, times(1)).loadFullOptionsChainWithAllDataBetweenDates(
                 eq("SPY"),
-                eq(LocalDate.MIN),
+                eq(LocalDate.of(1900, 1, 1)),
                 eq(LocalDate.of(2019, 1, 1))
         );
     }

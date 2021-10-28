@@ -69,10 +69,14 @@ public class HistoricalOption extends Option {
     }
 
     public void initializeHistoricalPriceData(Collection<OptionPriceData> priceData) {
-        priceData.forEach(item -> {
-            item.setOption(this);
-        });
-        this.historicalPriceData = new LinkedList<>(priceData);
+        if (priceData != null) {
+            priceData.forEach(item -> {
+                item.setOption(this);
+            });
+            this.historicalPriceData = new LinkedList<>(priceData);
+        } else {
+            this.historicalPriceData = new LinkedList<>();
+        }
     }
 
     public static HistoricalOption fromCacheableHistoricalOption(CacheableHistoricalOption ho) {
