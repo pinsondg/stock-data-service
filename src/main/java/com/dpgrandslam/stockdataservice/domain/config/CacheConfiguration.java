@@ -7,6 +7,7 @@ import com.dpgrandslam.stockdataservice.domain.model.tiingo.TiingoStockSearchRes
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NonNull;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -34,7 +35,7 @@ public class CacheConfiguration {
         return Caffeine.newBuilder()
                 .expireAfterWrite(30, TimeUnit.MINUTES)
                 .recordStats()
-                .maximumSize(10)
+                .maximumSize(2)
                 .build();
     }
 
@@ -54,6 +55,14 @@ public class CacheConfiguration {
                 .build();
     }
 
+    @Bean
+    public Cache<HistoricOptionsDataCacheKey, Set<HistoricalOption>> historicOptionsBetweenDatesCache() {
+        return Caffeine.newBuilder()
+                .expireAfterWrite(30, TimeUnit.MINUTES)
+                .maximumSize(100)
+                .build();
+    }
+
 
     @Data
     public static class HistoricOptionsDataCacheKey {
@@ -62,9 +71,11 @@ public class CacheConfiguration {
         private LocalDate startDate;
         private LocalDate endDate;
 
+        @EqualsAndHashCode.Exclude
         private Function<HistoricOptionsDataCacheKey, Boolean> IS_WITHIN_BOUNDS_LEFT = (other) -> (other.getStartDate().isBefore(this.startDate) || other.getStartDate().isEqual(this.startDate))
                 && (other.getEndDate().isAfter(this.startDate));
 
+        @EqualsAndHashCode.Exclude
         private Function<HistoricOptionsDataCacheKey, Boolean> IS_WITHIN_BOUNDS_RIGHT = (other) -> (other.getEndDate().isAfter(this.endDate) || other.getEndDate().isEqual(this.endDate))
                 && (other.getStartDate().isBefore(this.endDate));
 
