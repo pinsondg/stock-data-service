@@ -15,7 +15,7 @@
     <description>MicroService for getting stock and options data</description>
     <properties>
         <java.version>11</java.version>
-        <feign.version>11.6</feign.version>
+        <feign.version>11.7</feign.version>
         <jsoup.version>1.14.3</jsoup.version>
         <jasypt.version>1.9.3</jasypt.version>
         <caffine.version>3.0.4</caffine.version>
@@ -260,7 +260,7 @@
                     <dependency>
                         <groupId>org.springframework</groupId>
                         <artifactId>spring-beans</artifactId>
-                        <version>5.3.11</version>
+                        <version>5.3.12</version>
                     </dependency>
                     <dependency>
                         <groupId>org.springframework.data</groupId>
