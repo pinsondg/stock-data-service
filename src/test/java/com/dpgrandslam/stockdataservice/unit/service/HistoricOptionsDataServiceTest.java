@@ -2,19 +2,16 @@ package com.dpgrandslam.stockdataservice.unit.service;
 
 import com.dpgrandslam.stockdataservice.adapter.repository.HistoricalOptionJDBCRepository;
 import com.dpgrandslam.stockdataservice.adapter.repository.HistoricalOptionRepository;
-import com.dpgrandslam.stockdataservice.domain.config.CacheConfiguration;
 import com.dpgrandslam.stockdataservice.domain.model.options.HistoricalOption;
 import com.dpgrandslam.stockdataservice.domain.model.options.Option;
 import com.dpgrandslam.stockdataservice.domain.model.options.OptionPriceData;
 import com.dpgrandslam.stockdataservice.domain.service.HistoricOptionsDataService;
 import com.dpgrandslam.stockdataservice.testUtils.TestDataFactory;
 import com.github.benmanes.caffeine.cache.Cache;
-import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.*;
 import org.mockito.junit.MockitoJUnitRunner;
-import org.springframework.test.util.ReflectionTestUtils;
 
 import javax.persistence.EntityNotFoundException;
 import java.time.LocalDate;
@@ -23,7 +20,6 @@ import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -44,20 +40,11 @@ public class HistoricOptionsDataServiceTest {
     @Mock
     private Cache<String, Set<HistoricalOption.CacheableHistoricalOption>> historicalOptionCache;
 
-    @Mock
-    private Cache<CacheConfiguration.HistoricOptionsDataCacheKey, Set<HistoricalOption>> betweenDatesCache;
-
     @InjectMocks
     private HistoricOptionsDataService subject;
 
     @Captor
     private ArgumentCaptor<HistoricalOption> historicalOptionAC;
-
-    @Before
-    public void setup() {
-        ReflectionTestUtils.setField(subject, "historicalOptionCache", historicalOptionCache);
-        ReflectionTestUtils.setField(subject, "betweenDatesCache", betweenDatesCache);
-    }
 
     @Test
     public void testAddOption_noOptionExists_addsOption() {
@@ -173,14 +160,11 @@ public class HistoricOptionsDataServiceTest {
         retSet.add(historicalOption2);
 
         when(historicalOptionJDBCRepository.findByTickerBetweenDates(anyString(), any(), any())).thenReturn(retSet);
-        when(betweenDatesCache.get(any(), any())).then(invk -> {
-            Function<CacheConfiguration.HistoricOptionsDataCacheKey, Set<HistoricalOption>> f = invk.getArgument(1);
-            return f.apply(invk.getArgument(0));
-        });
 
         Set<HistoricalOption> historicalOptions = subject.findOptions("TEST", LocalDate.now().minusDays(5), LocalDate.now().minusDays(2));
 
-        verify(betweenDatesCache, times(1)).get(eq(new CacheConfiguration.HistoricOptionsDataCacheKey("TEST", LocalDate.now().minusDays(5), LocalDate.now().minusDays(2))), any());
+        HistoricalOption actual = (HistoricalOption) historicalOptions.stream().findFirst().get();
+
         verify(historicalOptionJDBCRepository, times(1)).findByTickerBetweenDates(eq("TEST"), eq(LocalDate.now().minusDays(5)), eq(LocalDate.now().minusDays(2)));
 
         assertEquals(2, historicalOptions.size());
