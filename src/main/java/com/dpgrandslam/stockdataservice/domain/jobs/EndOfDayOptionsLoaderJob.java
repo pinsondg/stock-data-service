@@ -32,7 +32,7 @@ import java.util.stream.Collectors;
 @Slf4j
 public class EndOfDayOptionsLoaderJob {
 
-    private static final int STEPS = 4;
+    private static final int STEPS = 3;
 
     private static final int MAIN_JOB = 0;
     private static final int RETRY_JOB = 1;
