@@ -1,5 +1,6 @@
 package com.dpgrandslam.stockdataservice.domain.service;
 
+import com.dpgrandslam.stockdataservice.adapter.repository.HistoricalOptionJDBCRepository;
 import com.dpgrandslam.stockdataservice.adapter.repository.HistoricalOptionRepository;
 import com.dpgrandslam.stockdataservice.domain.model.options.HistoricalOption;
 import com.dpgrandslam.stockdataservice.domain.model.options.Option;
@@ -27,6 +28,8 @@ public class HistoricOptionsDataService {
     private final HistoricalOptionRepository historicalOptionRepository;
 
     private final Cache<String, Set<HistoricalOption.CacheableHistoricalOption>> historicalOptionCache;
+
+    private final HistoricalOptionJDBCRepository historicalOptionJDBCRepository;
 
     private static final ExecutorService EXECUTOR = Executors.newFixedThreadPool(3);
 
@@ -116,7 +119,7 @@ public class HistoricOptionsDataService {
      * @return a set of option that has the data between the dates
      */
     public Set<HistoricalOption> findOptions(String ticker, final LocalDate startDate, final LocalDate endDate) {
-        return filterPriceDataBetweenDates(findOptions(ticker), startDate, endDate);
+        return historicalOptionJDBCRepository.findByTickerBetweenDates(ticker, startDate, endDate);
     }
 
     public Set<HistoricalOption> findOptions(String ticker, LocalDate expiration) {
