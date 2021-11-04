@@ -197,6 +197,43 @@ public class EndOfDayOptionLoaderJobIntTest {
         assertEquals(EndOfDayOptionsLoaderJob.JobStatus.RUNNING_MANUAL, ReflectionTestUtils.getField(subject, "mainJobStatus"));
     }
 
+    @Test
+    public void test_endOfDatOptionsLoaderJob_onCompleteFailedLoad_addsBackToQueue_updatesFailedCount() throws OptionsChainLoadException {
+        TrackedStock trackedStock = TrackedStock.builder()
+                .active(true)
+                .ticker("TEST")
+                .name("Test")
+                .lastOptionsHistoricDataUpdate(LocalDate.now().minusDays(1))
+                .build();
+        Queue<String> queue = new ConcurrentLinkedQueue<>();
+        queue.add(trackedStock.getTicker());
+
+        ReflectionTestUtils.setField(subject, "trackedStocks", queue);
+        ReflectionTestUtils.setField(subject, "mainJobStatus", EndOfDayOptionsLoaderJob.JobStatus.RUNNING_SCHEDULED);
+
+        when(webpageLoader.parseUrl(any())).thenReturn(mockErrorDoc);
+        when(trackedStocksRepository.findById(eq(trackedStock.getTicker()))).thenReturn(Optional.of(trackedStock));
+
+        Map<String, Integer> failMap = (Map<String, Integer>) ReflectionTestUtils.getField(subject, "failCountMap");
+        Integer steps = (Integer) ReflectionTestUtils.getField(subject, "STEPS");
+        Integer maxRetry = (Integer) ReflectionTestUtils.getField(subject, "MAX_RETRY");
+
+        assertNotNull(steps);
+        assertNotNull(maxRetry);
+
+        for (int i = 1; i < 10; i++) {
+            int timesTried = (i * steps) + 1;
+            subject.weekdayLoadJobAfterHours();
+            assertEquals(timesTried <= maxRetry ? 1 : 0, queue.size());
+            assertEquals(timesTried <= maxRetry ? timesTried : null, failMap.get(trackedStock.getTicker()));
+        }
+
+        assertEquals(0, queue.size());
+        assertEquals(0, failMap.size());
+
+        verify(optionsChainLoadService, times(maxRetry)).loadFullLiveOptionsChain(eq(trackedStock.getTicker()));
+    }
+
     @After
     public void cleanup() {
         retryRepository.deleteAll();
