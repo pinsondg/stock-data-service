@@ -22,9 +22,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import javax.annotation.PostConstruct;
 import java.time.LocalDate;
-import java.util.List;
-import java.util.Queue;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.stream.Collectors;
 
@@ -33,6 +31,7 @@ import java.util.stream.Collectors;
 public class EndOfDayOptionsLoaderJob {
 
     private static final int STEPS = 3;
+    private static final int MAX_RETRY = 10;
 
     private static final int MAIN_JOB = 0;
     private static final int RETRY_JOB = 1;
@@ -54,6 +53,8 @@ public class EndOfDayOptionsLoaderJob {
 
     private Queue<String> trackedStocks;
 
+    private Map<String, Integer> failCountMap;
+
     private JobStatus mainJobStatus;
     private JobStatus retryJobStatus;
 
@@ -71,6 +72,7 @@ public class EndOfDayOptionsLoaderJob {
     public EndOfDayOptionsLoaderJob() {
         this.mainJobStatus = JobStatus.NOT_STARTED;
         this.trackedStocks = new ConcurrentLinkedQueue<>();
+        failCountMap = new HashMap<>();
     }
 
     @PostConstruct
@@ -87,6 +89,7 @@ public class EndOfDayOptionsLoaderJob {
                 .filter(trackedStock -> trackedStock.getLastOptionsHistoricDataUpdate() == null || trackedStock.getLastOptionsHistoricDataUpdate().isBefore(timeUtils.getLastTradeDate()))
                 .map(TrackedStock::getTicker)
                 .collect(Collectors.toList()));
+        failCountMap = new HashMap<>();
     }
 
     @Scheduled(cron = "0 * 10-15 * * *")
@@ -198,11 +201,20 @@ public class EndOfDayOptionsLoaderJob {
                                     .loadFullLiveOptionsChain(current.getTicker());
                             historicOptionsDataService.addFullOptionsChain(fullOptionsChain);
                             trackedStockService.updateOptionUpdatedTimestamp(current.getTicker());
+                            failCountMap.remove(current.getTicker());
                             log.info("Options chain for {} processed successfully.", current.getTicker());
                             log.info("Took {} seconds to process options for {}", timerUtil.stop() / 1000.0, current.getTicker());
                         } catch (OptionsChainLoadException e) {
-                            log.error("Failed to load options chain for tracked stock: {}. Adding back to queue.", current.getTicker(), e);
-                            trackedStocks.add(current.getTicker());
+                            Integer failCount = failCountMap.putIfAbsent(current.getTicker(), 1);
+                            if (failCount == null || failCount < MAX_RETRY) {
+                                failCount = failCountMap.get(current.getTicker());
+                                log.warn("Failed to load options chain for tracked stock: {}. Adding back to queue. Failed {} times", current.getTicker(), failCount, e);
+                                trackedStocks.add(current.getTicker());
+                                failCountMap.put(current.getTicker(), failCount + 1);
+                            } else {
+                                log.error("Failed to load options chain for tracked stock: {}. Failed > {} times and will not be added back to queue.", current.getTicker(), MAX_RETRY);
+                                failCountMap.remove(current.getTicker());
+                            }
                         }
                     }
                 } else {
