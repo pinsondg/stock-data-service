@@ -7,6 +7,7 @@ import com.dpgrandslam.stockdataservice.domain.model.options.OptionsChain;
 import com.dpgrandslam.stockdataservice.domain.util.TimeUtils;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -14,14 +15,12 @@ import java.time.LocalDate;
 import java.util.*;
 import java.util.stream.Collectors;
 
-@NoArgsConstructor(access = AccessLevel.PROTECTED)
+@RequiredArgsConstructor
 public abstract class OptionsChainLoadService {
 
-    @Autowired
-    private HistoricOptionsDataService historicOptionsDataService;
+    protected final HistoricOptionsDataService historicOptionsDataService;
 
-    @Autowired
-    protected TimeUtils timeUtils;
+    protected final TimeUtils timeUtils;
 
     /**
      * Gets the a live OptionChain for a ticker that is for the closest expiration date.

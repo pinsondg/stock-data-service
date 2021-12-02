@@ -58,6 +58,20 @@ public class TimeUtils {
         return now.toLocalDate();
     }
 
+    public LocalDate getStartDayOfTradeWeek() {
+        LocalDate now = this.getNowAmericaNewYork().toLocalDate();
+        while (now.getDayOfWeek() != DayOfWeek.MONDAY) {
+            now = now.minusDays(1);
+        }
+        while (isStockMarketHoliday(now)) {
+            now = now.plusDays(1);
+        }
+        if (now.isAfter(LocalDate.now())) {
+            return null;
+        }
+        return now;
+    }
+
     public boolean isStockMarketHoliday(LocalDate date) {
         List<Holiday> stockMarketHolidays = getStockMarketHolidays();
         if (stockMarketHolidays != null) {
