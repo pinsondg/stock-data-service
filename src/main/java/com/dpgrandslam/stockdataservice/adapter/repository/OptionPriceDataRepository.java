@@ -6,7 +6,9 @@ import org.springframework.data.jpa.repository.QueryHints;
 import org.springframework.stereotype.Repository;
 
 import javax.persistence.QueryHint;
+import java.sql.Date;
 import java.sql.Timestamp;
+import java.time.LocalDate;
 import java.util.Set;
 import java.util.stream.Stream;
 
@@ -17,4 +19,6 @@ public interface OptionPriceDataRepository extends JpaRepository<OptionPriceData
     Set<OptionPriceData> findAllByOptionId(Long optionId);
 
     Set<OptionPriceData> findAllByOptionIdAndDataObtainedDateBetween(Long optionId, Timestamp start,  Timestamp end);
+
+    Long countAllByTradeDate(LocalDate tradeDate);
 }
