@@ -2,11 +2,13 @@ package com.dpgrandslam.stockdataservice.domain.service;
 
 import com.dpgrandslam.stockdataservice.adapter.apiclient.WebpageLoader;
 import com.dpgrandslam.stockdataservice.domain.config.ApiClientConfigurationProperties;
+import com.dpgrandslam.stockdataservice.domain.error.AllOptionsExpirationDatesNotPresentException;
 import com.dpgrandslam.stockdataservice.domain.error.OptionsChainLoadException;
 import com.dpgrandslam.stockdataservice.domain.event.OptionChainParseFailedEvent;
 import com.dpgrandslam.stockdataservice.domain.model.options.LiveOption;
 import com.dpgrandslam.stockdataservice.domain.model.options.Option;
 import com.dpgrandslam.stockdataservice.domain.model.options.OptionsChain;
+import com.dpgrandslam.stockdataservice.domain.util.TimeUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
@@ -29,15 +31,22 @@ import java.util.*;
 @Slf4j
 public class YahooFinanceOptionsChainLoadService extends OptionsChainLoadService {
 
-    @Autowired
-    private WebpageLoader basicWebPageLoader;
+    private final WebpageLoader basicWebPageLoader;
 
-    @Autowired
-    private ApplicationEventPublisher eventPublisher;
+    private final ApplicationEventPublisher eventPublisher;
 
-    @Autowired
-    @Qualifier("YahooFinanceApiClientConfigurationProperties")
-    private ApiClientConfigurationProperties clientConfigurationProperties;
+    private final ApiClientConfigurationProperties clientConfigurationProperties;
+
+    public YahooFinanceOptionsChainLoadService(HistoricOptionsDataService historicOptionsDataService,
+                                               TimeUtils timeUtils, WebpageLoader webpageLoader,
+                                               ApplicationEventPublisher applicationEventPublisher,
+                                               @Qualifier("YahooFinanceApiClientConfigurationProperties")
+                                                       ApiClientConfigurationProperties clientConfigurationProperties) {
+        super(historicOptionsDataService, timeUtils);
+        this.basicWebPageLoader = webpageLoader;
+        this.eventPublisher = applicationEventPublisher;
+        this.clientConfigurationProperties = clientConfigurationProperties;
+    }
 
     @Override
     public OptionsChain loadLiveOptionsChainForClosestExpiration(String ticker) throws OptionsChainLoadException {
@@ -60,6 +69,13 @@ public class YahooFinanceOptionsChainLoadService extends OptionsChainLoadService
         Document document = doCall(ticker);
         try {
             List<LocalDate> expirationDates = parseDocumentForExpirationDates(document);
+            log.info("Found {} option expiration dates for ticker {}: {}", expirationDates.size(), ticker, expirationDates);
+            try {
+                validateExpirationDates(ticker, expirationDates);
+            } catch (AllOptionsExpirationDatesNotPresentException e) {
+                log.warn("Not all options dates could be loaded from yahoo for ticker {}.", ticker, e);
+                e.getMissingDates().forEach(date -> eventPublisher.publishEvent(new OptionChainParseFailedEvent(this, ticker, date, timeUtils.getLastTradeDate())));
+            }
             for (LocalDate expiration : expirationDates) {
                 try {
                     optionsChains.add(loadLiveOptionsChainForExpirationDate(ticker, expiration));
@@ -198,5 +214,14 @@ public class YahooFinanceOptionsChainLoadService extends OptionsChainLoadService
             });
         }
         return timestamps;
+    }
+
+    private void validateExpirationDates(String ticker, List<LocalDate> expirationDates) throws AllOptionsExpirationDatesNotPresentException {
+        Set<LocalDate> expDatesCopy = new HashSet<>(expirationDates);
+        Set<LocalDate> storedExpirationDates = super.historicOptionsDataService.getExpirationDatesAtStartDate(ticker, timeUtils.getStartDayOfTradeWeek());
+        storedExpirationDates.removeAll(expDatesCopy);
+        if (!storedExpirationDates.isEmpty()) {
+            throw new AllOptionsExpirationDatesNotPresentException(new ArrayList<>(storedExpirationDates));
+        }
     }
 }

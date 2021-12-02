@@ -25,6 +25,8 @@ import java.util.*;
 @Slf4j
 public class StockDataServiceController {
 
+    private static final LocalDate MIN_DATE = LocalDate.of(1900, 1, 1);
+
     @Autowired
     private OptionsChainLoadService optionsChainLoadService;
 
@@ -48,12 +50,12 @@ public class StockDataServiceController {
         if ((startDate.isPresent() || endDate.isPresent()) && expirationDate.isPresent()) {
             retVal.add(optionsChainLoadService.loadCompleteOptionsChainForExpirationDateWithPriceDataInRange(ticker,
                     expirationDate.map(LocalDate::parse).get(),
-                    startDate.map(LocalDate::parse).orElse(LocalDate.MIN),
+                    startDate.map(LocalDate::parse).orElse(MIN_DATE),
                     endDate.map(LocalDate::parse).orElse(LocalDate.now())));
         } else if (startDate.isPresent() || endDate.isPresent()) {
             retVal = optionsChainLoadService.loadFullOptionsChainWithAllDataBetweenDates(
                     ticker,
-                    startDate.map(LocalDate::parse).orElse(LocalDate.MIN),
+                    startDate.map(LocalDate::parse).orElse(MIN_DATE),
                     endDate.map(LocalDate::parse).orElse(LocalDate.now())
             );
         } else if (expirationDate.isPresent()){

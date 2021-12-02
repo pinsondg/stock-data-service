@@ -1,6 +1,8 @@
 package com.dpgrandslam.stockdataservice.domain.service;
 
+import com.dpgrandslam.stockdataservice.adapter.repository.HistoricalOptionJDBCRepository;
 import com.dpgrandslam.stockdataservice.adapter.repository.HistoricalOptionRepository;
+import com.dpgrandslam.stockdataservice.adapter.repository.OptionPriceDataRepository;
 import com.dpgrandslam.stockdataservice.domain.model.options.HistoricalOption;
 import com.dpgrandslam.stockdataservice.domain.model.options.Option;
 import com.dpgrandslam.stockdataservice.domain.model.options.OptionPriceData;
@@ -27,6 +29,10 @@ public class HistoricOptionsDataService {
     private final HistoricalOptionRepository historicalOptionRepository;
 
     private final Cache<String, Set<HistoricalOption.CacheableHistoricalOption>> historicalOptionCache;
+
+    private final HistoricalOptionJDBCRepository historicalOptionJDBCRepository;
+
+    private final OptionPriceDataRepository optionPriceDataRepository;
 
     private static final ExecutorService EXECUTOR = Executors.newFixedThreadPool(3);
 
@@ -116,7 +122,7 @@ public class HistoricOptionsDataService {
      * @return a set of option that has the data between the dates
      */
     public Set<HistoricalOption> findOptions(String ticker, final LocalDate startDate, final LocalDate endDate) {
-        return filterPriceDataBetweenDates(findOptions(ticker), startDate, endDate);
+        return historicalOptionJDBCRepository.findByTickerBetweenDates(ticker, startDate, endDate);
     }
 
     public Set<HistoricalOption> findOptions(String ticker, LocalDate expiration) {
@@ -192,6 +198,17 @@ public class HistoricOptionsDataService {
 
     public HistoricalOption saveOption(HistoricalOption historicalOption) {
         return historicalOptionRepository.saveAndFlush(historicalOption);
+    }
+
+    public Long countOptionsLoadedOnTradeDate(LocalDate tradeDate) {
+        return optionPriceDataRepository.countAllByTradeDate(tradeDate);
+    }
+
+    public Set<LocalDate> getExpirationDatesAtStartDate(String ticker, LocalDate startDate) {
+        if (startDate == null) {
+            return Collections.emptySet();
+        }
+        return historicalOptionJDBCRepository.getExpirationDatesForOptionsAfterDate(ticker, startDate);
     }
 
     private Set<HistoricalOption> filterPriceDataBetweenDates(Set<HistoricalOption> historicalOptions, LocalDate startDate, LocalDate endDate) {
