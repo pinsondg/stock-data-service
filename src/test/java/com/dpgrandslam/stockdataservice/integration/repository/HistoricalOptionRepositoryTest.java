@@ -10,12 +10,17 @@ import lombok.extern.slf4j.Slf4j;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
+import java.sql.Date;
 import java.sql.Timestamp;
+import java.time.DayOfWeek;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
+import java.time.temporal.TemporalAdjuster;
+import java.time.temporal.TemporalAdjusters;
 import java.util.*;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static org.junit.Assert.*;
@@ -120,5 +125,39 @@ public class HistoricalOptionRepositoryTest extends RepositoryIntTestBase {
         assertEquals(2, returned.size());
         Collection<OptionPriceData> priceData = returned.stream().filter(x -> x.getExpiration().equals(LocalDate.now())).findFirst().get().getOptionPriceData();
         assertEquals(2, priceData.size());
+    }
+
+    @Test
+    public void testGetExpirationDatesForOptionsAfterDate() {
+        LocalDate monday = LocalDate.now().with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
+
+        LocalDate expiration1 = LocalDate.now().with(TemporalAdjusters.nextOrSame(DayOfWeek.FRIDAY));
+        LocalDate expiration2 = expiration1.with(TemporalAdjusters.next(DayOfWeek.FRIDAY));
+        LocalDate expiration3 = expiration2.with(TemporalAdjusters.next(DayOfWeek.FRIDAY));
+
+        HistoricalOption option1 = TestDataFactory.HistoricalOptionMother.noPriceData().historicalPriceData(new HashSet<>(Arrays.asList(
+                TestDataFactory.OptionPriceDataMother.complete().tradeDate(monday).build(),
+                TestDataFactory.OptionPriceDataMother.complete().tradeDate(monday.plusDays(1)).build(),
+                TestDataFactory.OptionPriceDataMother.complete().tradeDate(monday.plusDays(3)).build()
+        ))).expiration(expiration1).build();
+        HistoricalOption option2 = TestDataFactory.HistoricalOptionMother.noPriceData().historicalPriceData(new HashSet<>(Arrays.asList(
+                TestDataFactory.OptionPriceDataMother.complete().tradeDate(monday).build(),
+                TestDataFactory.OptionPriceDataMother.complete().tradeDate(monday.plusDays(2)).build(),
+                TestDataFactory.OptionPriceDataMother.complete().tradeDate(monday.plusDays(3)).build()
+        ))).expiration(expiration2).build();
+        HistoricalOption option3 = TestDataFactory.HistoricalOptionMother.noPriceData().historicalPriceData(new HashSet<>(Arrays.asList(
+                TestDataFactory.OptionPriceDataMother.complete().tradeDate(monday.plusDays(1)).build(),
+                TestDataFactory.OptionPriceDataMother.complete().tradeDate(monday.plusDays(2)).build(),
+                TestDataFactory.OptionPriceDataMother.complete().tradeDate(monday.plusDays(3)).build()
+        ))).expiration(expiration3).build();
+
+        subject.saveAllAndFlush(Arrays.asList(option1, option2, option3));
+
+        Set<LocalDate> actual = jdbcRepository.getExpirationDatesForOptionsAfterDate("TEST", monday);
+
+        assertEquals(3, actual.size());
+        assertTrue(actual.contains(expiration1));
+        assertTrue(actual.contains(expiration2));
+        assertTrue(actual.contains(expiration3));
     }
 }

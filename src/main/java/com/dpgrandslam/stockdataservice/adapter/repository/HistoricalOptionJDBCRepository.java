@@ -9,4 +9,6 @@ public interface HistoricalOptionJDBCRepository {
 
     Set<HistoricalOption> findByTickerBetweenDates(String ticker, LocalDate startDate, LocalDate endDate);
 
+    Set<LocalDate> getExpirationDatesForOptionsAfterDate(String ticker, LocalDate date);
+
 }
