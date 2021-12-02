@@ -3,6 +3,7 @@ package com.dpgrandslam.stockdataservice.unit.service;
 import com.dpgrandslam.stockdataservice.adapter.apiclient.WebpageLoader;
 import com.dpgrandslam.stockdataservice.domain.config.ApiClientConfigurationProperties;
 import com.dpgrandslam.stockdataservice.domain.error.OptionsChainLoadException;
+import com.dpgrandslam.stockdataservice.domain.event.OptionChainParseFailedEvent;
 import com.dpgrandslam.stockdataservice.domain.model.options.HistoricalOption;
 import com.dpgrandslam.stockdataservice.domain.model.options.Option;
 import com.dpgrandslam.stockdataservice.domain.model.options.OptionChainKey;
@@ -16,9 +17,12 @@ import org.jsoup.Jsoup;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Captor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
+import org.springframework.context.ApplicationEventPublisher;
 
 import java.io.IOException;
 import java.sql.Timestamp;
@@ -49,8 +53,14 @@ public class YahooFinanceOptionsChainLoadServiceTest {
     @Mock
     private TimeUtils timeUtils;
 
+    @Mock
+    private ApplicationEventPublisher applicationEventPublisher;
+
     @InjectMocks
     private YahooFinanceOptionsChainLoadService subject;
+
+    @Captor
+    private ArgumentCaptor<OptionChainParseFailedEvent> optionChainParseFailedEventAC;
 
     @Before
     public void setup() throws IOException {
@@ -60,6 +70,7 @@ public class YahooFinanceOptionsChainLoadServiceTest {
         when(timeUtils.getNowAmericaNewYork()).thenCallRealMethod();
         when(timeUtils.isStockMarketHoliday(any(LocalDate.class))).thenReturn(false);
         when(timeUtils.getLastTradeDate()).thenCallRealMethod();
+        when(historicOptionsDataService.getExpirationDatesAtStartDate(anyString(), any())).thenReturn(Collections.emptySet());
     }
 
     @Test
@@ -256,6 +267,23 @@ public class YahooFinanceOptionsChainLoadServiceTest {
         subject.loadFullOptionsChainWithAllDataBetweenDates("SPCE", null, endDate);
 
         verify(webpageLoader, never()).parseUrl(any());
+    }
+
+    @Test
+    public void loadFullOptionsChain_expirationDatesMissing_publishesEvent() throws OptionsChainLoadException {
+        Set<LocalDate> localDates = new HashSet<>(subject.getOptionExpirationDates("TEST"));
+        localDates.add(LocalDate.now().plusYears(20));
+
+        when(historicOptionsDataService.getExpirationDatesAtStartDate(anyString(), any())).thenReturn(localDates);
+
+        subject.loadFullLiveOptionsChain("TEST");
+
+        verify(applicationEventPublisher, times(1)).publishEvent(optionChainParseFailedEventAC.capture());
+
+        OptionChainParseFailedEvent optionChainParseFailedEvent = optionChainParseFailedEventAC.getValue();
+
+        assertEquals("TEST", optionChainParseFailedEvent.getTicker());
+        assertEquals(LocalDate.now().plusYears(20), optionChainParseFailedEvent.getExpiration());
     }
 
     private Set<HistoricalOption> buildHistoricalOptions(LocalDate actual, String ticker, LocalDate expiration, Double strike) {

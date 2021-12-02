@@ -254,6 +254,8 @@ public class EndOfDayOptionsLoaderJob {
             }
             log.info("Main job finished with status: {}", mainJobStatus.name());
         }
+        long optionsLoadedCount = historicOptionsDataService.countOptionsLoadedOnTradeDate(timeUtils.getLastTradeDate());
+        log.info("Loaded {} options for date {}", optionsLoadedCount, timeUtils.getLastTradeDate());
     }
 
     @EventListener(TrackedStockAddedEvent.class)
