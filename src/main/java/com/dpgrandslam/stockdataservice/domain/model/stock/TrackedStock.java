@@ -1,8 +1,6 @@
 package com.dpgrandslam.stockdataservice.domain.model.stock;
 
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-import lombok.ToString;
+import lombok.*;
 
 import javax.persistence.Column;
 import javax.persistence.Entity;
@@ -13,6 +11,9 @@ import java.time.LocalDate;
 @Data
 @ToString
 @EqualsAndHashCode
+@Builder
+@AllArgsConstructor
+@NoArgsConstructor
 public class TrackedStock {
 
     @Id
