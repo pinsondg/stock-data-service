@@ -10,6 +10,7 @@ import com.dpgrandslam.stockdataservice.domain.model.options.Option;
 import com.dpgrandslam.stockdataservice.domain.model.options.OptionsChain;
 import com.dpgrandslam.stockdataservice.domain.util.TimeUtils;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.tomcat.jni.Local;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
@@ -26,6 +27,7 @@ import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 @Slf4j
@@ -220,6 +222,9 @@ public class YahooFinanceOptionsChainLoadService extends OptionsChainLoadService
         Set<LocalDate> expDatesCopy = new HashSet<>(expirationDates);
         Set<LocalDate> storedExpirationDates = super.historicOptionsDataService.getExpirationDatesAtStartDate(ticker, timeUtils.getStartDayOfTradeWeek());
         storedExpirationDates.removeAll(expDatesCopy);
+        storedExpirationDates = storedExpirationDates.stream()
+                .filter(date -> date.isAfter(LocalDate.now())
+                    || date.isEqual(LocalDate.now())).collect(Collectors.toSet());
         if (!storedExpirationDates.isEmpty()) {
             throw new AllOptionsExpirationDatesNotPresentException(new ArrayList<>(storedExpirationDates));
         }
