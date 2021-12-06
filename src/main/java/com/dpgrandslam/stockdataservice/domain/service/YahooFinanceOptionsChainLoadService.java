@@ -13,7 +13,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
@@ -218,7 +217,7 @@ public class YahooFinanceOptionsChainLoadService extends OptionsChainLoadService
 
     private void validateExpirationDates(String ticker, List<LocalDate> expirationDates) throws AllOptionsExpirationDatesNotPresentException {
         Set<LocalDate> expDatesCopy = new HashSet<>(expirationDates);
-        Set<LocalDate> storedExpirationDates = super.historicOptionsDataService.getExpirationDatesAtStartDate(ticker, timeUtils.getStartDayOfTradeWeek());
+        Set<LocalDate> storedExpirationDates = super.historicOptionsDataService.getExpirationDatesAtStartDate(ticker, timeUtils.getStartDayOfCurrentTradeWeek(2));
         storedExpirationDates.removeAll(expDatesCopy);
         if (!storedExpirationDates.isEmpty()) {
             throw new AllOptionsExpirationDatesNotPresentException(new ArrayList<>(storedExpirationDates));
