@@ -2,7 +2,6 @@ package com.dpgrandslam.stockdataservice.domain.util;
 
 import com.dpgrandslam.stockdataservice.domain.model.Holiday;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 
@@ -10,6 +9,7 @@ import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
 import java.time.*;
+import java.time.temporal.TemporalAdjusters;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -58,13 +58,24 @@ public class TimeUtils {
         return now.toLocalDate();
     }
 
-    public LocalDate getStartDayOfTradeWeek() {
-        LocalDate now = this.getNowAmericaNewYork().toLocalDate();
-        while (now.getDayOfWeek() != DayOfWeek.MONDAY) {
-            now = now.minusDays(1);
+    public LocalDate getStartDayOfCurrentTradeWeek() {
+        return getStartDayOfCurrentTradeWeek(0);
+    }
+
+    public LocalDate getStartDayOfCurrentTradeWeek(int weekOffset) {
+        if (weekOffset < 0) {
+            throw new IllegalArgumentException("Week offset must be greater than 1");
         }
-        while (isStockMarketHoliday(now)) {
-            now = now.plusDays(1);
+        LocalDate now = this.getNowAmericaNewYork().toLocalDate();
+        for (int i = weekOffset; i >= 0; i--) {
+            if (i == weekOffset) {
+                now = now.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
+            } else {
+                now = now.with(TemporalAdjusters.previous(DayOfWeek.MONDAY));
+            }
+            while (isStockMarketHoliday(now)) {
+                now = now.plusDays(1);
+            }
         }
         if (now.isAfter(LocalDate.now())) {
             return null;
