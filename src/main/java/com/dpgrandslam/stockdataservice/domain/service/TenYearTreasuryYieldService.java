@@ -34,12 +34,18 @@ public class TenYearTreasuryYieldService {
         final String url = clientConfigurationProperties.getUrlAndPort() + "/quote/%5ETNX/history?period1="
                 + convertDate(date) + "&period2=" + convertDate(date.plusDays(1))
                 + "&interval=1d&filter=history&frequency=1d&includeAdjustedClose=true";
-        try {
-            return treasuryYieldCache.get(date, (d) -> parseDocument(basicWebPageLoader.parseUrl(url)));
-        } catch (Exception e) {
+        YahooFinanceTenYearTreasuryYield tenYearYeild = treasuryYieldCache.get(date, (d) -> {
+            try {
+                return parseDocument(basicWebPageLoader.parseUrl(url));
+            }  catch (Exception e) {
+                return new YahooFinanceTenYearTreasuryYield();
+            }
+        });
+        if (tenYearYeild.getClose() == null) {
             log.error("Error parsing document at url {}", url);
             throw new TreasuryYieldLoadException(date);
         }
+        return tenYearYeild;
     }
 
     private Long convertDate(LocalDate date) {
