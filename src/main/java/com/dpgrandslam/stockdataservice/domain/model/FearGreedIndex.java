@@ -6,8 +6,10 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.hibernate.Hibernate;
+import org.hibernate.annotations.CreationTimestamp;
 
 import javax.persistence.*;
+import java.sql.Timestamp;
 import java.time.LocalDate;
 import java.util.Objects;
 
@@ -35,6 +37,11 @@ public class FearGreedIndex {
     @Column(name = "trade_date")
     private LocalDate tradeDate;
 
+    @Getter
+    @Setter
+    @CreationTimestamp
+    private Timestamp createTime;
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -45,6 +52,6 @@ public class FearGreedIndex {
 
     @Override
     public int hashCode() {
-        return Objects.hashCode(this);
+        return Objects.hash(value, tradeDate);
     }
 }
