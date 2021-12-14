@@ -69,7 +69,8 @@ public class YahooFinanceOptionsChainLoadServiceTest {
                 .loadResourceFile("mocks/yahoofinance/yahoo-finance-spy.html"), "UTF-8"));
         when(timeUtils.getNowAmericaNewYork()).thenCallRealMethod();
         when(timeUtils.isStockMarketHoliday(any(LocalDate.class))).thenReturn(false);
-        when(timeUtils.getLastTradeDate()).thenCallRealMethod();
+        when(timeUtils.getCurrentOrLastTradeDate()).thenCallRealMethod();
+        when(timeUtils.getCurrentOrLastTradeDate(any(LocalDateTime.class))).thenCallRealMethod();
         when(historicOptionsDataService.getExpirationDatesAtStartDate(anyString(), any())).thenReturn(Collections.emptySet());
     }
 

@@ -41,8 +41,8 @@ public class TimeUtils {
         return stockMarketHolidays;
     }
 
-    public LocalDate getLastTradeDate() {
-        LocalDateTime now = this.getNowAmericaNewYork();
+    public LocalDate getCurrentOrLastTradeDate(LocalDateTime dateTime) {
+        LocalDateTime now = dateTime;
         // If now is before a weekday at 9:30am set to previous day
         if (isWeekday(now.getDayOfWeek()) && now.toLocalTime().compareTo(LocalTime.of(9, 30)) < 0) {
             now = now.minusDays(1);
@@ -56,6 +56,10 @@ public class TimeUtils {
             now = now.minusDays(1);
         }
         return now.toLocalDate();
+    }
+
+    public LocalDate getCurrentOrLastTradeDate() {
+        return getCurrentOrLastTradeDate(this.getNowAmericaNewYork());
     }
 
     public LocalDate getStartDayOfCurrentTradeWeek() {

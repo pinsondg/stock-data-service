@@ -39,7 +39,7 @@ public class EndOfDayFearGreedLoaderJobTest {
 
         Set<FearGreedIndex> fearGreedIndexSet = Collections.singleton(fearGreedIndex1);
         when(fearGreedDataLoadService.getFearGreedIndexOfDay(any())).thenReturn(Optional.empty());
-        when(timeUtils.getLastTradeDate()).thenReturn(LocalDate.now());
+        when(timeUtils.getCurrentOrLastTradeDate()).thenReturn(LocalDate.now());
         when(fearGreedDataLoadService.loadCurrentFearGreedIndex()).thenReturn(fearGreedIndexSet);
 
         subject.runJob();
