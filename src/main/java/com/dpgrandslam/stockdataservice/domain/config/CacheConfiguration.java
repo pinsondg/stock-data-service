@@ -1,5 +1,6 @@
 package com.dpgrandslam.stockdataservice.domain.config;
 
+import com.dpgrandslam.stockdataservice.domain.model.FearGreedIndex;
 import com.dpgrandslam.stockdataservice.domain.model.options.HistoricalOption;
 import com.dpgrandslam.stockdataservice.domain.model.stock.EndOfDayStockData;
 import com.dpgrandslam.stockdataservice.domain.model.stock.YahooFinanceTenYearTreasuryYield;
@@ -8,6 +9,7 @@ import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import lombok.Data;
 import lombok.NonNull;
+import org.apache.commons.lang3.tuple.Pair;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -51,6 +53,14 @@ public class CacheConfiguration {
         return Caffeine.newBuilder()
                 .expireAfterWrite(30, TimeUnit.MINUTES)
                 .maximumSize(1000)
+                .build();
+    }
+
+    @Bean
+    public Cache<Pair<LocalDate, LocalDate>, List<FearGreedIndex>> fearGreedBetweenDatesCache() {
+        return Caffeine.newBuilder()
+                .expireAfterWrite(2, TimeUnit.HOURS)
+                .maximumSize(500)
                 .build();
     }
 

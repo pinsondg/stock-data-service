@@ -1,15 +1,18 @@
 package com.dpgrandslam.stockdataservice.domain.service;
 
-import com.dpgrandslam.stockdataservice.adapter.apiclient.BasicWebPageLoader;
+import com.dpgrandslam.stockdataservice.adapter.apiclient.WebpageLoader;
+import com.dpgrandslam.stockdataservice.adapter.repository.FearGreedIndexRepository;
 import com.dpgrandslam.stockdataservice.domain.model.FearGreedIndex;
 import com.dpgrandslam.stockdataservice.domain.util.TimeUtils;
-import lombok.RequiredArgsConstructor;
+import com.github.benmanes.caffeine.cache.Cache;
+import org.apache.commons.lang3.tuple.Pair;
 import org.jsoup.nodes.Document;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.regex.Matcher;
@@ -17,19 +20,24 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 @Service
-@RequiredArgsConstructor
-public class CNNFearGreedIndexDataLoadService implements FearGreedIndexDataLoadService {
+public class CNNFearGreedDataLoadService extends FearGreedDataLoadService {
 
     public static final String URL = "https://money.cnn.com/data/fear-and-greed/";
     private static final Pattern REGEX = Pattern.compile("^Fear & Greed (.*): ([0-9]*) \\(.*\\)$");
 
-    private final BasicWebPageLoader basicWebPageLoader;
+    private final WebpageLoader webpageLoader;
     private final TimeUtils timeUtils;
+
+    public CNNFearGreedDataLoadService(FearGreedIndexRepository fearGreedIndexRepository, Cache<Pair<LocalDate, LocalDate>, List<FearGreedIndex>> fearGreedCache,  WebpageLoader webpageLoader, TimeUtils timeUtils) {
+        super(fearGreedIndexRepository, fearGreedCache);
+        this.webpageLoader = webpageLoader;
+        this.timeUtils = timeUtils;
+    }
 
 
     @Override
     public Set<FearGreedIndex> loadCurrentFearGreedIndex() {
-        return parseDocument(basicWebPageLoader.parseUrl(URL));
+        return parseDocument(webpageLoader.parseUrl(URL));
     }
 
     private Set<FearGreedIndex> parseDocument(Document document) {

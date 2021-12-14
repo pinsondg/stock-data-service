@@ -1,10 +1,7 @@
 package com.dpgrandslam.stockdataservice.domain.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 import org.hibernate.Hibernate;
 import org.hibernate.annotations.CreationTimestamp;
 
@@ -17,8 +14,8 @@ import java.util.Objects;
 @Table(indexes = {
         @Index(name = "idx_trade_date", columnList = "trade_date", unique = true)
 })
+@ToString
 @NoArgsConstructor
-@AllArgsConstructor
 public class FearGreedIndex {
 
     @Id
