@@ -24,7 +24,7 @@ public class EndOfDayFearGreedLoaderJob {
 
     @Scheduled(cron = "0 0 17-23 * * MON-FRI")
     public void runJob() {
-        LocalDate tradeDate = timeUtils.getLastTradeDate();
+        LocalDate tradeDate = timeUtils.getCurrentOrLastTradeDate();
         Optional<FearGreedIndex> existing = fearGreedDataLoadService.getFearGreedIndexOfDay(tradeDate);
         if (existing.isEmpty()) {
             try {

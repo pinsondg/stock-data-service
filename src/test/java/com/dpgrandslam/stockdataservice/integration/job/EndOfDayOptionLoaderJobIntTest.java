@@ -82,7 +82,7 @@ public class EndOfDayOptionLoaderJobIntTest {
     @Before
     public void init() throws IOException {
         when(timeUtils.isStockMarketHoliday(any())).thenReturn(false);
-        when(timeUtils.getLastTradeDate()).thenReturn(LocalDate.now());
+        when(timeUtils.getCurrentOrLastTradeDate()).thenReturn(LocalDate.now());
         mockErrorDoc = Jsoup.parse(loadHtmlFileAndClean("mocks/yahoofinance/yahoo-finance-aapl_error.html"));
         mockSuccessDoc = Jsoup.parse(loadHtmlFileAndClean("mocks/yahoofinance/yahoo-finance-aapl_empty-chain.html"));
     }
@@ -112,13 +112,13 @@ public class EndOfDayOptionLoaderJobIntTest {
         List<OptionsChain> optionsChains = optionsChainListAC.getValue();
 
         assertEquals(1, optionsChains.size());
-        assertEquals(16, retryService.getAllWithTradeDate(timeUtils.getLastTradeDate()).size());
+        assertEquals(16, retryService.getAllWithTradeDate(timeUtils.getCurrentOrLastTradeDate()).size());
         assertEquals(EndOfDayOptionsLoaderJob.JobStatus.COMPLETE_WITH_FAILURES, ReflectionTestUtils.getField(subject, "mainJobStatus"));
     }
 
     @Test
     public void testRetryQueue() throws OptionsChainLoadException {
-        Long retryId = retryService.addOrUpdateRetry("TEST", LocalDate.of(2021, 3, 12), timeUtils.getLastTradeDate()).getRetryId();
+        Long retryId = retryService.addOrUpdateRetry("TEST", LocalDate.of(2021, 3, 12), timeUtils.getCurrentOrLastTradeDate()).getRetryId();
 
         ReflectionTestUtils.setField(subject, "mainJobStatus", EndOfDayOptionsLoaderJob.JobStatus.COMPLETE_WITH_FAILURES);
 
@@ -130,12 +130,12 @@ public class EndOfDayOptionLoaderJobIntTest {
         verify(historicOptionsDataService, times(1)).addOptionsChain(any(OptionsChain.class));
         verify(optionsChainLoadService, times(1)).loadLiveOptionsChainForExpirationDate(eq("TEST"), eq(LocalDate.of(2021, 3, 12)));
         verify(retryService, times(1)).removeRetry(eq(retryId));
-        verify(retryService, atLeastOnce()).getAllWithTradeDate(eq(timeUtils.getLastTradeDate()));
+        verify(retryService, atLeastOnce()).getAllWithTradeDate(eq(timeUtils.getCurrentOrLastTradeDate()));
     }
 
     @Test
     public void testRetryQueue_failsLoad_doesNotAddBack() throws OptionsChainLoadException {
-        OptionPriceDataLoadRetry retry = retryService.addOrUpdateRetry("TEST", LocalDate.of(2021, 3, 12), timeUtils.getLastTradeDate());
+        OptionPriceDataLoadRetry retry = retryService.addOrUpdateRetry("TEST", LocalDate.of(2021, 3, 12), timeUtils.getCurrentOrLastTradeDate());
 
         ReflectionTestUtils.setField(subject, "mainJobStatus", EndOfDayOptionsLoaderJob.JobStatus.COMPLETE_WITH_FAILURES);
 

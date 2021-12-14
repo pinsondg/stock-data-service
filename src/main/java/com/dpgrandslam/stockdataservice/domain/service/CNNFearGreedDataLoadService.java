@@ -55,23 +55,20 @@ public class CNNFearGreedDataLoadService extends FearGreedDataLoadService {
             String time = m.group(1);
             switch (time) {
                 case "Previous Close":
-                    if (timeUtils.getNowAmericaNewYork().isAfter(LocalDateTime.of(LocalDate.now(), LocalTime.of(4, 30)))) {
-                        fearGreedIndex.setTradeDate(timeUtils.getLastTradeDate());
-                    } else {
-                        fearGreedIndex.setTradeDate(LocalDate.now().minusDays(1));
-                    }
+                    fearGreedIndex.setTradeDate(timeUtils.getCurrentOrLastTradeDate(LocalDateTime.now().minusDays(1)));
                     break;
                 case "1 Week Ago":
-                    fearGreedIndex.setTradeDate(LocalDate.now().minusWeeks(1));
+                    fearGreedIndex.setTradeDate(timeUtils.getCurrentOrLastTradeDate(LocalDateTime.now().minusWeeks(1)));
                     break;
                 case "1 Month Ago":
-                    fearGreedIndex.setTradeDate(LocalDate.now().minusMonths(1));
+                    fearGreedIndex.setTradeDate(timeUtils.getCurrentOrLastTradeDate(LocalDateTime.now().minusMonths(1)));
                     break;
                 case "1 Year Ago":
-                    fearGreedIndex.setTradeDate(LocalDate.now().minusYears(1));
+                    fearGreedIndex.setTradeDate(timeUtils.getCurrentOrLastTradeDate(LocalDateTime.now().minusYears(1)));
                     break;
                 case "Now":
-                    return null;
+                    fearGreedIndex.setTradeDate(timeUtils.getCurrentOrLastTradeDate());
+                    break;
             }
             Integer v = Integer.parseInt(m.group(2));
             fearGreedIndex.setValue(v);
