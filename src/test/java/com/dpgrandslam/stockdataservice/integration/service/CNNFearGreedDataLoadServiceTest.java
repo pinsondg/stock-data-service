@@ -16,6 +16,8 @@ import java.io.IOException;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Set;
 
 import static junit.framework.TestCase.assertEquals;
@@ -61,6 +63,31 @@ public class CNNFearGreedDataLoadServiceTest extends MockClientTest {
         assertTrue(actual.stream().anyMatch(x -> x.getValue() == 83 && x.getTradeDate().equals(LocalDate.now().minusMonths(1))));
         assertTrue(actual.stream().anyMatch(x -> x.getValue() == 69 && x.getTradeDate().equals(LocalDate.now().minusYears(1))));
         assertTrue(actual.stream().anyMatch(x -> x.getValue() == 26 && x.getTradeDate().equals(LocalDate.now())));
+
+    }
+
+    @Test
+    public void testSaveAll_repeatingItems_stillSaves() {
+        FearGreedIndex fearGreedIndex1 = new FearGreedIndex();
+        fearGreedIndex1.setTradeDate(LocalDate.now());
+        fearGreedIndex1.setValue(21);
+        FearGreedIndex fearGreedIndex2 = new FearGreedIndex();
+        fearGreedIndex2.setValue(22);
+        fearGreedIndex2.setTradeDate(LocalDate.now().minusDays(10));
+        FearGreedIndex fearGreedIndex3 = new FearGreedIndex();
+        fearGreedIndex3.setValue(12);
+        fearGreedIndex3.setTradeDate(LocalDate.now().minusDays(20));
+        FearGreedIndex fearGreedIndex4 = new FearGreedIndex();
+        fearGreedIndex4.setTradeDate(LocalDate.now());
+        fearGreedIndex1.setValue(21);
+
+        //Save 1 twice
+        subject.saveFearGreedData(Arrays.asList(fearGreedIndex1, fearGreedIndex2));
+        subject.saveFearGreedData(Arrays.asList(fearGreedIndex4, fearGreedIndex3));
+
+        List<FearGreedIndex> fearGreedIndexList = subject.loadFearGreedDataBetweenDates(LocalDate.now().minusDays(20), LocalDate.now());
+        assertEquals(3, fearGreedIndexList.size());
+        assertTrue(fearGreedIndexList.stream().anyMatch(x -> x.getValue() == 21 && x.getTradeDate().equals(LocalDate.now())));
 
     }
 }

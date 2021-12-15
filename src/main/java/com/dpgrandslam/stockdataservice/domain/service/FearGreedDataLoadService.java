@@ -4,13 +4,16 @@ import com.dpgrandslam.stockdataservice.adapter.repository.FearGreedIndexReposit
 import com.dpgrandslam.stockdataservice.domain.model.FearGreedIndex;
 import com.github.benmanes.caffeine.cache.Cache;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.tuple.Pair;
+import org.springframework.dao.DataIntegrityViolationException;
 
 import java.time.LocalDate;
 import java.util.*;
 import java.util.stream.Collectors;
 
 @RequiredArgsConstructor
+@Slf4j
 public abstract class FearGreedDataLoadService {
 
     protected final FearGreedIndexRepository fearGreedIndexRepository;
@@ -32,11 +35,23 @@ public abstract class FearGreedDataLoadService {
     }
 
     public FearGreedIndex saveFearGreedData(FearGreedIndex fearGreedIndex) {
-        return fearGreedIndexRepository.save(fearGreedIndex);
+        try {
+            return fearGreedIndexRepository.save(fearGreedIndex);
+        } catch (DataIntegrityViolationException e) {
+            log.warn("Tried to save duplicate value for {}. Ignoring save. Message: {}", fearGreedIndex, e.getMessage());
+        }
+        return fearGreedIndex;
     }
 
     public List<FearGreedIndex> saveFearGreedData(Collection<FearGreedIndex> fearGreedIndices) {
-        return fearGreedIndexRepository.saveAll(fearGreedIndices);
+        try {
+            return fearGreedIndexRepository.saveAll(fearGreedIndices);
+        } catch (DataIntegrityViolationException e) {
+            return fearGreedIndices.stream()
+                    .map(this::saveFearGreedData)
+                    .filter(Objects::nonNull)
+                    .collect(Collectors.toList());
+        }
     }
 
     public Optional<FearGreedIndex> getFearGreedIndexOfDay(LocalDate date) {
