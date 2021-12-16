@@ -6,6 +6,7 @@ import org.hibernate.Hibernate;
 import org.hibernate.annotations.CreationTimestamp;
 
 import javax.persistence.*;
+import javax.validation.constraints.NotNull;
 import java.sql.Timestamp;
 import java.time.LocalDate;
 import java.util.Objects;
@@ -27,11 +28,13 @@ public class FearGreedIndex {
 
     @Getter
     @Setter
+    @NotNull
     private Integer value;
 
     @Getter
     @Setter
     @Column(name = "trade_date")
+    @NotNull
     private LocalDate tradeDate;
 
     @Getter
