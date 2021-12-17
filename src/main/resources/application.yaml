@@ -35,6 +35,8 @@ api:
       authorization-token: ${TIINGO_AUTH_TOKEN}
     yahoo-finance:
       url: http://finance.yahoo.com
+    cnn:
+      url: https://money.cnn.com
 
 server:
   port: 5000

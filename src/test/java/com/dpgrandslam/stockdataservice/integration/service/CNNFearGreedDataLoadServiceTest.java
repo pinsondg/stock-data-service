@@ -45,7 +45,7 @@ public class CNNFearGreedDataLoadServiceTest extends MockClientTest {
     @Test
     public void testLoadFearGreedIndex_beforeClose() throws IOException {
         mockServerRule.getClient().when(
-                request().withMethod("GET").withPath("/data/fear-and-greed"),
+                request().withMethod("GET").withPath("/data/fear.*"),
                 Times.exactly(1)
         ).respond(HttpResponse.response()
                 .withStatusCode(200)
@@ -62,7 +62,7 @@ public class CNNFearGreedDataLoadServiceTest extends MockClientTest {
         assertTrue(actual.stream().anyMatch(x -> x.getValue() == 35 && x.getTradeDate().equals(LocalDate.now().minusWeeks(1))));
         assertTrue(actual.stream().anyMatch(x -> x.getValue() == 83 && x.getTradeDate().equals(LocalDate.now().minusMonths(1))));
         assertTrue(actual.stream().anyMatch(x -> x.getValue() == 69 && x.getTradeDate().equals(LocalDate.now().minusYears(1))));
-        assertTrue(actual.stream().anyMatch(x -> x.getValue() == 26 && x.getTradeDate().equals(LocalDate.now())));
+        assertTrue(actual.stream().anyMatch(x -> x.getValue() == 25 && x.getTradeDate().equals(LocalDate.now())));
 
     }
 
@@ -79,7 +79,7 @@ public class CNNFearGreedDataLoadServiceTest extends MockClientTest {
         fearGreedIndex3.setTradeDate(LocalDate.now().minusDays(20));
         FearGreedIndex fearGreedIndex4 = new FearGreedIndex();
         fearGreedIndex4.setTradeDate(LocalDate.now());
-        fearGreedIndex1.setValue(21);
+        fearGreedIndex4.setValue(21);
 
         //Save 1 twice
         subject.saveFearGreedData(Arrays.asList(fearGreedIndex1, fearGreedIndex2));

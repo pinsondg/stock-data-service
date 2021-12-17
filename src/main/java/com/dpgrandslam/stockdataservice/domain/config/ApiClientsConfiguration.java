@@ -38,4 +38,10 @@ public class ApiClientsConfiguration {
                 .client(new OkHttpClient())
                 .target(new BasicAuthorizationTarget<>(TiingoApiClient.class, configurationProperties));
     }
+
+    @Bean("CNNClientConfigurationProperties")
+    @ConfigurationProperties(prefix = "api.client.cnn")
+    public ApiClientConfigurationProperties cnnClientConfigurationProperties() {
+        return new ApiClientConfigurationProperties();
+    }
 }

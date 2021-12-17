@@ -45,3 +45,6 @@ api:
     yahoo-finance:
       url: http://localhost
       port: 1080
+    cnn:
+      url: http://localhost
+      port: 1080
