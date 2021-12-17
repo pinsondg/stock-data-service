@@ -281,7 +281,7 @@ public class YahooFinanceOptionsChainLoadServiceTest {
 
         subject.loadFullLiveOptionsChain("TEST");
 
-        verify(applicationEventPublisher, times(2)).publishEvent(optionChainParseFailedEventAC.capture());
+        verify(applicationEventPublisher, atLeastOnce()).publishEvent(optionChainParseFailedEventAC.capture());
 
         OptionChainParseFailedEvent optionChainParseFailedEvent = optionChainParseFailedEventAC.getAllValues().get(0);
 
