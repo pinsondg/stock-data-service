@@ -4,10 +4,7 @@ import com.dpgrandslam.stockdataservice.adapter.api.StockDataServiceController;
 import com.dpgrandslam.stockdataservice.domain.error.OptionsChainLoadException;
 import com.dpgrandslam.stockdataservice.domain.model.options.Option;
 import com.dpgrandslam.stockdataservice.domain.model.options.OptionsChain;
-import com.dpgrandslam.stockdataservice.domain.model.stock.EndOfDayStockData;
-import com.dpgrandslam.stockdataservice.domain.model.stock.LiveStockData;
-import com.dpgrandslam.stockdataservice.domain.model.stock.StockSearchResult;
-import com.dpgrandslam.stockdataservice.domain.model.stock.TrackedStock;
+import com.dpgrandslam.stockdataservice.domain.model.stock.*;
 import com.dpgrandslam.stockdataservice.domain.model.tiingo.TiingoStockSearchResponse;
 import com.dpgrandslam.stockdataservice.domain.service.OptionsChainLoadService;
 import com.dpgrandslam.stockdataservice.domain.service.StockDataLoadService;
@@ -76,22 +73,23 @@ public class StockDataServiceControllerTest {
 
     @Test
     public void testUpdateTrackedStocksActive() {
-        Map<String, Boolean> request = new HashMap<>();
-        request.put("TEST1", true);
-        request.put("TEST2", false);
-        request.put("TEST3", true);
+        List<TrackedStockUpdateRequest> request = new ArrayList<>();
+
+        request.add(new TrackedStockUpdateRequest("TEST1", true));
+        request.add(new TrackedStockUpdateRequest("TEST2", false));
+        request.add(new TrackedStockUpdateRequest("TEST3", true));
 
         doNothing().doNothing().doThrow(new EntityNotFoundException("Not Found")).when(trackedStockService).setTrackedStockActive(anyString(), anyBoolean());
 
-        ResponseEntity<Map<String, Object>> response = subject.updateTrackedStocksActive(request);
+        ResponseEntity<TrackedStockUpdateResponse> response = subject.updateTrackedStocksActive(request);
 
         verify(trackedStockService ,times(1)).setTrackedStockActive(eq("TEST1"), eq(true));
         verify(trackedStockService, times(1)).setTrackedStockActive(eq("TEST2"), eq(false));
         verify(trackedStockService, times(1)).setTrackedStockActive(eq("TEST3"), eq(true));
 
         assertTrue(response.getStatusCode().is2xxSuccessful());
-        assertEquals("has_failures", response.getBody().get("status"));
-        assertEquals(1, ((Map<String, String>)response.getBody().get("failed")).size());
+        assertEquals("has_failures", response.getBody().getStatus());
+        assertEquals(1, response.getBody().getFailedUpdates().size());
     }
 
     @Test

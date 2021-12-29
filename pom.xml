@@ -23,6 +23,7 @@
         <liquibase-hibernate5.version>3.10.2</liquibase-hibernate5.version>
         <cucumber.version>6.11.0</cucumber.version>
         <jacoco.line-coverage>0.80</jacoco.line-coverage>
+        <swagger.version>3.0.0</swagger.version>
         <log4j2.version>2.15.0</log4j2.version>
     </properties>
     <dependencies>
@@ -45,6 +46,16 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.springfox</groupId>
+            <artifactId>springfox-boot-starter</artifactId>
+            <version>${swagger.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>io.springfox</groupId>
+            <artifactId>springfox-swagger-ui</artifactId>
+            <version>${swagger.version}</version>
         </dependency>
         <dependency>
             <groupId>org.liquibase</groupId>
