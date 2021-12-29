@@ -11,9 +11,7 @@ import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
 
 import java.time.LocalDate;
-import java.util.Collections;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
@@ -36,17 +34,38 @@ public class EndOfDayFearGreedLoaderJobTest {
         fearGreedIndex1.setTradeDate(LocalDate.now());
         fearGreedIndex1.setId(1L);
         fearGreedIndex1.setValue(20);
+        FearGreedIndex fearGreedIndex2 = new FearGreedIndex();
+        fearGreedIndex2.setTradeDate(LocalDate.now().minusDays(1));
+        fearGreedIndex2.setId(2L);
+        fearGreedIndex2.setValue(21);
 
-        Set<FearGreedIndex> fearGreedIndexSet = Collections.singleton(fearGreedIndex1);
+        Set<FearGreedIndex> fearGreedIndexSet = new HashSet<>(Arrays.asList(fearGreedIndex1, fearGreedIndex2));
         when(fearGreedDataLoadService.getFearGreedIndexOfDay(any())).thenReturn(Optional.empty());
         when(timeUtils.getCurrentOrLastTradeDate()).thenReturn(LocalDate.now());
+        when(timeUtils.isStockMarketHoliday(eq(LocalDate.now()))).thenReturn(false);
+        when(timeUtils.isStockMarketHoliday(eq(LocalDate.now().minusDays(1)))).thenReturn(true);
         when(fearGreedDataLoadService.loadCurrentFearGreedIndex()).thenReturn(fearGreedIndexSet);
 
         subject.runJob();
 
         verify(fearGreedDataLoadService, times(1)).getFearGreedIndexOfDay(eq(LocalDate.now()));
         verify(fearGreedDataLoadService, times(1)).loadCurrentFearGreedIndex();
-        verify(fearGreedDataLoadService, times(1)).saveFearGreedData(eq(fearGreedIndexSet));
+        verify(fearGreedDataLoadService, times(1)).saveFearGreedData(eq(Collections.singleton(fearGreedIndex1)));
+    }
+
+    @Test
+    public void testRunJob_stockMarketHoliday_doesNotRun() {
+
+        when(fearGreedDataLoadService.getFearGreedIndexOfDay(any())).thenReturn(Optional.empty());
+        when(timeUtils.getCurrentOrLastTradeDate()).thenReturn(LocalDate.now());
+        when(timeUtils.isStockMarketHoliday(any(LocalDate.class))).thenReturn(true);
+
+        subject.runJob();
+
+        verify(timeUtils, times(1)).isStockMarketHoliday(eq(LocalDate.now()));
+        verify(fearGreedDataLoadService, never()).saveFearGreedData(any(FearGreedIndex.class));
+        verify(fearGreedDataLoadService, never()).saveFearGreedData(anyList());
+        verify(fearGreedDataLoadService, never()).loadCurrentFearGreedIndex();
     }
 
 }
