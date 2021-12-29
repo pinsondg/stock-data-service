@@ -163,7 +163,7 @@ public class EndOfDayOptionLoaderJobIntTest {
     @Test
     public void test_jobHoliday_doesNotRun() throws OptionsChainLoadException {
         Holiday holiday = new Holiday("Test Holiday", LocalDate.now());
-        List<Holiday> mockHolidays = Collections.singletonList(holiday);
+        Set<Holiday> mockHolidays = Collections.singleton(holiday);
         when(timeUtils.isTodayAmericaNewYorkStockMarketHoliday()).thenReturn(true);
         when(timeUtils.getStockMarketHolidays()).thenReturn(mockHolidays);
         when(timeUtils.getNowAmericaNewYork()).thenCallRealMethod();
