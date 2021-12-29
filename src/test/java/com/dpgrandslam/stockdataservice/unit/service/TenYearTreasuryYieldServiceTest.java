@@ -62,7 +62,7 @@ public class TenYearTreasuryYieldServiceTest {
 
     @Test(expected = TreasuryYieldLoadException.class)
     public void testGetTreasuryYieldForDate_throwsException() {
-        when(treasuryYieldCache.get(any(), any())).thenThrow(new NullPointerException());
+        when(treasuryYieldCache.get(any(), any())).thenReturn(new YahooFinanceTenYearTreasuryYield());
 
         subject.getTreasuryYieldForDate(LocalDate.now());
     }

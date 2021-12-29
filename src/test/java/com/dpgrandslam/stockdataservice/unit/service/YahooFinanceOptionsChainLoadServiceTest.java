@@ -69,7 +69,8 @@ public class YahooFinanceOptionsChainLoadServiceTest {
                 .loadResourceFile("mocks/yahoofinance/yahoo-finance-spy.html"), "UTF-8"));
         when(timeUtils.getNowAmericaNewYork()).thenCallRealMethod();
         when(timeUtils.isStockMarketHoliday(any(LocalDate.class))).thenReturn(false);
-        when(timeUtils.getLastTradeDate()).thenCallRealMethod();
+        when(timeUtils.getCurrentOrLastTradeDate()).thenCallRealMethod();
+        when(timeUtils.getCurrentOrLastTradeDate(any(LocalDateTime.class))).thenCallRealMethod();
         when(historicOptionsDataService.getExpirationDatesAtStartDate(anyString(), any())).thenReturn(Collections.emptySet());
     }
 
@@ -273,14 +274,16 @@ public class YahooFinanceOptionsChainLoadServiceTest {
     public void loadFullOptionsChain_expirationDatesMissing_publishesEvent() throws OptionsChainLoadException {
         Set<LocalDate> localDates = new HashSet<>(subject.getOptionExpirationDates("TEST"));
         localDates.add(LocalDate.now().plusYears(20));
+        localDates.add(LocalDate.now().minusDays(1));
+        localDates.add(LocalDate.now());
 
         when(historicOptionsDataService.getExpirationDatesAtStartDate(anyString(), any())).thenReturn(localDates);
 
         subject.loadFullLiveOptionsChain("TEST");
 
-        verify(applicationEventPublisher, times(1)).publishEvent(optionChainParseFailedEventAC.capture());
+        verify(applicationEventPublisher, atLeastOnce()).publishEvent(optionChainParseFailedEventAC.capture());
 
-        OptionChainParseFailedEvent optionChainParseFailedEvent = optionChainParseFailedEventAC.getValue();
+        OptionChainParseFailedEvent optionChainParseFailedEvent = optionChainParseFailedEventAC.getAllValues().get(0);
 
         assertEquals("TEST", optionChainParseFailedEvent.getTicker());
         assertEquals(LocalDate.now().plusYears(20), optionChainParseFailedEvent.getExpiration());

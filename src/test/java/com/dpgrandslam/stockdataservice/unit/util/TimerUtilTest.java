@@ -13,9 +13,9 @@ public class TimerUtilTest {
         timerUtil.start();
         Thread.sleep(100);
         long time = timerUtil.getTime();
-        assertEquals(100L, time, 100);
+        assertEquals(100L, time, 1000);
         Thread.sleep(100);
         time = timerUtil.stop();
-        assertEquals(200L, time, 100);
+        assertEquals(200L, time, 1000);
     }
 }

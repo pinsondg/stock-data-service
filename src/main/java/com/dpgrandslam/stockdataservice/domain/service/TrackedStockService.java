@@ -53,7 +53,7 @@ public class TrackedStockService {
 
     public void updateOptionUpdatedTimestamp(String ticker)  {
         TrackedStock trackedStock = findByTicker(ticker);
-        trackedStock.setLastOptionsHistoricDataUpdate(timeUtils.getLastTradeDate());
+        trackedStock.setLastOptionsHistoricDataUpdate(timeUtils.getCurrentOrLastTradeDate());
         trackedStocksRepository.save(trackedStock);
     }
 

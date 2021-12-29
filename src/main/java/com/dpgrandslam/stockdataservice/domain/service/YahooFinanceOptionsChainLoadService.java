@@ -13,7 +13,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
@@ -26,6 +25,7 @@ import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 @Slf4j
@@ -56,7 +56,7 @@ public class YahooFinanceOptionsChainLoadService extends OptionsChainLoadService
             expiration = parseDocumentForExpirationDates(document).get(0);
             return buildOptionsChain(ticker, expiration, document);
         } catch (Exception e) {
-            eventPublisher.publishEvent(new OptionChainParseFailedEvent(this, ticker, expiration, timeUtils.getLastTradeDate()));
+            eventPublisher.publishEvent(new OptionChainParseFailedEvent(this, ticker, expiration, timeUtils.getCurrentOrLastTradeDate()));
             throw new OptionsChainLoadException(ticker, document.baseUri(), "Options chain load failure most likely due to too many calls.", e);
         }
     }
@@ -74,7 +74,7 @@ public class YahooFinanceOptionsChainLoadService extends OptionsChainLoadService
                 validateExpirationDates(ticker, expirationDates);
             } catch (AllOptionsExpirationDatesNotPresentException e) {
                 log.warn("Not all options dates could be loaded from yahoo for ticker {}.", ticker, e);
-                e.getMissingDates().forEach(date -> eventPublisher.publishEvent(new OptionChainParseFailedEvent(this, ticker, date, timeUtils.getLastTradeDate())));
+                e.getMissingDates().forEach(date -> eventPublisher.publishEvent(new OptionChainParseFailedEvent(this, ticker, date, timeUtils.getCurrentOrLastTradeDate())));
             }
             for (LocalDate expiration : expirationDates) {
                 try {
@@ -103,7 +103,7 @@ public class YahooFinanceOptionsChainLoadService extends OptionsChainLoadService
             if (document != null) {
                 uri = document.baseUri();
             }
-            eventPublisher.publishEvent(new OptionChainParseFailedEvent(this, ticker, expirationDate, timeUtils.getLastTradeDate()));
+            eventPublisher.publishEvent(new OptionChainParseFailedEvent(this, ticker, expirationDate, timeUtils.getCurrentOrLastTradeDate()));
             throw new OptionsChainLoadException(ticker, uri, "Options chain load failure most likely due to too many calls.", e);
         }
         return buildOptionsChain(ticker, expirationDate, document);
@@ -170,7 +170,7 @@ public class YahooFinanceOptionsChainLoadService extends OptionsChainLoadService
                     .ifPresent(val -> option.getMostRecentPriceData().setOpenInterest(val.intValue()));
             option.getMostRecentPriceData().setImpliedVolatility(extractPercent(optionRow.selectFirst("td.data-col10").text()));
             option.getMostRecentPriceData().setDataObtainedDate(Timestamp.from(Instant.now()));
-            option.getMostRecentPriceData().setTradeDate(timeUtils.getLastTradeDate());
+            option.getMostRecentPriceData().setTradeDate(timeUtils.getCurrentOrLastTradeDate());
             option.setOptionType(optionType);
             options.add(option);
         });
@@ -218,8 +218,11 @@ public class YahooFinanceOptionsChainLoadService extends OptionsChainLoadService
 
     private void validateExpirationDates(String ticker, List<LocalDate> expirationDates) throws AllOptionsExpirationDatesNotPresentException {
         Set<LocalDate> expDatesCopy = new HashSet<>(expirationDates);
-        Set<LocalDate> storedExpirationDates = super.historicOptionsDataService.getExpirationDatesAtStartDate(ticker, timeUtils.getStartDayOfTradeWeek());
+        Set<LocalDate> storedExpirationDates = super.historicOptionsDataService.getExpirationDatesAtStartDate(ticker, timeUtils.getStartDayOfCurrentTradeWeek(2));
         storedExpirationDates.removeAll(expDatesCopy);
+        storedExpirationDates = storedExpirationDates.stream()
+                .filter(date -> date.isAfter(LocalDate.now())
+                    || date.isEqual(LocalDate.now())).collect(Collectors.toSet());
         if (!storedExpirationDates.isEmpty()) {
             throw new AllOptionsExpirationDatesNotPresentException(new ArrayList<>(storedExpirationDates));
         }
