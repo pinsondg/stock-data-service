@@ -15,7 +15,7 @@
     <description>MicroService for getting stock and options data</description>
     <properties>
         <java.version>11</java.version>
-        <feign.version>11.7</feign.version>
+        <feign.version>11.8</feign.version>
         <jsoup.version>1.14.3</jsoup.version>
         <jasypt.version>1.9.3</jasypt.version>
         <caffine.version>3.0.5</caffine.version>
@@ -173,7 +173,7 @@
         <dependency>
             <groupId>org.ehcache</groupId>
             <artifactId>ehcache</artifactId>
-            <version>3.9.7</version>
+            <version>3.9.9</version>
             <scope>runtime</scope>
         </dependency>
     </dependencies>
