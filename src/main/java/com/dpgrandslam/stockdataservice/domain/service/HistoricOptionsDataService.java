@@ -200,6 +200,10 @@ public class HistoricOptionsDataService {
         return historicalOptionRepository.saveAndFlush(historicalOption);
     }
 
+    public List<HistoricalOption> saveOptions(Collection<HistoricalOption> historicalOptions) {
+        return historicalOptionRepository.saveAll(historicalOptions);
+    }
+
     public Long countOptionsLoadedOnTradeDate(LocalDate tradeDate) {
         return optionPriceDataRepository.countAllByTradeDate(tradeDate);
     }
