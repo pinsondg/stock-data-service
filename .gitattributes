@@ -1,1 +1,1 @@
-src/test/resources/mocks/** linguist-vendored=true
+src/test/resources/mocks/yahoofinance/* linguist-vendored=true
