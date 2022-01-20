@@ -26,6 +26,9 @@ spring:
           region:
             #required - classpath to cache region factory.
             factory_class: org.hibernate.cache.jcache.JCacheRegionFactory
+  batch:
+    job:
+      enabled: false
 
 api:
   client:
@@ -37,6 +40,8 @@ api:
       url: http://finance.yahoo.com
     cnn:
       url: https://money.cnn.com
+  security:
+    enabled: false
 
 server:
   port: 5000

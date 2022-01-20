@@ -1,0 +1,8 @@
+job:
+  option-csv:
+    test-bucket-name: ${TEST_BUCKET_NAME}
+    test-key: ${TEST_KEY}
+
+spring:
+  jpa:
+    show-sql: false
