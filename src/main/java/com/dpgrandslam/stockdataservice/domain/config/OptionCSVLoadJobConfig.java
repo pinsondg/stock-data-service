@@ -8,9 +8,6 @@ import com.dpgrandslam.stockdataservice.domain.model.options.HistoricalOption;
 import lombok.AllArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
-import org.hibernate.SessionFactory;
-import org.hibernate.internal.SessionFactoryImpl;
-import org.springframework.batch.core.Entity;
 import org.springframework.batch.core.Job;
 import org.springframework.batch.core.JobParametersValidator;
 import org.springframework.batch.core.Step;
@@ -19,33 +16,30 @@ import org.springframework.batch.core.job.DefaultJobParametersValidator;
 import org.springframework.batch.core.launch.JobLauncher;
 import org.springframework.batch.core.launch.support.RunIdIncrementer;
 import org.springframework.batch.core.launch.support.SimpleJobLauncher;
+import org.springframework.batch.core.repository.JobRepository;
+import org.springframework.batch.core.repository.support.JobRepositoryFactoryBean;
 import org.springframework.batch.item.ItemReader;
 import org.springframework.batch.item.ItemStreamReader;
 import org.springframework.batch.item.ItemWriter;
-import org.springframework.batch.item.database.HibernateItemWriter;
-import org.springframework.batch.item.database.JpaItemWriter;
 import org.springframework.batch.item.file.FlatFileItemReader;
 import org.springframework.batch.item.file.LineMapper;
 import org.springframework.batch.item.file.mapping.BeanWrapperFieldSetMapper;
 import org.springframework.batch.item.file.mapping.DefaultLineMapper;
 import org.springframework.batch.item.file.transform.DelimitedLineTokenizer;
 import org.springframework.batch.item.support.SynchronizedItemStreamReader;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.core.io.support.ResourcePatternResolver;
 import org.springframework.core.task.SimpleAsyncTaskExecutor;
-import org.springframework.jdbc.support.JdbcTransactionManager;
-import org.springframework.orm.hibernate5.HibernateTransactionManager;
-import org.springframework.orm.jpa.JpaDialect;
+import org.springframework.core.task.TaskExecutor;
 import org.springframework.orm.jpa.JpaTransactionManager;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.transaction.PlatformTransactionManager;
 
 import javax.persistence.EntityManagerFactory;
 import javax.sql.DataSource;
 import java.io.IOException;
+import java.util.concurrent.ThreadPoolExecutor;
 
 @Configuration
 @EnableBatchProcessing
@@ -56,27 +50,30 @@ public class OptionCSVLoadJobConfig {
     public static final String JOB_NAME = "option-csv-load-job";
     public static final String STEP_NAME = "option-csv-load-step";
 
-    private final EntityManagerFactory entityManagerFactory;
-
     @Bean
     public Step optionCsvLoadJobStep(StepBuilderFactory stepBuilderFactory,
                                      ItemReader<OptionCSVFile> itemReader,
                                      OptionCSVItemProcessor itemProcessor,
                                      ItemWriter<HistoricalOption> itemWriter) {
         return stepBuilderFactory.get(STEP_NAME)
-                .<OptionCSVFile, HistoricalOption>chunk(100)
+                .<OptionCSVFile, HistoricalOption>chunk(50)
                 .reader(itemReader)
                 .processor(itemProcessor)
                 .writer(itemWriter)
+                .taskExecutor(taskExecutor())
                 .build();
     }
 
-//    @Bean
-//    public JpaItemWriter<HistoricalOption> getItemWriter() {
-//        JpaItemWriter<HistoricalOption> itemWriter = new JpaItemWriter<>();
-//        itemWriter.setEntityManagerFactory(entityManagerFactory);
-//        return itemWriter;
-//    }
+    @Bean
+    public TaskExecutor taskExecutor() {
+        ThreadPoolTaskExecutor taskExecutor = new ThreadPoolTaskExecutor();
+        taskExecutor.setCorePoolSize(3);
+        taskExecutor.setMaxPoolSize(3);
+        taskExecutor.setQueueCapacity(3);
+        taskExecutor.setThreadNamePrefix("MultiThreaded-");
+        taskExecutor.setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy());
+        return taskExecutor;
+    }
 
     @Bean
     public Job optionCSVLoadJob(JobBuilderFactory jobBuilderFactory, Step optionCsvLoadJobStep) {
@@ -110,16 +107,6 @@ public class OptionCSVLoadJobConfig {
         awss3ItemReader.setKeyPrefix(keyPrefix);
         awss3ItemReader.setDelegate(csvReader);
 
-//        MultiResourceItemReader<OptionCSVFile> itemReader = new MultiResourceItemReader<>();
-//        itemReader.setDelegate(csvReader);
-//        String formattedResourcePath = resourcePath;
-//        if (!formattedResourcePath.endsWith("*.csv")) {
-//            formattedResourcePath += "*.csv";
-//        }
-//        Resource[] resources = resourcePatternResolver.getResources(formattedResourcePath);
-//        Arrays.stream(resources).forEach(x -> log.debug("Resource: ", x.getDescription()));
-//        itemReader.setResources(new Resource[] {resourceLoader.getResource(resourcePath)});
-//
         SynchronizedItemStreamReader<OptionCSVFile> synchronizedItemStreamReader = new SynchronizedItemStreamReader<>();
         synchronizedItemStreamReader.setDelegate(awss3ItemReader);
 
@@ -127,7 +114,7 @@ public class OptionCSVLoadJobConfig {
     }
 
     @Bean
-    public BatchConfigurer batchConfigurer(DataSource dataSource) {
+    public BatchConfigurer batchConfigurer(DataSource dataSource, EntityManagerFactory entityManagerFactory) {
         return new DefaultBatchConfigurer(dataSource) {
 
             @SneakyThrows
@@ -140,13 +127,19 @@ public class OptionCSVLoadJobConfig {
                 return jobLauncher;
             }
 
+            @SneakyThrows
+            @Override
+            public JobRepository getJobRepository() {
+                JobRepositoryFactoryBean jobRepositoryFactoryBean = new JobRepositoryFactoryBean();
+                jobRepositoryFactoryBean.setDataSource(dataSource);
+                jobRepositoryFactoryBean.setTransactionManager(getTransactionManager());
+                // set other properties
+                return jobRepositoryFactoryBean.getObject();
+            }
+
             @Override
             public PlatformTransactionManager getTransactionManager() {
-//                JpaTransactionManager jpaTransactionManager = new JpaTransactionManager();
-//                jpaTransactionManager.setDataSource(dataSource);
-//                jpaTransactionManager.setEntityManagerFactory(entityManagerFactory);
-//                return jpaTransactionManager;
-                return super.getTransactionManager();
+                return new JpaTransactionManager(entityManagerFactory);
             }
         };
     }

@@ -39,7 +39,12 @@ public class AWSS3ItemReader extends MultiResourceItemReader<OptionCSVFile> impl
 
     @Override
     public OptionCSVFile read() throws Exception, UnexpectedInputException, ParseException, NonTransientResourceException {
-        return super.read();
+        OptionCSVFile optionCSVFile =  super.read();
+        Resource resource = super.getCurrentResource();
+        if (resource != null && resource.getFile() != null && resource.getFile().exists()) {
+            resource.getFile().delete();
+        }
+        return optionCSVFile;
     }
 
     @Override

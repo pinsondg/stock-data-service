@@ -11,6 +11,7 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 
 import javax.persistence.EntityNotFoundException;
+import javax.sound.midi.Track;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.Collections;
@@ -73,6 +74,11 @@ public class TrackedStockService {
             log.info("Added tracked stock: {}", saved);
             applicationEventPublisher.publishEvent(new TrackedStockAddedEvent(this, Collections.singleton(saved)));
         });
+    }
+
+    public TrackedStock saveTrackedStock(TrackedStock trackedStock) {
+        log.info("Adding tracked stock with ticker: {}", trackedStock.getTicker());
+        return trackedStocksRepository.save(trackedStock);
     }
 
     private Optional<TrackedStock> verifyAndBuildTrackedStock(String ticker) {

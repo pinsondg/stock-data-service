@@ -3,6 +3,7 @@ package com.dpgrandslam.stockdataservice.adapter.api;
 import com.dpgrandslam.stockdataservice.domain.model.JobRunRequest;
 import com.dpgrandslam.stockdataservice.domain.model.JobRunResponse;
 import org.springframework.batch.core.*;
+import org.springframework.batch.core.explore.JobExplorer;
 import org.springframework.batch.core.launch.JobLauncher;
 import org.springframework.batch.core.repository.JobExecutionAlreadyRunningException;
 import org.springframework.batch.core.repository.JobInstanceAlreadyCompleteException;
@@ -25,6 +26,9 @@ public class JobController {
     @Autowired
     private Job optionCSVLoadJob;
 
+    @Autowired
+    private JobExplorer jobExplorer;
+
     @PostMapping("/run")
     public ResponseEntity<JobRunResponse> runOptionCSVLoadJob(@RequestBody JobRunRequest runRequest) throws JobInstanceAlreadyCompleteException, JobExecutionAlreadyRunningException, JobParametersInvalidException, JobRestartException {
         Map<String, JobParameter> jobParameterMap = runRequest.getJobParams().entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, x -> new JobParameter(x.getValue())));
@@ -37,7 +41,12 @@ public class JobController {
     }
 
     @GetMapping("/status")
-    public ResponseEntity<JobRunResponse> getJobStatus(@RequestParam String jobId, @RequestParam String executionId) {
-        return null;
+    public ResponseEntity<JobRunResponse> getJobStatus(@RequestParam Long executionId) {
+        JobRunResponse jobRunResponse = new JobRunResponse();
+        JobExecution jobExecution = jobExplorer.getJobExecution(executionId);
+        jobRunResponse.setJobStatus(jobExecution.getStatus().name());
+        jobRunResponse.setJobId(jobExecution.getJobId());
+        jobRunResponse.setJobExecutionId(jobExecution.getId());
+        return ResponseEntity.ok(jobRunResponse);
     }
 }

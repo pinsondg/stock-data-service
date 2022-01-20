@@ -40,6 +40,8 @@ api:
       url: http://finance.yahoo.com
     cnn:
       url: https://money.cnn.com
+  security:
+    enabled: false
 
 server:
   port: 5000

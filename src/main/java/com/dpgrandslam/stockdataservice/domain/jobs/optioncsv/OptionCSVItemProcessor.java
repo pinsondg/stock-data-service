@@ -15,8 +15,12 @@ import org.springframework.batch.item.ItemProcessor;
 import org.springframework.stereotype.Component;
 
 import javax.persistence.EntityNotFoundException;
+import javax.transaction.Transactional;
+import java.sql.Timestamp;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.util.Collections;
+import java.util.stream.Collectors;
 
 @Component
 @RequiredArgsConstructor
@@ -28,8 +32,15 @@ public class OptionCSVItemProcessor implements ItemProcessor<OptionCSVFile, Hist
     private final StockDataLoadService stockDataLoadService;
 
     @Override
+    @Transactional
     public HistoricalOption process(OptionCSVFile optionCSVFile) throws Exception {
-        TrackedStock trackedStock = trackedStockService.findByTicker(optionCSVFile.getSymbol());
+        TrackedStock trackedStock;
+        try {
+            trackedStock = trackedStockService.findByTicker(optionCSVFile.getSymbol());
+        } catch (EntityNotFoundException e) {
+            log.warn("{}. Skipping update...", e.getMessage());
+            return null;
+        }
 
         if (trackedStock == null) {
             trackedStock = new TrackedStock();
@@ -55,22 +66,32 @@ public class OptionCSVItemProcessor implements ItemProcessor<OptionCSVFile, Hist
                 .ask(Double.parseDouble(optionCSVFile.getAskPrice()))
                 .volume(Integer.parseInt(optionCSVFile.getVolume()))
                 .lastTradePrice(Double.parseDouble(optionCSVFile.getLastPrice()))
-                .option(historicalOption)
+                .dataObtainedDate(Timestamp.from(Instant.now()))
                 .build();
         HistoricalOption existing;
         try {
             existing = historicOptionsDataService.findOption(historicalOption.getTicker(), historicalOption.getExpiration(),
                     historicalOption.getStrike(), historicalOption.getOptionType());
+            if (existing.getOptionPriceData().stream().map(OptionPriceData::getTradeDate)
+                    .collect(Collectors.toSet()).contains(optionPriceData.getTradeDate())) {
+                log.warn("Option Price data for {} already exists. Skipping...", optionPriceData);
+                return null;
+            }
         } catch (EntityNotFoundException e) {
             existing = null;
             log.debug("Option does not exist, creating new one");
         }
         if (existing != null) {
             existing.getOptionPriceData().add(optionPriceData);
+            optionPriceData.setOption(existing);
         } else {
             historicalOption.setOptionPriceData(Collections.singleton(optionPriceData));
+            optionPriceData.setOption(historicalOption);
         }
-
+        if (optionPriceData.getTradeDate().isBefore(trackedStock.getOptionsHistoricDataStartDate())) {
+            trackedStock.setOptionsHistoricDataStartDate(optionPriceData.getTradeDate());
+            trackedStockService.saveTrackedStock(trackedStock);
+        }
         return existing != null ? existing : historicalOption;
     }
 }
