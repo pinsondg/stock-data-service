@@ -4,6 +4,7 @@ import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.model.S3ObjectSummary;
 import com.dpgrandslam.stockdataservice.domain.model.OptionCSVFile;
 import com.dpgrandslam.stockdataservice.domain.util.AWSResource;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.batch.item.*;
 import org.springframework.batch.item.file.MultiResourceItemReader;
@@ -11,10 +12,13 @@ import org.springframework.beans.factory.InitializingBean;
 import org.springframework.core.io.Resource;
 import org.springframework.util.Assert;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
+@Slf4j
 public class AWSS3ItemReader extends MultiResourceItemReader<OptionCSVFile> implements InitializingBean {
 
     private List<S3ObjectSummary> s3Objects;
@@ -73,7 +77,14 @@ public class AWSS3ItemReader extends MultiResourceItemReader<OptionCSVFile> impl
             if (s3Objects == null || s3Objects.isEmpty()) {
                 s3Objects = amazonS3.listObjectsV2(bucket, keyPrefix).getObjectSummaries().stream().filter(x -> !x.getKey().endsWith("/")).collect(Collectors.toList());
             }
-            super.setResources(s3Objects.stream().map(x -> new AWSResource(amazonS3, x)).toArray(Resource[]::new));
+            super.setResources(s3Objects.stream().map(x -> {
+                try {
+                    return new AWSResource(amazonS3, x);
+                } catch (IOException e) {
+                    log.error("Error creating S3 resource from bucket: {} with key: {}.", x.getBucketName(), x.getKey(), e);
+                    return null;
+                }
+            }).filter(Objects::nonNull).toArray(Resource[]::new));
         }
     }
 }

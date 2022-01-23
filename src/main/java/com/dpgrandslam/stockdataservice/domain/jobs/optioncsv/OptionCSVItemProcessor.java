@@ -67,7 +67,7 @@ public class OptionCSVItemProcessor implements ItemProcessor<OptionCSVFile, Hist
                 .build();
 
         if (optionPriceData.getTradeDate().isAfter(historicalOption.getExpiration())) {
-            log.warn("Trade date for {} is after expiration. Skipping...", optionPriceData);
+            log.warn("Trade date for {} is after expiration: {}. Skipping...", optionPriceData, historicalOption.getExpiration());
             return null;
         }
         HistoricalOption existing;
