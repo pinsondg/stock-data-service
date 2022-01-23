@@ -3,6 +3,7 @@ package com.dpgrandslam.stockdataservice.domain.util;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.model.S3Object;
 import com.amazonaws.services.s3.model.S3ObjectSummary;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.IOUtils;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.Resource;
@@ -17,6 +18,7 @@ import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
+@Slf4j
 public class AWSResource implements Resource {
 
     private AmazonS3 amazonS3;
@@ -57,6 +59,7 @@ public class AWSResource implements Resource {
     @Override
     public File getFile() throws IOException {
         if (downloadedFile == null) {
+            log.info("Downloading file from S3 from bucket: {} with key: {}", summary.getBucketName(), summary.getKey());
             File file = File.createTempFile("tempAWSObject", summary.getKey().substring(summary.getKey().lastIndexOf('.')));
             S3Object o = amazonS3.getObject(summary.getBucketName(), summary.getKey());
             FileOutputStream fileInputStream = new FileOutputStream(file);
@@ -66,6 +69,7 @@ public class AWSResource implements Resource {
             downloadedFile = file;
             downloadedFile.deleteOnExit();
             path = downloadedFile.toPath();
+            log.info("File downloaded successfully!");
         }
         return downloadedFile;
     }
@@ -95,6 +99,7 @@ public class AWSResource implements Resource {
             try {
                 return getFile().getName();
             } catch (IOException e) {
+                log.warn("Error getting filename for S3 file in bucket: {} with key: {}.", summary.getBucketName(), summary.getKey());
                 return null;
             }
         }
