@@ -14,12 +14,15 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.batch.item.ItemProcessor;
 import org.springframework.stereotype.Component;
 
+import javax.annotation.PostConstruct;
 import javax.persistence.EntityNotFoundException;
 import javax.transaction.Transactional;
 import java.sql.Timestamp;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.Collections;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Component
@@ -31,25 +34,19 @@ public class OptionCSVItemProcessor implements ItemProcessor<OptionCSVFile, Hist
     private final TrackedStockService trackedStockService;
     private final StockDataLoadService stockDataLoadService;
 
+    private Set<String> tracked = new HashSet<>();
+    private boolean trackedStocksLoaded = false;
+
     @Override
     @Transactional
     public HistoricalOption process(OptionCSVFile optionCSVFile) throws Exception {
-        TrackedStock trackedStock;
-        try {
-            trackedStock = trackedStockService.findByTicker(optionCSVFile.getSymbol());
-        } catch (EntityNotFoundException e) {
-            log.warn("{}. Skipping update...", e.getMessage());
-            return null;
+        if (!trackedStocksLoaded && tracked.isEmpty()) {
+            tracked.addAll(trackedStockService.getAllTrackedStocks(true).stream()
+                    .map(TrackedStock::getTicker).collect(Collectors.toSet()));
+            trackedStocksLoaded = true;
         }
-
-        if (trackedStock == null) {
-            trackedStock = new TrackedStock();
-            StockMetaData metaData = stockDataLoadService.getStockMetaData(optionCSVFile.getSymbol());
-            trackedStock.setName(metaData.getName());
-            trackedStock.setTicker(metaData.getTicker());
-            trackedStock.setActive(true);
-            trackedStock.setLastOptionsHistoricDataUpdate(LocalDate.parse(optionCSVFile.getDataDate()));
-            trackedStock.setOptionsHistoricDataStartDate(LocalDate.parse(optionCSVFile.getDataDate()));
+        if (!tracked.contains(optionCSVFile.getSymbol())) {
+            return null;
         }
 
         HistoricalOption historicalOption = HistoricalOption.builder()
@@ -68,6 +65,11 @@ public class OptionCSVItemProcessor implements ItemProcessor<OptionCSVFile, Hist
                 .lastTradePrice(Double.parseDouble(optionCSVFile.getLastPrice()))
                 .dataObtainedDate(Timestamp.from(Instant.now()))
                 .build();
+
+        if (optionPriceData.getTradeDate().isAfter(historicalOption.getExpiration())) {
+            log.warn("Trade date for {} is after expiration. Skipping...", optionPriceData);
+            return null;
+        }
         HistoricalOption existing;
         try {
             existing = historicOptionsDataService.findOption(historicalOption.getTicker(), historicalOption.getExpiration(),
@@ -87,6 +89,13 @@ public class OptionCSVItemProcessor implements ItemProcessor<OptionCSVFile, Hist
         } else {
             historicalOption.setOptionPriceData(Collections.singleton(optionPriceData));
             optionPriceData.setOption(historicalOption);
+        }
+        TrackedStock trackedStock;
+        try {
+            trackedStock = trackedStockService.findByTicker(optionCSVFile.getSymbol());
+        } catch (EntityNotFoundException e) {
+            log.warn("{}. Skipping update...", e.getMessage());
+            return null;
         }
         if (optionPriceData.getTradeDate().isBefore(trackedStock.getOptionsHistoricDataStartDate())) {
             trackedStock.setOptionsHistoricDataStartDate(optionPriceData.getTradeDate());
