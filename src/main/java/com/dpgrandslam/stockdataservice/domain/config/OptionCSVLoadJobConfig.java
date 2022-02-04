@@ -39,6 +39,7 @@ import org.springframework.transaction.PlatformTransactionManager;
 import javax.persistence.EntityManagerFactory;
 import javax.sql.DataSource;
 import java.io.IOException;
+import java.time.format.DateTimeParseException;
 import java.util.concurrent.ThreadPoolExecutor;
 
 @Configuration
@@ -60,6 +61,9 @@ public class OptionCSVLoadJobConfig {
                 .reader(itemReader)
                 .processor(itemProcessor)
                 .writer(itemWriter)
+                .faultTolerant()
+                .skipLimit(1000000)
+                .skip(DateTimeParseException.class)
                 .taskExecutor(taskExecutor())
                 .build();
     }
