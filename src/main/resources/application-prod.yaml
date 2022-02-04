@@ -12,3 +12,21 @@ spring:
     url: ${DATASOURCE_URL}?currentSchema=${spring.liquibase.default-schema}
     username: ${DATASOURCE_USERNAME}
     password: ${DATASOURCE_PASSWORD}
+  batch:
+    jdbc:
+      initialize-schema: always
+
+api:
+  security:
+    enabled: true
+    password: ${API_PASSWORD}
+
+---
+spring:
+  config:
+    activate:
+      on-profile: prod-non-secure
+
+api:
+  security:
+    enabled: false

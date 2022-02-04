@@ -15,15 +15,28 @@
     <description>MicroService for getting stock and options data</description>
     <properties>
         <java.version>11</java.version>
-        <feign.version>11.7</feign.version>
+        <feign.version>11.8</feign.version>
         <jsoup.version>1.14.3</jsoup.version>
         <jasypt.version>1.9.3</jasypt.version>
-        <caffine.version>3.0.4</caffine.version>
+        <caffine.version>3.0.5</caffine.version>
         <validation-api.version>2.0.1.Final</validation-api.version>
         <liquibase-hibernate5.version>3.10.2</liquibase-hibernate5.version>
         <cucumber.version>6.11.0</cucumber.version>
         <jacoco.line-coverage>0.80</jacoco.line-coverage>
+        <log4j2.version>2.15.0</log4j2.version>
+        <spring-cloud-aws.version>2.2.6.RELEASE</spring-cloud-aws.version>
     </properties>
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>com.amazonaws</groupId>
+                <artifactId>aws-java-sdk-bom</artifactId>
+                <version>1.11.1000</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
     <dependencies>
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -44,6 +57,10 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.batch</groupId>
+            <artifactId>spring-batch-core</artifactId>
         </dependency>
         <dependency>
             <groupId>org.liquibase</groupId>
@@ -172,9 +189,14 @@
         <dependency>
             <groupId>org.ehcache</groupId>
             <artifactId>ehcache</artifactId>
-            <version>3.9.6</version>
+            <version>3.9.9</version>
             <scope>runtime</scope>
         </dependency>
+        <dependency>
+            <groupId>com.amazonaws</groupId>
+            <artifactId>aws-java-sdk-s3</artifactId>
+        </dependency>
+
     </dependencies>
     <build>
         <plugins>
@@ -201,6 +223,9 @@
                             <goal>check</goal>
                         </goals>
                         <configuration>
+                            <excludes>
+                                <exclude>com/dpgrandslam/stockdataservice/domain/util/*</exclude>
+                            </excludes>
                             <rules>
                                 <rule>
                                     <element>PACKAGE</element>
@@ -260,7 +285,7 @@
                     <dependency>
                         <groupId>org.springframework</groupId>
                         <artifactId>spring-beans</artifactId>
-                        <version>5.3.11</version>
+                        <version>5.3.14</version>
                     </dependency>
                     <dependency>
                         <groupId>org.springframework.data</groupId>
@@ -270,7 +295,7 @@
                     <dependency>
                         <groupId>org.yaml</groupId>
                         <artifactId>snakeyaml</artifactId>
-                        <version>1.29</version>
+                        <version>1.30</version>
                     </dependency>
                     <dependency>
                         <groupId>javax.validation</groupId>

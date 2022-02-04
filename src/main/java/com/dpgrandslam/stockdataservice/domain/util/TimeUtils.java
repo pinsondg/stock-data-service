@@ -2,7 +2,6 @@ package com.dpgrandslam.stockdataservice.domain.util;
 
 import com.dpgrandslam.stockdataservice.domain.model.Holiday;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 
@@ -10,8 +9,11 @@ import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
 import java.time.*;
+import java.time.temporal.TemporalAdjusters;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 @Component
 @Slf4j
@@ -19,8 +21,7 @@ public class TimeUtils {
 
     private static final String HOLIDAYS_FILE_PATH = "data/market-holidays.csv";
 
-    private List<Holiday> stockMarketHolidays;
-
+    private Set<Holiday> stockMarketHolidays;
 
     public TimeUtils() {
         Assert.notNull(getStockMarketHolidays(), "Holidays are null on startup.");
@@ -30,10 +31,10 @@ public class TimeUtils {
         return LocalDateTime.now(ZoneId.of("America/New_York"));
     }
 
-    public List<Holiday> getStockMarketHolidays() {
+    public Set<Holiday> getStockMarketHolidays() {
         if (stockMarketHolidays == null) {
             try {
-                stockMarketHolidays = parseStockMarketHolidays();
+                stockMarketHolidays = new HashSet<>(parseStockMarketHolidays());
             } catch (IOException e) {
                 log.error("Error reading holiday file.", e);
             }
@@ -41,8 +42,8 @@ public class TimeUtils {
         return stockMarketHolidays;
     }
 
-    public LocalDate getLastTradeDate() {
-        LocalDateTime now = this.getNowAmericaNewYork();
+    public LocalDate getCurrentOrLastTradeDate(LocalDateTime dateTime) {
+        LocalDateTime now = dateTime;
         // If now is before a weekday at 9:30am set to previous day
         if (isWeekday(now.getDayOfWeek()) && now.toLocalTime().compareTo(LocalTime.of(9, 30)) < 0) {
             now = now.minusDays(1);
@@ -58,13 +59,28 @@ public class TimeUtils {
         return now.toLocalDate();
     }
 
-    public LocalDate getStartDayOfTradeWeek() {
-        LocalDate now = this.getNowAmericaNewYork().toLocalDate();
-        while (now.getDayOfWeek() != DayOfWeek.MONDAY) {
-            now = now.minusDays(1);
+    public LocalDate getCurrentOrLastTradeDate() {
+        return getCurrentOrLastTradeDate(this.getNowAmericaNewYork());
+    }
+
+    public LocalDate getStartDayOfCurrentTradeWeek() {
+        return getStartDayOfCurrentTradeWeek(0);
+    }
+
+    public LocalDate getStartDayOfCurrentTradeWeek(int weekOffset) {
+        if (weekOffset < 0) {
+            throw new IllegalArgumentException("Week offset must be greater than 1");
         }
-        while (isStockMarketHoliday(now)) {
-            now = now.plusDays(1);
+        LocalDate now = this.getNowAmericaNewYork().toLocalDate();
+        for (int i = weekOffset; i >= 0; i--) {
+            if (i == weekOffset) {
+                now = now.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
+            } else {
+                now = now.with(TemporalAdjusters.previous(DayOfWeek.MONDAY));
+            }
+            while (isStockMarketHoliday(now)) {
+                now = now.plusDays(1);
+            }
         }
         if (now.isAfter(LocalDate.now())) {
             return null;
@@ -73,7 +89,7 @@ public class TimeUtils {
     }
 
     public boolean isStockMarketHoliday(LocalDate date) {
-        List<Holiday> stockMarketHolidays = getStockMarketHolidays();
+        Set<Holiday> stockMarketHolidays = getStockMarketHolidays();
         if (stockMarketHolidays != null) {
             return stockMarketHolidays.stream().map(Holiday::getDate).anyMatch(date::equals);
         }

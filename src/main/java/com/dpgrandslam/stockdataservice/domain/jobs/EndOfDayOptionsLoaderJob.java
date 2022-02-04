@@ -86,7 +86,7 @@ public class EndOfDayOptionsLoaderJob {
         trackedStocks = new ConcurrentLinkedQueue<>();
         // Put all tracked stock tickers into queue for processing by batch
         trackedStocks.addAll(trackedStockService.getAllTrackedStocks(true).stream()
-                .filter(trackedStock -> trackedStock.getLastOptionsHistoricDataUpdate() == null || trackedStock.getLastOptionsHistoricDataUpdate().isBefore(timeUtils.getLastTradeDate()))
+                .filter(trackedStock -> trackedStock.getLastOptionsHistoricDataUpdate() == null || trackedStock.getLastOptionsHistoricDataUpdate().isBefore(timeUtils.getCurrentOrLastTradeDate()))
                 .map(TrackedStock::getTicker)
                 .collect(Collectors.toList()));
         failCountMap = new HashMap<>();
@@ -144,7 +144,7 @@ public class EndOfDayOptionsLoaderJob {
      * A retry job that trys again for any failed reads.
      */
     private void retryQueueJob() {
-        LocalDate tradeDate = timeUtils.getLastTradeDate();
+        LocalDate tradeDate = timeUtils.getCurrentOrLastTradeDate();
         log.info("Getting options in retry table for trade date {}.", tradeDate);
         Set<OptionPriceDataLoadRetry> retrySet = optionRetryService.getAllWithTradeDate(tradeDate);
         log.info("Found {} options in retry table for trade date {}.", retrySet.size(),tradeDate);
@@ -192,7 +192,7 @@ public class EndOfDayOptionsLoaderJob {
                     TrackedStock current = trackedStockService.findByTicker(trackedStocks.poll());
                     // If the current is null or not active or already updated today, do nothing.
                     if (current != null && mainJobStatus.isRunning() && current.isActive()
-                            && (current.getLastOptionsHistoricDataUpdate() == null || !current.getLastOptionsHistoricDataUpdate().equals(timeUtils.getLastTradeDate()))) {
+                            && (current.getLastOptionsHistoricDataUpdate() == null || !current.getLastOptionsHistoricDataUpdate().equals(timeUtils.getCurrentOrLastTradeDate()))) {
                         // Do options data load and put into database
                         log.info("Executing update for {}", current);
                         TimerUtil timerUtil = TimerUtil.startTimer();
@@ -239,7 +239,7 @@ public class EndOfDayOptionsLoaderJob {
 
     private void completeJob(int job) {
         if (job == RETRY_JOB && retryJobStatus.isRunning()) {
-            if (optionRetryService.getAllWithTradeDate(timeUtils.getLastTradeDate()).isEmpty()) {
+            if (optionRetryService.getAllWithTradeDate(timeUtils.getCurrentOrLastTradeDate()).isEmpty()) {
                 retryJobStatus = JobStatus.COMPLETE;
             } else {
                 retryJobStatus = JobStatus.COMPLETE_WITH_FAILURES;
@@ -247,15 +247,15 @@ public class EndOfDayOptionsLoaderJob {
             log.info("Retry job finished with status: {}", retryJobStatus.name());
         } else if (job == MAIN_JOB && mainJobStatus.isRunning()) {
             log.info("Main job finished.");
-            if (optionRetryService.getAllWithTradeDate(timeUtils.getLastTradeDate()).isEmpty()) {
+            if (optionRetryService.getAllWithTradeDate(timeUtils.getCurrentOrLastTradeDate()).isEmpty()) {
                 mainJobStatus = JobStatus.COMPLETE;
             } else {
                 mainJobStatus = JobStatus.COMPLETE_WITH_FAILURES;
             }
             log.info("Main job finished with status: {}", mainJobStatus.name());
         }
-        long optionsLoadedCount = historicOptionsDataService.countOptionsLoadedOnTradeDate(timeUtils.getLastTradeDate());
-        log.info("Loaded {} options for date {}", optionsLoadedCount, timeUtils.getLastTradeDate());
+        long optionsLoadedCount = historicOptionsDataService.countOptionsLoadedOnTradeDate(timeUtils.getCurrentOrLastTradeDate());
+        log.info("Loaded {} options for date {}", optionsLoadedCount, timeUtils.getCurrentOrLastTradeDate());
     }
 
     @EventListener(TrackedStockAddedEvent.class)

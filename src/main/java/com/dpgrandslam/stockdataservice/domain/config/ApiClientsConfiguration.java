@@ -1,7 +1,9 @@
 package com.dpgrandslam.stockdataservice.domain.config;
 
+import com.amazonaws.regions.Regions;
+import com.amazonaws.services.s3.AmazonS3;
+import com.amazonaws.services.s3.AmazonS3ClientBuilder;
 import com.dpgrandslam.stockdataservice.adapter.apiclient.tiingo.TiingoApiClient;
-import com.dpgrandslam.stockdataservice.domain.config.ApiClientConfigurationProperties;
 import com.dpgrandslam.stockdataservice.domain.util.BasicAuthorizationTarget;
 import feign.Feign;
 import feign.gson.GsonDecoder;
@@ -37,5 +39,16 @@ public class ApiClientsConfiguration {
                 .logger(new Slf4jLogger(TiingoApiClient.class))
                 .client(new OkHttpClient())
                 .target(new BasicAuthorizationTarget<>(TiingoApiClient.class, configurationProperties));
+    }
+
+    @Bean("CNNClientConfigurationProperties")
+    @ConfigurationProperties(prefix = "api.client.cnn")
+    public ApiClientConfigurationProperties cnnClientConfigurationProperties() {
+        return new ApiClientConfigurationProperties();
+    }
+
+    @Bean
+    public AmazonS3 amazonS3() {
+        return AmazonS3ClientBuilder.standard().withRegion(Regions.US_EAST_1).build();
     }
 }

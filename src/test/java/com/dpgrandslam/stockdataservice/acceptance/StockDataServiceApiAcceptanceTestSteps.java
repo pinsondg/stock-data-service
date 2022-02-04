@@ -50,7 +50,7 @@ public class StockDataServiceApiAcceptanceTestSteps extends BaseAcceptanceTestSt
         optionPriceDataSet.add(TestDataFactory.OptionPriceDataMother.complete().build());
         savedOption = TestDataFactory.HistoricalOptionMother.noPriceData().historicalPriceData(optionPriceDataSet).ticker(ticker).build();
         savedOption.getOptionPriceData().add(TestDataFactory.OptionPriceDataMother.complete().build());
-        savedOption = historicalOptionRepository.saveAndFlush(savedOption);
+        savedOption = historicalOptionRepository.save(savedOption);
         assertNotNull(savedOption.getId());
         assertNotNull("Option should have price data.", savedOption.getOptionPriceData());
         assertFalse("Option should have price data.", savedOption.getOptionPriceData().isEmpty());
