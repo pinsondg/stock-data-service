@@ -3,6 +3,7 @@ package com.dpgrandslam.stockdataservice.domain.util;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.model.S3Object;
 import com.amazonaws.services.s3.model.S3ObjectSummary;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.IOUtils;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.Resource;
@@ -17,55 +18,68 @@ import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
+@Slf4j
 public class AWSResource implements Resource {
 
     private AmazonS3 amazonS3;
     private S3ObjectSummary summary;
     private File downloadedFile;
     private Path path;
+    private boolean isDownloaded;
 
-    public AWSResource(AmazonS3 amazonS3, S3ObjectSummary summary) {
+
+    public AWSResource(AmazonS3 amazonS3, S3ObjectSummary summary) throws IOException {
         this.amazonS3 = amazonS3;
         this.summary = summary;
+        isDownloaded = false;
+        createFile();
+    }
+
+    private void createFile() throws IOException {
+        int separatorIndex = summary.getKey().lastIndexOf("/");
+        String fileName;
+        if (separatorIndex != -1) {
+            fileName = summary.getKey().substring(separatorIndex + 1);
+        } else {
+            fileName = summary.getKey();
+        }
+        String name;
+        if (fileName.lastIndexOf('.') > 0) {
+            name = fileName.substring(0, fileName.lastIndexOf('.'));
+        } else {
+            name = fileName;
+        }
+        downloadedFile = File.createTempFile("tempAWSObject-" + name, fileName.substring(fileName.lastIndexOf('.')));
+        downloadedFile.deleteOnExit();
+        path = downloadedFile.toPath();
     }
 
     @Override
     public boolean exists() {
-        try {
-            return getFile().exists();
-        } catch (IOException e) {
-            return false;
-        }
+        return downloadedFile.exists();
     }
 
     @Override
     public URL getURL() throws IOException {
-        if (downloadedFile == null) {
-            return getFile().toURI().toURL();
-        }
         return downloadedFile.toURI().toURL();
     }
 
     @Override
     public URI getURI() throws IOException {
-        if (downloadedFile == null) {
-            return getFile().toURI();
-        }
         return downloadedFile.toURI();
     }
 
     @Override
     public File getFile() throws IOException {
-        if (downloadedFile == null) {
-            File file = File.createTempFile("tempAWSObject", summary.getKey().substring(summary.getKey().lastIndexOf('.')));
+        if (!isDownloaded) {
+            log.info("Downloading file from S3 from bucket: {} with key: {}", summary.getBucketName(), summary.getKey());
             S3Object o = amazonS3.getObject(summary.getBucketName(), summary.getKey());
-            FileOutputStream fileInputStream = new FileOutputStream(file);
+            FileOutputStream fileInputStream = new FileOutputStream(downloadedFile);
             IOUtils.copy(o.getObjectContent(), fileInputStream);
             fileInputStream.close();
             o.getObjectContent().close();
-            downloadedFile = file;
-            downloadedFile.deleteOnExit();
-            path = downloadedFile.toPath();
+            log.info("File downloaded successfully!");
+            isDownloaded = true;
         }
         return downloadedFile;
     }
@@ -82,22 +96,12 @@ public class AWSResource implements Resource {
 
     @Override
     public Resource createRelative(String relativePath) throws IOException {
-        if (downloadedFile == null) {
-            getFile();
-        }
         String pathToUse = StringUtils.applyRelativePath(downloadedFile.getPath(), relativePath);
         return this.downloadedFile != null ? new FileSystemResource(pathToUse) : new FileSystemResource(this.path.getFileSystem(), pathToUse);
     }
 
     @Override
     public String getFilename() {
-        if (downloadedFile == null) {
-            try {
-                return getFile().getName();
-            } catch (IOException e) {
-                return null;
-            }
-        }
         return downloadedFile.getName();
     }
 
@@ -108,7 +112,7 @@ public class AWSResource implements Resource {
 
     @Override
     public InputStream getInputStream() throws IOException {
-        if (downloadedFile == null) {
+        if (!isDownloaded) {
             getFile();
         }
         return Files.newInputStream(path);

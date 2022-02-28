@@ -9,7 +9,6 @@ import org.apache.http.client.methods.HttpRequestBase;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
 import org.springframework.core.io.Resource;
@@ -32,7 +31,6 @@ public class AWSResourceTest {
     @Mock
     private S3ObjectSummary s3ObjectSummary;
 
-    @InjectMocks
     private AWSResource subject;
 
     @Mock
@@ -40,10 +38,11 @@ public class AWSResourceTest {
 
     @Before
     public void setup() throws IOException {
-        when(s3ObjectSummary.getKey()).thenReturn("key.txt");
+        when(s3ObjectSummary.getKey()).thenReturn("folder/key.txt");
         when(s3ObjectSummary.getBucketName()).thenReturn("bucket");
         when(amazonS3.getObject(anyString(), anyString())).thenReturn(s3Object);
         when(s3Object.getObjectContent()).thenReturn(new S3ObjectInputStream(new FileInputStream(createMockFile()), mock(HttpRequestBase.class)));
+        subject = new AWSResource(amazonS3, s3ObjectSummary);
     }
 
     @Test

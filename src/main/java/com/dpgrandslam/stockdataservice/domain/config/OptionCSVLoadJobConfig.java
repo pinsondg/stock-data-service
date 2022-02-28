@@ -39,6 +39,7 @@ import org.springframework.transaction.PlatformTransactionManager;
 import javax.persistence.EntityManagerFactory;
 import javax.sql.DataSource;
 import java.io.IOException;
+import java.time.format.DateTimeParseException;
 import java.util.concurrent.ThreadPoolExecutor;
 
 @Configuration
@@ -60,6 +61,9 @@ public class OptionCSVLoadJobConfig {
                 .reader(itemReader)
                 .processor(itemProcessor)
                 .writer(itemWriter)
+                .faultTolerant()
+                .skipLimit(1000000)
+                .skip(DateTimeParseException.class)
                 .taskExecutor(taskExecutor())
                 .build();
     }
@@ -67,9 +71,9 @@ public class OptionCSVLoadJobConfig {
     @Bean
     public TaskExecutor taskExecutor() {
         ThreadPoolTaskExecutor taskExecutor = new ThreadPoolTaskExecutor();
-        taskExecutor.setCorePoolSize(3);
-        taskExecutor.setMaxPoolSize(3);
-        taskExecutor.setQueueCapacity(3);
+        taskExecutor.setCorePoolSize(10);
+        taskExecutor.setMaxPoolSize(10);
+        taskExecutor.setQueueCapacity(10);
         taskExecutor.setThreadNamePrefix("MultiThreaded-");
         taskExecutor.setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy());
         return taskExecutor;
