@@ -11,6 +11,7 @@ import com.dpgrandslam.stockdataservice.domain.service.StockDataLoadService;
 import com.dpgrandslam.stockdataservice.domain.service.TrackedStockService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.tomcat.jni.Local;
 import org.springframework.batch.item.ItemProcessor;
 import org.springframework.stereotype.Component;
 
@@ -18,8 +19,11 @@ import javax.annotation.PostConstruct;
 import javax.persistence.EntityNotFoundException;
 import javax.transaction.Transactional;
 import java.sql.Timestamp;
+import java.time.DateTimeException;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -30,7 +34,6 @@ public class OptionCSVItemProcessor implements ItemProcessor<OptionCSVFile, Hist
 
     private final HistoricOptionsDataService historicOptionsDataService;
     private final TrackedStockService trackedStockService;
-    private final StockDataLoadService stockDataLoadService;
 
     private Map<String, LocalDate> tracked = new HashMap<>();
     private boolean trackedStocksLoaded = false;
@@ -50,12 +53,12 @@ public class OptionCSVItemProcessor implements ItemProcessor<OptionCSVFile, Hist
         HistoricalOption historicalOption = HistoricalOption.builder()
                 .optionType(optionCSVFile.getPutCall().equalsIgnoreCase("call") ? Option.OptionType.CALL : Option.OptionType.PUT)
                 .strike(Double.parseDouble(optionCSVFile.getStrikePrice()))
-                .expiration(LocalDate.parse(optionCSVFile.getExpirationDate()))
+                .expiration(parseDate(optionCSVFile.getExpirationDate()))
                 .ticker(optionCSVFile.getSymbol().toUpperCase())
                 .build();
 
         OptionPriceData optionPriceData = OptionPriceData.builder()
-                .tradeDate(LocalDate.parse(optionCSVFile.getDataDate()))
+                .tradeDate(parseDate(optionCSVFile.getDataDate()))
                 .openInterest(Integer.parseInt(optionCSVFile.getOpenInterest()))
                 .bid(Double.parseDouble(optionCSVFile.getBidPrice()))
                 .ask(Double.parseDouble(optionCSVFile.getAskPrice()))
@@ -100,5 +103,15 @@ public class OptionCSVItemProcessor implements ItemProcessor<OptionCSVFile, Hist
             }
         }
         return existing != null ? existing : historicalOption;
+    }
+
+    private LocalDate parseDate(String dateString) {
+        LocalDate date;
+        try {
+            date = LocalDate.parse(dateString);
+        } catch (DateTimeParseException e) {
+            date = LocalDate.parse(dateString, DateTimeFormatter.ofPattern("M/d/yyyy"));
+        }
+        return date;
     }
 }
