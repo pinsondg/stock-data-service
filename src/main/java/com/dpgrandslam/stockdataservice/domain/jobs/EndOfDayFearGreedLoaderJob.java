@@ -31,7 +31,7 @@ public class EndOfDayFearGreedLoaderJob {
             try {
                 log.info("Loading fear greed data for day {}...", tradeDate);
                 Set<FearGreedIndex> fearGreedIndices = fearGreedDataLoadService.loadCurrentFearGreedIndex().stream()
-                        .filter(x -> !timeUtils.isStockMarketHoliday(x.getTradeDate()))
+                        .filter(x -> !timeUtils.isStockMarketHoliday(x.getTradeDate()) && fearGreedDataLoadService.getFearGreedIndexOfDay(x.getTradeDate()).isEmpty())
                         .collect(Collectors.toSet());
                 log.info("Found fear greed data for day {}: {}", tradeDate, fearGreedIndices);
                 fearGreedDataLoadService.saveFearGreedData(fearGreedIndices);
