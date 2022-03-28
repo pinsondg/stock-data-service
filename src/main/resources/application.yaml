@@ -1,6 +1,9 @@
 spring:
   profiles:
     active: local
+  datasource:
+    hikari:
+      max-lifetime: 240000
   jpa:
     #optional - show SQL statements in console.
     show-sql: true
