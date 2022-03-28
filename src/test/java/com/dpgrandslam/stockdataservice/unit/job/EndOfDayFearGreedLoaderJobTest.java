@@ -48,7 +48,7 @@ public class EndOfDayFearGreedLoaderJobTest {
 
         subject.runJob();
 
-        verify(fearGreedDataLoadService, times(1)).getFearGreedIndexOfDay(eq(LocalDate.now()));
+        verify(fearGreedDataLoadService, atLeastOnce()).getFearGreedIndexOfDay(eq(LocalDate.now()));
         verify(fearGreedDataLoadService, times(1)).loadCurrentFearGreedIndex();
         verify(fearGreedDataLoadService, times(1)).saveFearGreedData(eq(Collections.singleton(fearGreedIndex1)));
     }
