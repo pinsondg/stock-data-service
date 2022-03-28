@@ -1,6 +1,7 @@
 package com.dpgrandslam.stockdataservice.domain.jobs.optioncsv;
 
 import com.amazonaws.services.s3.AmazonS3;
+import com.amazonaws.services.s3.model.ListObjectsRequest;
 import com.amazonaws.services.s3.model.S3ObjectSummary;
 import com.dpgrandslam.stockdataservice.domain.model.OptionCSVFile;
 import com.dpgrandslam.stockdataservice.domain.util.AWSResource;
@@ -75,7 +76,8 @@ public class AWSS3ItemReader extends MultiResourceItemReader<OptionCSVFile> impl
     private void setObjectSummaries() {
         if (StringUtils.isNoneBlank(this.bucket) && StringUtils.isNoneBlank(this.keyPrefix)) {
             if (s3Objects == null || s3Objects.isEmpty()) {
-                s3Objects = amazonS3.listObjectsV2(bucket, keyPrefix).getObjectSummaries().stream().filter(x -> !x.getKey().endsWith("/")).collect(Collectors.toList());
+                ListObjectsRequest listObjectsRequest = new ListObjectsRequest().withBucketName(bucket).withPrefix(keyPrefix);
+                s3Objects = amazonS3.listObjects(listObjectsRequest).getObjectSummaries().stream().filter(x -> !x.getKey().endsWith("/")).collect(Collectors.toList());
             }
             super.setResources(s3Objects.stream().map(x -> {
                 try {
