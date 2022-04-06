@@ -6,7 +6,7 @@ import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.runner.RunWith;
 import org.mockserver.junit.MockServerRule;
-import org.springframework.boot.test.context.ConfigFileApplicationContextInitializer;
+import org.springframework.boot.test.context.ConfigDataApplicationContextInitializer;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.test.context.ActiveProfiles;
@@ -19,7 +19,7 @@ import java.nio.file.Files;
 
 @ActiveProfiles({"local", "local-mock"})
 @RunWith(SpringRunner.class)
-@ContextConfiguration(initializers = ConfigFileApplicationContextInitializer.class)
+@ContextConfiguration(initializers = ConfigDataApplicationContextInitializer.class)
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT, classes = StockDataServiceApplication.class)
 @Ignore
 public class MockClientTest {
