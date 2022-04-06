@@ -5,6 +5,7 @@ import com.dpgrandslam.stockdataservice.domain.model.FearGreedIndex;
 import com.dpgrandslam.stockdataservice.domain.model.options.OptionsChain;
 import com.dpgrandslam.stockdataservice.domain.model.stock.*;
 import com.dpgrandslam.stockdataservice.domain.service.*;
+import com.google.common.collect.ImmutableMap;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.tomcat.jni.Local;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -143,6 +144,9 @@ public class StockDataServiceController {
             return ResponseEntity.ok(fearGreedDataLoadService.loadCurrentFearGreedIndex().stream()
                     .sorted(Comparator.comparing(FearGreedIndex::getTradeDate))
                     .collect(Collectors.toList()));
+        } else if (sd.equals(ed)) {
+            Optional<FearGreedIndex> fgIndex = fearGreedDataLoadService.getFearGreedIndexOfDay(sd);
+            return fgIndex.map(fearGreedIndex -> ResponseEntity.ok(Collections.singletonList(fearGreedIndex))).orElseGet(() -> ResponseEntity.notFound().build());
         }
         return ResponseEntity.ok(fearGreedDataLoadService.loadFearGreedDataBetweenDates(sd, ed));
     }
