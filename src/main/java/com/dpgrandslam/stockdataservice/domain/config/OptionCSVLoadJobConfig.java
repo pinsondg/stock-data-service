@@ -70,9 +70,10 @@ public class OptionCSVLoadJobConfig {
 
     @Bean
     public TaskExecutor taskExecutor() {
+        int cores = Runtime.getRuntime().availableProcessors();
         ThreadPoolTaskExecutor taskExecutor = new ThreadPoolTaskExecutor();
-        taskExecutor.setCorePoolSize(10);
-        taskExecutor.setMaxPoolSize(10);
+        taskExecutor.setCorePoolSize(cores - 1);
+        taskExecutor.setMaxPoolSize(cores - 1);
         taskExecutor.setQueueCapacity(10);
         taskExecutor.setThreadNamePrefix("MultiThreaded-");
         taskExecutor.setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy());
