@@ -38,3 +38,5 @@ build/
 *.db
 
 venv
+
+/logs
