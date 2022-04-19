@@ -18,7 +18,7 @@
         <feign.version>11.8</feign.version>
         <jsoup.version>1.14.3</jsoup.version>
         <jasypt.version>1.9.3</jasypt.version>
-        <caffine.version>3.0.5</caffine.version>
+        <caffine.version>3.0.6</caffine.version>
         <validation-api.version>2.0.1.Final</validation-api.version>
         <liquibase-hibernate5.version>3.10.2</liquibase-hibernate5.version>
         <cucumber.version>6.11.0</cucumber.version>
@@ -316,7 +316,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-report-plugin</artifactId>
-                <version>3.0.0-M5</version>
+                <version>3.0.0-M6</version>
             </plugin>
         </plugins>
     </reporting>
