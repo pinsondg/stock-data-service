@@ -2,6 +2,7 @@ package com.dpgrandslam.stockdataservice.adapter.api;
 
 import com.dpgrandslam.stockdataservice.domain.error.OptionsChainLoadException;
 import com.dpgrandslam.stockdataservice.domain.model.FearGreedIndex;
+import com.dpgrandslam.stockdataservice.domain.model.options.Option;
 import com.dpgrandslam.stockdataservice.domain.model.options.OptionsChain;
 import com.dpgrandslam.stockdataservice.domain.model.stock.*;
 import com.dpgrandslam.stockdataservice.domain.service.*;
@@ -40,6 +41,9 @@ public class StockDataServiceController {
 
     @Autowired
     private FearGreedDataLoadService fearGreedDataLoadService;
+
+    @Autowired
+    private VIXLoadService vixLoadService;
 
     @GetMapping("/option/{ticker}")
     public ResponseEntity<List<OptionsChain>> getOptionsChain(@PathVariable(name = "ticker") String ticker,
@@ -147,5 +151,10 @@ public class StockDataServiceController {
             return fgIndex.map(fearGreedIndex -> ResponseEntity.ok(Collections.singletonList(fearGreedIndex))).orElseGet(() -> ResponseEntity.notFound().build());
         }
         return ResponseEntity.ok(fearGreedDataLoadService.loadFearGreedDataBetweenDates(sd, ed));
+    }
+
+    @GetMapping("/vix")
+    public ResponseEntity<List<YahooFinanceQuote>> getVixForDates(@RequestParam String startDate, @RequestParam Optional<String> endDate) {
+        return ResponseEntity.ok(vixLoadService.loadVIXBetweenDates(LocalDate.parse(startDate), endDate.map(LocalDate::parse).orElse(LocalDate.parse(startDate))));
     }
 }

@@ -64,6 +64,14 @@ public class CacheConfiguration {
                 .build();
     }
 
+    @Bean
+    public Cache<Pair<LocalDate, LocalDate>, List<YahooFinanceQuote>> vixCache() {
+        return Caffeine.newBuilder()
+                .expireAfterWrite(2, TimeUnit.DAYS)
+                .maximumSize(500)
+                .build();
+    }
+
 
     @Data
     public static class HistoricOptionsDataCacheKey {

@@ -42,7 +42,7 @@ public class YahooFinanceHistoricStockDataLoadService {
         sb.append("/history?period1=");
         sb.append(convertDate(startDate));
         sb.append("&period2=");
-        Long period2 = convertDate(endDate == null || endDate.equals(startDate) ? startDate.plusDays(1) : endDate);
+        Long period2 = convertDate(endDate == null || endDate.equals(startDate) ? startDate.plusDays(1) : endDate.plusDays(1));
         sb.append(period2);
         sb.append( "&interval=1d&filter=history&frequency=1d&includeAdjustedClose=true");
         String url = sb.toString();
