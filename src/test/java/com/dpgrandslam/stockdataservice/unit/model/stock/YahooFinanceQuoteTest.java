@@ -1,15 +1,15 @@
 package com.dpgrandslam.stockdataservice.unit.model.stock;
 
-import com.dpgrandslam.stockdataservice.domain.model.stock.YahooFinanceTenYearTreasuryYield;
+import com.dpgrandslam.stockdataservice.domain.model.stock.YahooFinanceQuote;
 import org.junit.Test;
 
 import static junit.framework.TestCase.assertNull;
 
-public class YahooFinanceTenYearTreasuryYieldTest {
+public class YahooFinanceQuoteTest {
 
     @Test
     public void testCorrectValuesNull() {
-        YahooFinanceTenYearTreasuryYield treasuryYield = new YahooFinanceTenYearTreasuryYield();
+        YahooFinanceQuote treasuryYield = new YahooFinanceQuote();
         assertNull(treasuryYield.getAdjOpen());
         assertNull(treasuryYield.getVolume());
         assertNull(treasuryYield.getAdjVolume());

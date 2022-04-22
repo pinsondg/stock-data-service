@@ -5,9 +5,7 @@ import com.dpgrandslam.stockdataservice.domain.model.FearGreedIndex;
 import com.dpgrandslam.stockdataservice.domain.model.options.OptionsChain;
 import com.dpgrandslam.stockdataservice.domain.model.stock.*;
 import com.dpgrandslam.stockdataservice.domain.service.*;
-import com.google.common.collect.ImmutableMap;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.tomcat.jni.Local;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -129,7 +127,7 @@ public class StockDataServiceController {
     }
 
     @GetMapping("/treasury-yield")
-    public ResponseEntity<YahooFinanceTenYearTreasuryYield> getTreasuryYield(@RequestParam Optional<String> date) {
+    public ResponseEntity<YahooFinanceQuote> getTreasuryYield(@RequestParam Optional<String> date) {
         return ResponseEntity.ok(treasuryYieldService.getTreasuryYieldForDate(date.map(LocalDate::parse)
                 .orElse(LocalDate.now())));
     }

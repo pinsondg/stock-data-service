@@ -8,7 +8,7 @@ import java.time.ZoneId;
 import java.util.TimeZone;
 
 @SpringBootApplication
-@EnableScheduling
+//@EnableScheduling
 public class StockDataServiceApplication {
 
     public static void main(String[] args) {

@@ -3,7 +3,7 @@ package com.dpgrandslam.stockdataservice.domain.config;
 import com.dpgrandslam.stockdataservice.domain.model.FearGreedIndex;
 import com.dpgrandslam.stockdataservice.domain.model.options.HistoricalOption;
 import com.dpgrandslam.stockdataservice.domain.model.stock.EndOfDayStockData;
-import com.dpgrandslam.stockdataservice.domain.model.stock.YahooFinanceTenYearTreasuryYield;
+import com.dpgrandslam.stockdataservice.domain.model.stock.YahooFinanceQuote;
 import com.dpgrandslam.stockdataservice.domain.model.tiingo.TiingoStockSearchResponse;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
@@ -41,7 +41,7 @@ public class CacheConfiguration {
     }
 
     @Bean
-    public Cache<LocalDate, YahooFinanceTenYearTreasuryYield> treasuryYieldCache() {
+    public Cache<LocalDate, YahooFinanceQuote> treasuryYieldCache() {
         return Caffeine.newBuilder()
                 .expireAfterWrite(10, TimeUnit.DAYS)
                 .maximumSize(1000)
