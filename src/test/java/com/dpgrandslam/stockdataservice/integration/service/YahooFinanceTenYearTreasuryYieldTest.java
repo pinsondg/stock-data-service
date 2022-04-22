@@ -1,6 +1,6 @@
 package com.dpgrandslam.stockdataservice.integration.service;
 
-import com.dpgrandslam.stockdataservice.domain.model.stock.YahooFinanceTenYearTreasuryYield;
+import com.dpgrandslam.stockdataservice.domain.model.stock.YahooFinanceQuote;
 import com.dpgrandslam.stockdataservice.domain.service.TenYearTreasuryYieldService;
 import com.dpgrandslam.stockdataservice.integration.client.MockClientTest;
 import com.dpgrandslam.stockdataservice.testUtils.TestUtils;
@@ -33,7 +33,7 @@ public class YahooFinanceTenYearTreasuryYieldTest extends MockClientTest {
                 .withBody(TestUtils.loadHtmlFileAndClean("mocks/yahoofinance/yahoo-finance-tnx.html")));
 
         LocalDate date = LocalDate.of(2021, 9, 14);
-        YahooFinanceTenYearTreasuryYield tenYearTreasuryYield = subject.getTreasuryYieldForDate(date);
+        YahooFinanceQuote tenYearTreasuryYield = subject.getTreasuryYieldForDate(date);
 
         assertEquals(date, tenYearTreasuryYield.getDate());
         assertEquals(1.3460, tenYearTreasuryYield.getOpen());

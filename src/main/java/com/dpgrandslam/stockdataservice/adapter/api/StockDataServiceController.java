@@ -2,12 +2,11 @@ package com.dpgrandslam.stockdataservice.adapter.api;
 
 import com.dpgrandslam.stockdataservice.domain.error.OptionsChainLoadException;
 import com.dpgrandslam.stockdataservice.domain.model.FearGreedIndex;
+import com.dpgrandslam.stockdataservice.domain.model.options.Option;
 import com.dpgrandslam.stockdataservice.domain.model.options.OptionsChain;
 import com.dpgrandslam.stockdataservice.domain.model.stock.*;
 import com.dpgrandslam.stockdataservice.domain.service.*;
-import com.google.common.collect.ImmutableMap;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.tomcat.jni.Local;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -42,6 +41,9 @@ public class StockDataServiceController {
 
     @Autowired
     private FearGreedDataLoadService fearGreedDataLoadService;
+
+    @Autowired
+    private VIXLoadService vixLoadService;
 
     @GetMapping("/option/{ticker}")
     public ResponseEntity<List<OptionsChain>> getOptionsChain(@PathVariable(name = "ticker") String ticker,
@@ -129,7 +131,7 @@ public class StockDataServiceController {
     }
 
     @GetMapping("/treasury-yield")
-    public ResponseEntity<YahooFinanceTenYearTreasuryYield> getTreasuryYield(@RequestParam Optional<String> date) {
+    public ResponseEntity<YahooFinanceQuote> getTreasuryYield(@RequestParam Optional<String> date) {
         return ResponseEntity.ok(treasuryYieldService.getTreasuryYieldForDate(date.map(LocalDate::parse)
                 .orElse(LocalDate.now())));
     }
@@ -149,5 +151,10 @@ public class StockDataServiceController {
             return fgIndex.map(fearGreedIndex -> ResponseEntity.ok(Collections.singletonList(fearGreedIndex))).orElseGet(() -> ResponseEntity.notFound().build());
         }
         return ResponseEntity.ok(fearGreedDataLoadService.loadFearGreedDataBetweenDates(sd, ed));
+    }
+
+    @GetMapping("/vix")
+    public ResponseEntity<List<YahooFinanceQuote>> getVixForDates(@RequestParam String startDate, @RequestParam Optional<String> endDate) {
+        return ResponseEntity.ok(vixLoadService.loadVIXBetweenDates(LocalDate.parse(startDate), endDate.map(LocalDate::parse).orElse(LocalDate.parse(startDate))));
     }
 }

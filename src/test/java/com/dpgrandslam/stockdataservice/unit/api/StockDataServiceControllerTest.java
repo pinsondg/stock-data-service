@@ -12,6 +12,7 @@ import com.dpgrandslam.stockdataservice.domain.model.tiingo.TiingoStockSearchRes
 import com.dpgrandslam.stockdataservice.domain.service.OptionsChainLoadService;
 import com.dpgrandslam.stockdataservice.domain.service.StockDataLoadService;
 import com.dpgrandslam.stockdataservice.domain.service.TrackedStockService;
+import com.dpgrandslam.stockdataservice.domain.service.VIXLoadService;
 import com.dpgrandslam.stockdataservice.testUtils.TestDataFactory;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.Before;
@@ -41,6 +42,9 @@ public class StockDataServiceControllerTest {
 
     @Mock
     private StockDataLoadService stockDataLoadService;
+
+    @Mock
+    private VIXLoadService vixLoadService;
 
     @InjectMocks
     private StockDataServiceController subject;
@@ -257,6 +261,15 @@ public class StockDataServiceControllerTest {
         subject.getFullOptionsChain("TEST");
 
         verify(optionsChainLoadService, times(1)).loadFullOptionsChainWithAllData(eq("TEST"));
+    }
+
+    @Test
+    public void testGetVix() {
+        when(vixLoadService.loadVIXBetweenDates(any(), any())).thenReturn(Collections.emptyList());
+
+        subject.getVixForDates(LocalDate.now().toString(), Optional.of(LocalDate.now().toString()));
+
+        verify(vixLoadService, times(1)).loadVIXBetweenDates(eq(LocalDate.now()), eq(LocalDate.now()));
     }
 
 
