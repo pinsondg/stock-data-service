@@ -8,6 +8,7 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
+import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -25,6 +26,7 @@ public class VIXLoadService {
         return vixCache.get(Pair.of(startDate, endDate), (pair) -> historicStockDataLoadService
                 .loadQuoteForDates("^VIX", pair.getLeft(), pair.getRight()).stream()
                 .filter(x -> x.getClose() != null)
+                .sorted(Comparator.comparing(YahooFinanceQuote::getDate))
                 .collect(Collectors.toList()));
     }
 }
