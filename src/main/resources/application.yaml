@@ -43,6 +43,8 @@ api:
       url: http://finance.yahoo.com
     cnn:
       url: https://money.cnn.com
+    fear-greed:
+      url: https://production.dataviz.cnn.io
   security:
     enabled: false
 
