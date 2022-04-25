@@ -45,6 +45,6 @@ api:
     yahoo-finance:
       url: http://localhost
       port: 1080
-    cnn:
+    fear-greed:
       url: http://localhost
       port: 1080
