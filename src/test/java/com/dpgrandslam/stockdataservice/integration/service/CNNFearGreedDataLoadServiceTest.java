@@ -45,12 +45,12 @@ public class CNNFearGreedDataLoadServiceTest extends MockClientTest {
     @Test
     public void testLoadFearGreedIndex_beforeClose() throws IOException {
         mockServerRule.getClient().when(
-                request().withMethod("GET").withPath("/data/fear.*"),
+                request().withMethod("GET").withPath("/index/fearandgreed/graphdata/.*"),
                 Times.exactly(1)
         ).respond(HttpResponse.response()
                 .withStatusCode(200)
-                .withHeader("Content-Type", "text/html")
-                .withBody(TestUtils.loadHtmlFileAndClean("mocks/cnn/cnn-fear-greed-index.html"))
+                .withHeader("Content-Type", "application/json")
+                .withBody(TestUtils.loadBodyFromTestResourceFile("mocks/cnn/cnn-fear-greed-index-api-response.json"))
         );
 
         when(timeUtils.getCurrentOrLastTradeDate()).thenReturn(LocalDate.now());
@@ -58,11 +58,11 @@ public class CNNFearGreedDataLoadServiceTest extends MockClientTest {
 
         Set<FearGreedIndex> actual = subject.loadCurrentFearGreedIndex();
         assertEquals(5, actual.size());
-        assertTrue(actual.stream().anyMatch(x -> x.getValue() == 30 && x.getTradeDate().equals(LocalDate.now().minusDays(1))));
-        assertTrue(actual.stream().anyMatch(x -> x.getValue() == 35 && x.getTradeDate().equals(LocalDate.now().minusWeeks(1))));
-        assertTrue(actual.stream().anyMatch(x -> x.getValue() == 83 && x.getTradeDate().equals(LocalDate.now().minusMonths(1))));
-        assertTrue(actual.stream().anyMatch(x -> x.getValue() == 69 && x.getTradeDate().equals(LocalDate.now().minusYears(1))));
-        assertTrue(actual.stream().anyMatch(x -> x.getValue() == 25 && x.getTradeDate().equals(LocalDate.now())));
+        assertTrue(actual.stream().anyMatch(x -> x.getValue() == 40 && x.getTradeDate().equals(LocalDate.now().minusDays(1))));
+        assertTrue(actual.stream().anyMatch(x -> x.getValue() == 45 && x.getTradeDate().equals(LocalDate.now().minusWeeks(1))));
+        assertTrue(actual.stream().anyMatch(x -> x.getValue() == 46 && x.getTradeDate().equals(LocalDate.now().minusMonths(1))));
+        assertTrue(actual.stream().anyMatch(x -> x.getValue() == 53 && x.getTradeDate().equals(LocalDate.now().minusYears(1))));
+        assertTrue(actual.stream().anyMatch(x -> x.getValue() == 31 && x.getTradeDate().equals(LocalDate.now())));
 
     }
 
