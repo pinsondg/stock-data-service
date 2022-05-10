@@ -60,7 +60,7 @@ public class CacheConfiguration {
     public Cache<Pair<LocalDate, LocalDate>, List<FearGreedIndex>> fearGreedBetweenDatesCache() {
         return Caffeine.newBuilder()
                 .expireAfterWrite(2, TimeUnit.HOURS)
-                .maximumSize(500)
+                .maximumSize(2000)
                 .build();
     }
 
@@ -68,7 +68,7 @@ public class CacheConfiguration {
     public Cache<Pair<LocalDate, LocalDate>, List<YahooFinanceQuote>> vixCache() {
         return Caffeine.newBuilder()
                 .expireAfterWrite(2, TimeUnit.DAYS)
-                .maximumSize(500)
+                .maximumSize(1000)
                 .build();
     }
 
