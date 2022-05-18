@@ -1,7 +1,7 @@
 package com.dpgrandslam.stockdataservice.integration.service;
 
 import com.dpgrandslam.stockdataservice.domain.model.FearGreedIndex;
-import com.dpgrandslam.stockdataservice.domain.service.CNNFearGreedDataLoadService;
+import com.dpgrandslam.stockdataservice.domain.service.CNNFearGreedDataLoadAPIService;
 import com.dpgrandslam.stockdataservice.domain.util.TimeUtils;
 import com.dpgrandslam.stockdataservice.integration.client.MockClientTest;
 import com.dpgrandslam.stockdataservice.testUtils.TestUtils;
@@ -26,10 +26,10 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 import static org.mockserver.model.HttpRequest.request;
 
-public class CNNFearGreedDataLoadServiceTest extends MockClientTest {
+public class CNNFearGreedDataLoadAPIServiceTest extends MockClientTest {
 
     @Autowired
-    private CNNFearGreedDataLoadService subject;
+    private CNNFearGreedDataLoadAPIService subject;
 
     @MockBean
     private TimeUtils timeUtils;

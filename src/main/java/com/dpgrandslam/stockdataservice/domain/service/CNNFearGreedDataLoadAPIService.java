@@ -7,7 +7,7 @@ import com.dpgrandslam.stockdataservice.domain.model.FearGreedIndex;
 import com.dpgrandslam.stockdataservice.domain.util.TimeUtils;
 import com.github.benmanes.caffeine.cache.Cache;
 import org.apache.commons.lang3.tuple.Pair;
-import org.jsoup.nodes.Element;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
@@ -15,20 +15,19 @@ import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.regex.Pattern;
 
-@Service
-public class CNNFearGreedDataLoadService extends FearGreedDataLoadService {
+@Service(value = "CNNFearGreedDataLoadAPIService")
+public class CNNFearGreedDataLoadAPIService extends FearGreedDataLoadService {
 
     public static final String PATH = "/data/fear-and-greed/";
 
     private final TimeUtils timeUtils;
     private final CNNFearGreedClient cnnFearGreedClient;
 
-    public CNNFearGreedDataLoadService(FearGreedIndexRepository fearGreedIndexRepository,
-                                       Cache<Pair<LocalDate, LocalDate>, List<FearGreedIndex>> fearGreedCache,
-                                       CNNFearGreedClient cnnFearGreedClient,
-                                       TimeUtils timeUtils) {
+    public CNNFearGreedDataLoadAPIService(FearGreedIndexRepository fearGreedIndexRepository,
+                                          Cache<Pair<LocalDate, LocalDate>, List<FearGreedIndex>> fearGreedCache,
+                                          CNNFearGreedClient cnnFearGreedClient,
+                                          TimeUtils timeUtils) {
         super(fearGreedIndexRepository, fearGreedCache);
         this.cnnFearGreedClient = cnnFearGreedClient;
         this.timeUtils = timeUtils;

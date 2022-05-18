@@ -8,6 +8,7 @@ import com.dpgrandslam.stockdataservice.domain.model.stock.*;
 import com.dpgrandslam.stockdataservice.domain.service.*;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -40,6 +41,7 @@ public class StockDataServiceController {
     private TenYearTreasuryYieldService treasuryYieldService;
 
     @Autowired
+    @Qualifier("CNNFearGreedDataLoadAPIService")
     private FearGreedDataLoadService fearGreedDataLoadService;
 
     @Autowired

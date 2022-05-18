@@ -3,7 +3,7 @@ package com.dpgrandslam.stockdataservice.unit.service;
 import com.dpgrandslam.stockdataservice.adapter.apiclient.WebpageLoader;
 import com.dpgrandslam.stockdataservice.adapter.repository.FearGreedIndexRepository;
 import com.dpgrandslam.stockdataservice.domain.model.FearGreedIndex;
-import com.dpgrandslam.stockdataservice.domain.service.CNNFearGreedDataLoadService;
+import com.dpgrandslam.stockdataservice.domain.service.CNNFearGreedDataLoadAPIService;
 import com.github.benmanes.caffeine.cache.Cache;
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.Before;
@@ -27,7 +27,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 @RunWith(MockitoJUnitRunner.class)
-public class CNNFearGreedDataLoadServiceTest {
+public class CNNFearGreedDataLoadAPIServiceTest {
 
     @Mock
     private Cache<Pair<LocalDate, LocalDate>, List<FearGreedIndex>> fearGreedBetweenDatesCache;
@@ -39,7 +39,7 @@ public class CNNFearGreedDataLoadServiceTest {
     private WebpageLoader webpageLoader;
 
     @InjectMocks
-    private CNNFearGreedDataLoadService subject;
+    private CNNFearGreedDataLoadAPIService subject;
 
     @Before
     public void setup() {
