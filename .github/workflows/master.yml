@@ -15,7 +15,8 @@ jobs:
     runs-on: ubuntu-latest
     env:
       TEST_BUCKET_NAME: ${{ secrets.TEST_BUCKET_NAME }}
-      TEST_KEY: ${{ secrets.TEST_KEY }}
+      TEST_KEY_OPTION_CSV: ${{ secrets.TEST_KEY_OPTION_CSV }}
+      TEST_KEY_FEAR_GREED_JSON: ${{ secrets.TEST_KEY_FEAR_GREED_JSON }}
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
 

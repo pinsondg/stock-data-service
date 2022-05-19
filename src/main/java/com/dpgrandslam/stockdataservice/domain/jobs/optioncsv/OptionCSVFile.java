@@ -1,4 +1,4 @@
-package com.dpgrandslam.stockdataservice.domain.model;
+package com.dpgrandslam.stockdataservice.domain.jobs.optioncsv;
 
 import lombok.Data;
 
