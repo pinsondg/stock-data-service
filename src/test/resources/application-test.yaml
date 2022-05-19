@@ -1,7 +1,10 @@
 job:
   option-csv:
     test-bucket-name: ${TEST_BUCKET_NAME}
-    test-key: ${TEST_KEY}
+    test-key: ${TEST_KEY_OPTION_CSV}
+  fear-greed-json:
+    test-bucket-name: ${TEST_BUCKET_NAME}
+    test-key: ${TEST_KEY_FEAR_GREED_JSON}
 
 spring:
   jpa:

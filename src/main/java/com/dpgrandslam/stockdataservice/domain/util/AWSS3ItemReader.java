@@ -1,10 +1,8 @@
-package com.dpgrandslam.stockdataservice.domain.jobs.optioncsv;
+package com.dpgrandslam.stockdataservice.domain.util;
 
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.model.ListObjectsRequest;
 import com.amazonaws.services.s3.model.S3ObjectSummary;
-import com.dpgrandslam.stockdataservice.domain.model.OptionCSVFile;
-import com.dpgrandslam.stockdataservice.domain.util.AWSResource;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.batch.item.*;
@@ -20,7 +18,7 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 
 @Slf4j
-public class AWSS3ItemReader extends MultiResourceItemReader<OptionCSVFile> implements InitializingBean {
+public class AWSS3ItemReader<T> extends MultiResourceItemReader<T> implements InitializingBean {
 
     private List<S3ObjectSummary> s3Objects;
     private final AmazonS3 amazonS3;
@@ -43,13 +41,13 @@ public class AWSS3ItemReader extends MultiResourceItemReader<OptionCSVFile> impl
     }
 
     @Override
-    public OptionCSVFile read() throws Exception, UnexpectedInputException, ParseException, NonTransientResourceException {
-        OptionCSVFile optionCSVFile =  super.read();
+    public T read() throws Exception, UnexpectedInputException, ParseException, NonTransientResourceException {
+        T readFile =  super.read();
         Resource resource = super.getCurrentResource();
         if (resource != null && resource.getFile() != null && resource.getFile().exists()) {
             resource.getFile().delete();
         }
-        return optionCSVFile;
+        return readFile;
     }
 
     @Override
