@@ -96,6 +96,10 @@ public class TimeUtils {
         return false;
     }
 
+    public boolean isTradingOpenOnDay(LocalDate date) {
+        return !isStockMarketHoliday(date) && isWeekday(date.getDayOfWeek());
+    }
+
     public boolean isTodayAmericaNewYorkStockMarketHoliday() {
         return isStockMarketHoliday(getNowAmericaNewYork().toLocalDate());
     }

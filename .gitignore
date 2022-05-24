@@ -38,3 +38,5 @@ build/
 *.db
 
 venv
+
+src/main/resources/data/fear-greed-files/

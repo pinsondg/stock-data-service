@@ -2,6 +2,7 @@ package com.dpgrandslam.stockdataservice.domain.jobs.feargreedbatch;
 
 import com.dpgrandslam.stockdataservice.domain.model.FearGreedIndex;
 import com.dpgrandslam.stockdataservice.domain.service.FearGreedDataLoadService;
+import com.dpgrandslam.stockdataservice.domain.util.TimeUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.batch.item.ItemProcessor;
@@ -25,13 +26,16 @@ public class FearGreedJSONItemProcessor implements ItemProcessor<FearGreedJSONFi
     @Qualifier("CNNFearGreedDataLoadAPIService")
     private FearGreedDataLoadService fearGreedDataLoadService;
 
+    @Autowired
+    private TimeUtils timeUtils;
+
     @Override
     public Set<FearGreedIndex> process(FearGreedJSONFile fearGreedJSONFile) throws Exception {
         Set<FearGreedIndex> fearGreedIndices = new HashSet<>();
         fearGreedJSONFile.getData().forEach(data -> {
             Instant instant = Instant.ofEpochMilli(data.getTimestamp().longValue());
             LocalDate tradeDate = LocalDate.ofInstant(instant, ZoneOffset.UTC);
-            if (fearGreedDataLoadService.getFearGreedIndexOfDay(tradeDate).isEmpty()) {
+            if (fearGreedDataLoadService.getFearGreedIndexOfDay(tradeDate).isEmpty() && timeUtils.isTradingOpenOnDay(tradeDate)) {
                 FearGreedIndex fearGreedIndex = new FearGreedIndex();
                 fearGreedIndex.setTradeDate(tradeDate);
                 fearGreedIndex.setValue(data.getValue().intValue());

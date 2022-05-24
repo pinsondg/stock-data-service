@@ -4,6 +4,7 @@ import com.dpgrandslam.stockdataservice.domain.jobs.feargreedbatch.FearGreedJSON
 import com.dpgrandslam.stockdataservice.domain.jobs.feargreedbatch.FearGreedJSONItemProcessor;
 import com.dpgrandslam.stockdataservice.domain.model.FearGreedIndex;
 import com.dpgrandslam.stockdataservice.domain.service.FearGreedDataLoadService;
+import com.dpgrandslam.stockdataservice.domain.util.TimeUtils;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.InjectMocks;
@@ -26,6 +27,9 @@ public class FearGreedJSONItemProcessorTest {
 
     @Mock
     private FearGreedDataLoadService fearGreedDataLoadService;
+
+    @Mock
+    private TimeUtils timeUtils;
 
     @InjectMocks
     private FearGreedJSONItemProcessor subject;
@@ -54,6 +58,7 @@ public class FearGreedJSONItemProcessorTest {
         fearGreedJSONData.add(data2);
         input.setData(fearGreedJSONData);
 
+        when(timeUtils.isTradingOpenOnDay(any())).thenReturn(true);
         when(fearGreedDataLoadService.getFearGreedIndexOfDay(eq(today))).thenReturn(Optional.of(existing));
         when(fearGreedDataLoadService.getFearGreedIndexOfDay(eq(yesterday))).thenReturn(Optional.empty());
 
