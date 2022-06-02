@@ -82,7 +82,7 @@ public class FearGreedJSONBatchLoadAcceptanceTestSteps extends BaseAcceptanceTes
             assertNotNull(index.getValue());
             assertNotNull(index.getCreateTime());
         });
-        assertEquals(432, fearGreedIndices.size());
+        assertEquals(430, fearGreedIndices.size());
     }
 
     @After
