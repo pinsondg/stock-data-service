@@ -40,3 +40,4 @@ build/
 venv
 
 src/main/resources/data/fear-greed-files/
+fear-greed-json/
