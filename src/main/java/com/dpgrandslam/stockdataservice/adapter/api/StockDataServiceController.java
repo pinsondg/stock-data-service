@@ -133,9 +133,9 @@ public class StockDataServiceController {
     }
 
     @GetMapping("/treasury-yield")
-    public ResponseEntity<YahooFinanceQuote> getTreasuryYield(@RequestParam Optional<String> date) {
-        return ResponseEntity.ok(treasuryYieldService.getTreasuryYieldForDate(date.map(LocalDate::parse)
-                .orElse(LocalDate.now())));
+    public ResponseEntity<List<YahooFinanceQuote>> getTreasuryYield(@RequestParam String startDate, @RequestParam Optional<String> endDate) {
+        return ResponseEntity.ok(treasuryYieldService.getTreasuryYieldForDate(LocalDate.parse(startDate),
+                endDate.map(LocalDate::parse).orElse(LocalDate.now())));
     }
 
     @GetMapping("/fear-greed")
