@@ -40,8 +40,8 @@ public class CacheConfiguration {
                 .build();
     }
 
-    @Bean
-    public Cache<LocalDate, YahooFinanceQuote> treasuryYieldCache() {
+    @Bean("TreasuryYieldCache")
+    public Cache<Pair<LocalDate, LocalDate>, List<YahooFinanceQuote>> treasuryYieldCache() {
         return Caffeine.newBuilder()
                 .expireAfterWrite(10, TimeUnit.DAYS)
                 .maximumSize(1000)
@@ -64,7 +64,7 @@ public class CacheConfiguration {
                 .build();
     }
 
-    @Bean
+    @Bean("VIXCache")
     public Cache<Pair<LocalDate, LocalDate>, List<YahooFinanceQuote>> vixCache() {
         return Caffeine.newBuilder()
                 .expireAfterWrite(2, TimeUnit.DAYS)

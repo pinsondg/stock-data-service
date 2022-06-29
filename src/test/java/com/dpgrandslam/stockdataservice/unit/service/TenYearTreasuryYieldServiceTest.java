@@ -5,6 +5,7 @@ import com.dpgrandslam.stockdataservice.domain.model.stock.YahooFinanceQuote;
 import com.dpgrandslam.stockdataservice.domain.service.TenYearTreasuryYieldService;
 import com.dpgrandslam.stockdataservice.domain.service.YahooFinanceHistoricStockDataLoadService;
 import com.github.benmanes.caffeine.cache.Cache;
+import org.apache.commons.lang3.tuple.Pair;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.InjectMocks;
@@ -24,7 +25,7 @@ import static org.mockito.Mockito.*;
 public class TenYearTreasuryYieldServiceTest {
 
     @Mock
-    private Cache<LocalDate, YahooFinanceQuote> treasuryYieldCache;
+    private Cache<Pair<LocalDate, LocalDate>, List<YahooFinanceQuote>> treasuryYieldCache;
 
     @Mock
     private YahooFinanceHistoricStockDataLoadService historicStockDataLoadService;
@@ -44,30 +45,14 @@ public class TenYearTreasuryYieldServiceTest {
                 .build();
         when(historicStockDataLoadService.loadQuoteForDates(any(), any(), any())).thenReturn(Collections.singletonList(yield));
         when(treasuryYieldCache.get(any(), any())).then(invok -> {
-            Function<LocalDate, List<YahooFinanceQuote>> func = invok.getArgument(1);
+            Function<Pair<LocalDate, LocalDate>, List<YahooFinanceQuote>> func = invok.getArgument(1);
             return func.apply(invok.getArgument(0));
         });
-        YahooFinanceQuote actual = subject.getTreasuryYieldForDate(LocalDate.now());
+        List<YahooFinanceQuote> actual = subject.getTreasuryYieldForDate(LocalDate.now().minusDays(1), LocalDate.now());
 
-        verify(treasuryYieldCache, times(1)).get(eq(LocalDate.now()), any());
-        verify(historicStockDataLoadService, times(1)).loadQuoteForDates(eq("^TNX"), eq(LocalDate.now()), eq(LocalDate.now()));
+        verify(treasuryYieldCache, times(1)).get(eq(Pair.of(LocalDate.now().minusDays(1), LocalDate.now())), any());
+        verify(historicStockDataLoadService, times(1)).loadQuoteForDates(eq("^TNX"), eq(LocalDate.now().minusDays(1)), eq(LocalDate.now()));
 
-        assertEquals(yield, actual);
-    }
-
-    @Test(expected = YahooFinanceQuoteLoadException.class)
-    public void testGetTreasuryYieldForDate_throwsException() {
-        when(historicStockDataLoadService.loadQuoteForDates(any(), any(), any())).thenReturn(
-                Collections.singletonList(YahooFinanceQuote.builder()
-                        .date(LocalDate.now())
-                        .build()));
-        when(treasuryYieldCache.get(any(), any())).then(invok -> {
-            Function<LocalDate, List<YahooFinanceQuote>> func = invok.getArgument(1);
-            return func.apply(invok.getArgument(0));
-        });
-
-        subject.getTreasuryYieldForDate(LocalDate.now());
-
-        verify(historicStockDataLoadService, times(1)).loadQuoteForDates(eq("^TNX"), eq(LocalDate.now()), eq(LocalDate.now()));
+        assertEquals(Collections.singletonList(yield), actual);
     }
 }

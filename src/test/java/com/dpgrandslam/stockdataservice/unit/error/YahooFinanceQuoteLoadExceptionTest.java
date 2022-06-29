@@ -27,4 +27,12 @@ public class YahooFinanceQuoteLoadExceptionTest {
         assertEquals(expected, subject.getMessage());
     }
 
+    @Test
+    public void test_constructors() {
+        YahooFinanceQuoteLoadException yahooFinanceQuoteLoadException = new YahooFinanceQuoteLoadException("^TNX", LocalDate.now().minusDays(1), LocalDate.now(), "Test");
+        yahooFinanceQuoteLoadException = new YahooFinanceQuoteLoadException("^TNX", LocalDate.now().minusDays(1), LocalDate.now());
+        yahooFinanceQuoteLoadException = new YahooFinanceQuoteLoadException("^TNX", LocalDate.now().minusDays(1), LocalDate.now(), "Test", new RuntimeException());
+        yahooFinanceQuoteLoadException = new YahooFinanceQuoteLoadException("^TNX", LocalDate.now().minusDays(1), LocalDate.now(), new RuntimeException());
+    }
+
 }
