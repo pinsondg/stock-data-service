@@ -18,9 +18,7 @@ import java.net.URLEncoder;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
-import java.util.Date;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -36,6 +34,24 @@ public class YahooFinanceHistoricStockDataLoadService {
 
 
     public List<YahooFinanceQuote> loadQuoteForDates(String ticker, LocalDate startDate, LocalDate endDate) {
+        // Break into 3 month chunks since yahoo finance is weird about long dates
+        List<YahooFinanceQuote> quotes = new ArrayList<>();
+        LocalDate sd = startDate;
+        LocalDate ed = sd.plusMonths(3);
+        while (sd.isBefore(endDate)) {
+            quotes.addAll(doLoad(ticker, sd, ed).stream()
+                    .filter(x -> x.getClose() != null)
+                    .collect(Collectors.toList()));
+            sd = ed.plusDays(1);
+            ed = sd.plusMonths(3);
+        }
+        return quotes.stream().filter(x -> (x.getDate().isAfter(startDate) || x.getDate().equals(startDate))
+                        && (x.getDate().isBefore(endDate) || x.getDate().equals(endDate)))
+                .sorted(Comparator.comparing(YahooFinanceQuote::getDate))
+                .collect(Collectors.toList());
+    }
+
+    private List<YahooFinanceQuote> doLoad(String ticker, LocalDate startDate, LocalDate endDate) {
         StringBuilder sb = new StringBuilder(clientConfigurationProperties.getUrlAndPort());
         sb.append("/quote/");
         sb.append(URLEncoder.encode(ticker, Charsets.UTF_8));

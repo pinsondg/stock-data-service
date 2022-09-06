@@ -241,6 +241,7 @@
                             <excludes>
                                 <exclude>**/util*</exclude>
                                 <exclude>**/tiingo*</exclude>
+                                <exclude>**/error*</exclude>
                             </excludes>
                         </configuration>
                     </execution>
