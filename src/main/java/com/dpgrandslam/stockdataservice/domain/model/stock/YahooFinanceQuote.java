@@ -38,6 +38,16 @@ public class YahooFinanceQuote implements EndOfDayStockData {
     }
 
     @Override
+    public Double getAdjHigh() {
+        return null;
+    }
+
+    @Override
+    public Double getAdjLow() {
+        return null;
+    }
+
+    @Override
     public Double getSplitFactor() {
         return null;
     }
