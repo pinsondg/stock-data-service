@@ -21,6 +21,8 @@ public class TiingoStockEndOfDayResponse implements EndOfDayStockData {
     private Integer volume;
     private Double adjOpen;
     private Double adjClose;
+    private Double adjHigh;
+    private Double adjLow;
     private Integer adjVolume;
     private Double divCash;
     private Double splitFactor;

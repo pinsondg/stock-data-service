@@ -14,5 +14,10 @@ public class YahooFinanceQuoteTest {
         assertNull(treasuryYield.getVolume());
         assertNull(treasuryYield.getAdjVolume());
         assertNull(treasuryYield.getSplitFactor());
+        assertNull(treasuryYield.getAdjOpen());
+        assertNull(treasuryYield.getAdjClose());
+        assertNull(treasuryYield.getAdjLow());
+        assertNull(treasuryYield.getAdjHigh());
+        assertNull(treasuryYield.getSplitFactor());
     }
 }
