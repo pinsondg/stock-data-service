@@ -6,8 +6,7 @@ import com.dpgrandslam.stockdataservice.domain.model.options.OptionPriceData;
 import com.dpgrandslam.stockdataservice.domain.model.stock.TrackedStock;
 import com.dpgrandslam.stockdataservice.domain.service.HistoricOptionsDataService;
 import com.dpgrandslam.stockdataservice.domain.service.TrackedStockService;
-import com.dpgrandslam.stockdataservice.domain.util.HistoricOptionBetweenDateCache;
-import lombok.*;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.batch.item.ItemProcessor;
 import org.springframework.stereotype.Component;
@@ -27,13 +26,11 @@ import java.util.stream.Collectors;
 @Slf4j
 public class OptionCSVItemProcessor implements ItemProcessor<OptionCSVFile, HistoricalOption> {
 
+    private final HistoricOptionsDataService historicOptionsDataService;
     private final TrackedStockService trackedStockService;
-    private final HistoricOptionBetweenDateCache historicOptionBetweenDateCache;
 
     private Map<String, LocalDate> tracked = new HashMap<>();
     private boolean trackedStocksLoaded = false;
-    private LocalDate cacheStartDate;
-    private LocalDate cacheEndDate;
 
     @Override
     @Transactional
@@ -46,9 +43,6 @@ public class OptionCSVItemProcessor implements ItemProcessor<OptionCSVFile, Hist
         if (!tracked.containsKey(optionCSVFile.getSymbol())) {
             return null;
         }
-        LocalDate dataDate = parseDate(optionCSVFile.getDataDate());
-
-        handleCache(dataDate);
 
         HistoricalOption historicalOption = HistoricalOption.builder()
                 .optionType(optionCSVFile.getPutCall().equalsIgnoreCase("call") ? Option.OptionType.CALL : Option.OptionType.PUT)
@@ -58,7 +52,7 @@ public class OptionCSVItemProcessor implements ItemProcessor<OptionCSVFile, Hist
                 .build();
 
         OptionPriceData optionPriceData = OptionPriceData.builder()
-                .tradeDate(dataDate)
+                .tradeDate(parseDate(optionCSVFile.getDataDate()))
                 .openInterest(Integer.parseInt(optionCSVFile.getOpenInterest()))
                 .bid(Double.parseDouble(optionCSVFile.getBidPrice()))
                 .ask(Double.parseDouble(optionCSVFile.getAskPrice()))
@@ -71,24 +65,27 @@ public class OptionCSVItemProcessor implements ItemProcessor<OptionCSVFile, Hist
             log.warn("Trade date for {} is after expiration: {}. Skipping...", optionPriceData, historicalOption.getExpiration());
             return null;
         }
-
-        Optional<HistoricalOption> existing = historicOptionBetweenDateCache.findOption(historicalOption.getTicker(), historicalOption.getStrike(),
-                historicalOption.getExpiration(), historicalOption.getOptionType());
-        if (existing.isPresent() && existing.get().getOptionPriceData().stream()
-                .map(OptionPriceData::getTradeDate)
-                .anyMatch(x -> x.equals(optionPriceData.getTradeDate()))) {
-            log.info("Option Price data for {} already exists. Skipping...", optionPriceData);
-            return null;
+        HistoricalOption existing;
+        try {
+            existing = historicOptionsDataService.findOption(historicalOption.getTicker(), historicalOption.getExpiration(),
+                    historicalOption.getStrike(), historicalOption.getOptionType());
+            if (existing.getOptionPriceData().stream().map(OptionPriceData::getTradeDate)
+                    .collect(Collectors.toSet()).contains(optionPriceData.getTradeDate())) {
+                log.warn("Option Price data for option {} on trade date {} already exists. Skipping...", historicalOption, optionPriceData.getTradeDate());
+                return null;
+            }
+        } catch (EntityNotFoundException e) {
+            existing = null;
+            log.debug("Option (ticker: {}, expiration: {}, strike: {}, type: {}) does not exist, creating new one.",
+                    historicalOption.getTicker(), historicalOption.getExpiration(), historicalOption.getStrike(), historicalOption.getOptionType());
         }
-
-        existing.ifPresentOrElse((x) -> {
-            x.getOptionPriceData().add(optionPriceData);
-            optionPriceData.setOption(x);
-        }, () -> {
+        if (existing != null) {
+            existing.getOptionPriceData().add(optionPriceData);
+            optionPriceData.setOption(existing);
+        } else {
             historicalOption.setOptionPriceData(Collections.singleton(optionPriceData));
             optionPriceData.setOption(historicalOption);
-        });
-
+        }
         if (optionPriceData.getTradeDate().isBefore(tracked.get(historicalOption.getTicker()))) {
             try {
                 TrackedStock trackedStock = trackedStockService.findByTicker(optionCSVFile.getSymbol());
@@ -96,27 +93,11 @@ public class OptionCSVItemProcessor implements ItemProcessor<OptionCSVFile, Hist
                 trackedStockService.saveTrackedStock(trackedStock);
                 tracked.put(historicalOption.getTicker(), optionPriceData.getTradeDate());
             } catch (EntityNotFoundException e) {
-                log.warn("Exception encountered. Skipping update...", e);
+                log.warn("{}. Skipping update...", e.getMessage());
                 return null;
             }
         }
-        return existing.orElse(historicalOption);
-    }
-
-    private void handleCache(LocalDate optionTradeDate) {
-        if (cacheStartDate == null) {
-            cacheStartDate = optionTradeDate.minusDays(10);
-            cacheEndDate = optionTradeDate.plusMonths(1);
-            historicOptionBetweenDateCache.addDataToCache(cacheStartDate, cacheEndDate);
-        }
-        if (optionTradeDate.isAfter(cacheEndDate)) {
-            LocalDate prevCacheStart = cacheStartDate;
-            LocalDate prevCacheEnd = cacheEndDate;
-            cacheStartDate = optionTradeDate.minusDays(10);
-            cacheEndDate = optionTradeDate.plusMonths(1);
-            historicOptionBetweenDateCache.clearDataFromCache(prevCacheStart, prevCacheEnd.minusDays(5));
-            historicOptionBetweenDateCache.addDataToCache(cacheStartDate, cacheEndDate);
-        }
+        return existing != null ? existing : historicalOption;
     }
 
     private LocalDate parseDate(String dateString) {
@@ -128,5 +109,4 @@ public class OptionCSVItemProcessor implements ItemProcessor<OptionCSVFile, Hist
         }
         return date;
     }
-
 }

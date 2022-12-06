@@ -9,3 +9,7 @@ job:
 spring:
   jpa:
     show-sql: false
+logging:
+  level:
+    root: info
+    com.dpgrandslam.stockdataservice: debug

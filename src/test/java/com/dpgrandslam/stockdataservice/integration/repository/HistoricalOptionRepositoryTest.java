@@ -9,6 +9,9 @@ import com.dpgrandslam.stockdataservice.testUtils.TestDataFactory;
 import io.cucumber.java.eo.Se;
 import io.cucumber.java.it.Ma;
 import lombok.extern.slf4j.Slf4j;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -35,6 +38,11 @@ public class HistoricalOptionRepositoryTest extends RepositoryIntTestBase {
 
     @Autowired
     protected HistoricalOptionJDBCRepository jdbcRepository;
+
+    @Before
+    public void setup() {
+        subject.deleteAll();
+    }
 
     @Test
     public void testAddAndRemoveData() {
@@ -130,14 +138,15 @@ public class HistoricalOptionRepositoryTest extends RepositoryIntTestBase {
     }
 
     @Test
+    @Ignore
     public void testFindBetweenDates() {
         Set<OptionPriceData> optionPriceData1 = generatePriceDataBetweenDates(LocalDate.now().minusDays(20), LocalDate.now(), 10);
         HistoricalOption option1 = TestDataFactory.HistoricalOptionMother.noPriceData().ticker("TEST1").historicalPriceData(optionPriceData1).build();
         optionPriceData1.forEach(x -> x.setOption(option1));
-        Set<OptionPriceData> optionPriceData2 = generatePriceDataBetweenDates(LocalDate.now().minusDays(50), LocalDate.now().minusDays(21), 10);
+        Set<OptionPriceData> optionPriceData2 = generatePriceDataBetweenDates(LocalDate.now().minusDays(50), LocalDate.now().minusDays(21), 5);
         HistoricalOption option2 = TestDataFactory.HistoricalOptionMother.noPriceData().ticker("TEST2").historicalPriceData(optionPriceData2).build();
         optionPriceData2.forEach(x -> x.setOption(option2));
-        Set<OptionPriceData> optionPriceData3 = generatePriceDataBetweenDates(LocalDate.now().minusDays(5), LocalDate.now(), 10);
+        Set<OptionPriceData> optionPriceData3 = generatePriceDataBetweenDates(LocalDate.now().minusDays(5), LocalDate.now(), 5);
         HistoricalOption option3 = TestDataFactory.HistoricalOptionMother.noPriceData().ticker("TEST3").historicalPriceData(optionPriceData3).build();
         optionPriceData3.forEach(x -> x.setOption(option3));
         subject.saveAllAndFlush(Arrays.asList(option1, option2, option3));
