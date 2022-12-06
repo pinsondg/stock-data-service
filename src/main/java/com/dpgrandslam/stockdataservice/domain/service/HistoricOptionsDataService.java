@@ -125,6 +125,10 @@ public class HistoricOptionsDataService {
         return historicalOptionJDBCRepository.findByTickerBetweenDates(ticker, startDate, endDate);
     }
 
+    public Set<HistoricalOption> findOptions(final LocalDate startDate, final LocalDate endDate) {
+        return historicalOptionJDBCRepository.findBetweenDates(startDate, endDate);
+    }
+
     public Set<HistoricalOption> findOptions(String ticker, LocalDate expiration) {
         log.info("Searching DB for options with ticker: {} and expiration: {}", ticker, expiration);
         TimerUtil timerUtil = new TimerUtil();

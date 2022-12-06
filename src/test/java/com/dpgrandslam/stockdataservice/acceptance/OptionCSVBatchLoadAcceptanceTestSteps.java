@@ -18,6 +18,7 @@ import io.cucumber.java.en.And;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
+import io.cucumber.java.hu.Ha;
 import io.cucumber.java.tr.Ama;
 import org.junit.After;
 import org.junit.Ignore;
@@ -79,11 +80,15 @@ public class OptionCSVBatchLoadAcceptanceTestSteps extends BaseAcceptanceTestSte
                 .ticker(ticker)
                 .strike(100.0)
                 .optionType(Option.OptionType.CALL)
-                .historicalPriceData(Collections.singleton(TestDataFactory.OptionPriceDataMother.complete()
+                .historicalPriceData(new HashSet<>(Arrays.asList(TestDataFactory.OptionPriceDataMother.complete()
                         .tradeDate(LocalDate.now().minusDays(1))
                         .dataObtainedDate(Timestamp.from(Instant.now()))
-                        .build()
-                ))
+                        .build(),
+                        TestDataFactory.OptionPriceDataMother.complete()
+                                .tradeDate(LocalDate.of(2019, 2, 1))
+                                .dataObtainedDate(Timestamp.from(Instant.now()))
+                                .build()
+                )))
                 .build();
         TrackedStock trackedStock = TrackedStock.builder()
                 .ticker("SPY")

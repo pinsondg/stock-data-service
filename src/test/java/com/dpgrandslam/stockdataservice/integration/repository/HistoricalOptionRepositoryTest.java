@@ -6,6 +6,8 @@ import com.dpgrandslam.stockdataservice.domain.model.options.HistoricalOption;
 import com.dpgrandslam.stockdataservice.domain.model.options.Option;
 import com.dpgrandslam.stockdataservice.domain.model.options.OptionPriceData;
 import com.dpgrandslam.stockdataservice.testUtils.TestDataFactory;
+import io.cucumber.java.eo.Se;
+import io.cucumber.java.it.Ma;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -128,6 +130,29 @@ public class HistoricalOptionRepositoryTest extends RepositoryIntTestBase {
     }
 
     @Test
+    public void testFindBetweenDates() {
+        Set<OptionPriceData> optionPriceData1 = generatePriceDataBetweenDates(LocalDate.now().minusDays(20), LocalDate.now(), 10);
+        HistoricalOption option1 = TestDataFactory.HistoricalOptionMother.noPriceData().ticker("TEST1").historicalPriceData(optionPriceData1).build();
+        optionPriceData1.forEach(x -> x.setOption(option1));
+        Set<OptionPriceData> optionPriceData2 = generatePriceDataBetweenDates(LocalDate.now().minusDays(50), LocalDate.now().minusDays(21), 10);
+        HistoricalOption option2 = TestDataFactory.HistoricalOptionMother.noPriceData().ticker("TEST2").historicalPriceData(optionPriceData2).build();
+        optionPriceData2.forEach(x -> x.setOption(option2));
+        Set<OptionPriceData> optionPriceData3 = generatePriceDataBetweenDates(LocalDate.now().minusDays(5), LocalDate.now(), 10);
+        HistoricalOption option3 = TestDataFactory.HistoricalOptionMother.noPriceData().ticker("TEST3").historicalPriceData(optionPriceData3).build();
+        optionPriceData3.forEach(x -> x.setOption(option3));
+        subject.saveAllAndFlush(Arrays.asList(option1, option2, option3));
+
+        Set<HistoricalOption> returned = jdbcRepository.findBetweenDates(LocalDate.now().minusDays(10), LocalDate.now());
+        assertTrue(returned.stream().noneMatch(x -> x.getTicker().equals("TEST2")));
+        assertTrue(returned.stream().allMatch(x -> x.getTicker().equals("TEST1") || x.getTicker().equals("TEST3")));
+        assertEquals(optionPriceData3.size(), returned.stream().filter(x -> x.getTicker().equals("TEST3")).mapToLong(x -> x.getOptionPriceData().size()).sum());
+
+        returned = jdbcRepository.findBetweenDates(LocalDate.now().minusDays(50), LocalDate.now().minusDays(21));
+        assertTrue(returned.stream().noneMatch(x -> x.getTicker().equals("TEST1") || x.getTicker().equals("TEST3")));
+        assertTrue(returned.stream().allMatch(x -> x.getTicker().equals("TEST2")));
+    }
+
+    @Test
     public void testGetExpirationDatesForOptionsAfterDate() {
         LocalDate monday = LocalDate.now().with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
 
@@ -159,5 +184,20 @@ public class HistoricalOptionRepositoryTest extends RepositoryIntTestBase {
         assertTrue(actual.contains(expiration1));
         assertTrue(actual.contains(expiration2));
         assertTrue(actual.contains(expiration3));
+    }
+
+    private Set<OptionPriceData> generatePriceDataBetweenDates(LocalDate startDate, LocalDate endDate, int size) {
+        Set<OptionPriceData> optionPriceDataSet = new HashSet<>();
+        Random random = new Random();
+        for (int i = 0; i < size; i++) {
+            int diff = (int) Math.abs(ChronoUnit.DAYS.between(startDate, endDate));
+            int randomDiff = random.nextInt(diff + 1);
+            LocalDate randomTradeDate = endDate.minusDays(randomDiff);
+            OptionPriceData optionPriceData = TestDataFactory.OptionPriceDataMother.complete()
+                    .tradeDate(randomTradeDate)
+                    .build();
+            optionPriceDataSet.add(optionPriceData);
+        }
+        return optionPriceDataSet;
     }
 }
