@@ -15,7 +15,7 @@ import java.util.Set;
 @RequiredArgsConstructor
 public class HistoricalOptionJDBCRepositoryImpl implements HistoricalOptionJDBCRepository{
 
-    private static final String FIND_BETWEEN_DATES_SQL = "SELECT * FROM historical_option ho left join option_price_data " +
+    private static final String FIND_BETWEEN_DATES_TICKER_SQL = "SELECT * FROM historical_option ho left join option_price_data " +
             "pd on ho.option_id = pd.option_id WHERE ho.ticker = ? and pd.trade_date >= ? and pd.trade_date <= ?";
     private static final String FIND_EXPIRATION_AFTER_DATE_SQL = "select distinct expiration from historical_option " +
             "inner join option_price_data opd on historical_option.option_id = opd.option_id where trade_date >= ? " +
@@ -25,7 +25,7 @@ public class HistoricalOptionJDBCRepositoryImpl implements HistoricalOptionJDBCR
 
     @Override
     public Set<HistoricalOption> findByTickerBetweenDates(final String ticker, LocalDate startDate, LocalDate endDate) {
-        return jdbcTemplate.query(FIND_BETWEEN_DATES_SQL, (ps) -> {
+        return jdbcTemplate.query(FIND_BETWEEN_DATES_TICKER_SQL, (ps) -> {
             ps.setString(1, ticker);
             ps.setDate(2, Date.valueOf(startDate));
             ps.setDate(3, Date.valueOf(endDate));

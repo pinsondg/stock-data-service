@@ -71,12 +71,13 @@ public class OptionCSVItemProcessor implements ItemProcessor<OptionCSVFile, Hist
                     historicalOption.getStrike(), historicalOption.getOptionType());
             if (existing.getOptionPriceData().stream().map(OptionPriceData::getTradeDate)
                     .collect(Collectors.toSet()).contains(optionPriceData.getTradeDate())) {
-                log.warn("Option Price data for {} already exists. Skipping...", optionPriceData);
+                log.warn("Option Price data for option {} on trade date {} already exists. Skipping...", historicalOption, optionPriceData.getTradeDate());
                 return null;
             }
         } catch (EntityNotFoundException e) {
             existing = null;
-            log.debug("Option does not exist, creating new one");
+            log.debug("Option (ticker: {}, expiration: {}, strike: {}, type: {}) does not exist, creating new one.",
+                    historicalOption.getTicker(), historicalOption.getExpiration(), historicalOption.getStrike(), historicalOption.getOptionType());
         }
         if (existing != null) {
             existing.getOptionPriceData().add(optionPriceData);
