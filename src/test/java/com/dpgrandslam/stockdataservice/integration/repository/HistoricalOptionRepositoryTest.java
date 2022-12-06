@@ -137,29 +137,6 @@ public class HistoricalOptionRepositoryTest extends RepositoryIntTestBase {
         assertEquals(2, priceData.size());
     }
 
-    @Test
-    @Ignore
-    public void testFindBetweenDates() {
-        Set<OptionPriceData> optionPriceData1 = generatePriceDataBetweenDates(LocalDate.now().minusDays(20), LocalDate.now(), 10);
-        HistoricalOption option1 = TestDataFactory.HistoricalOptionMother.noPriceData().ticker("TEST1").historicalPriceData(optionPriceData1).build();
-        optionPriceData1.forEach(x -> x.setOption(option1));
-        Set<OptionPriceData> optionPriceData2 = generatePriceDataBetweenDates(LocalDate.now().minusDays(50), LocalDate.now().minusDays(21), 5);
-        HistoricalOption option2 = TestDataFactory.HistoricalOptionMother.noPriceData().ticker("TEST2").historicalPriceData(optionPriceData2).build();
-        optionPriceData2.forEach(x -> x.setOption(option2));
-        Set<OptionPriceData> optionPriceData3 = generatePriceDataBetweenDates(LocalDate.now().minusDays(5), LocalDate.now(), 5);
-        HistoricalOption option3 = TestDataFactory.HistoricalOptionMother.noPriceData().ticker("TEST3").historicalPriceData(optionPriceData3).build();
-        optionPriceData3.forEach(x -> x.setOption(option3));
-        subject.saveAllAndFlush(Arrays.asList(option1, option2, option3));
-
-        Set<HistoricalOption> returned = jdbcRepository.findBetweenDates(LocalDate.now().minusDays(10), LocalDate.now());
-        assertTrue(returned.stream().noneMatch(x -> x.getTicker().equals("TEST2")));
-        assertTrue(returned.stream().allMatch(x -> x.getTicker().equals("TEST1") || x.getTicker().equals("TEST3")));
-        assertEquals(optionPriceData3.size(), returned.stream().filter(x -> x.getTicker().equals("TEST3")).mapToLong(x -> x.getOptionPriceData().size()).sum());
-
-        returned = jdbcRepository.findBetweenDates(LocalDate.now().minusDays(50), LocalDate.now().minusDays(21));
-        assertTrue(returned.stream().noneMatch(x -> x.getTicker().equals("TEST1") || x.getTicker().equals("TEST3")));
-        assertTrue(returned.stream().allMatch(x -> x.getTicker().equals("TEST2")));
-    }
 
     @Test
     public void testGetExpirationDatesForOptionsAfterDate() {

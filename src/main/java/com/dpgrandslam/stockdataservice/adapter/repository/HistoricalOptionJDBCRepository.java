@@ -11,6 +11,4 @@ public interface HistoricalOptionJDBCRepository {
 
     Set<LocalDate> getExpirationDatesForOptionsAfterDate(String ticker, LocalDate date);
 
-    Set<HistoricalOption> findBetweenDates(LocalDate startDate, LocalDate endDate);
-
 }
