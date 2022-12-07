@@ -60,7 +60,6 @@ public class OptionCSVItemProcessorTest {
                 .active(true)
                 .optionsHistoricDataStartDate(LocalDate.MIN)
                 .build()));
-        when(historicOptionsDataService.findOption(any(), any(), any(), any())).thenThrow(EntityNotFoundException.class);
 
         HistoricalOption actual = subject.process(file);
 
