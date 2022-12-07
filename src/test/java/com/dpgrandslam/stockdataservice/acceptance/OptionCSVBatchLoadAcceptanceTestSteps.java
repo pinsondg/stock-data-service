@@ -1,11 +1,9 @@
 package com.dpgrandslam.stockdataservice.acceptance;
 
 import com.amazonaws.services.s3.AmazonS3;
-import com.amazonaws.services.s3.model.S3ObjectSummary;
 import com.dpgrandslam.stockdataservice.adapter.repository.HistoricalOptionRepository;
 import com.dpgrandslam.stockdataservice.adapter.repository.TrackedStocksRepository;
 import com.dpgrandslam.stockdataservice.domain.config.OptionCSVLoadJobConfig;
-import com.dpgrandslam.stockdataservice.domain.model.JobRunResponse;
 import com.dpgrandslam.stockdataservice.domain.model.options.HistoricalOption;
 import com.dpgrandslam.stockdataservice.domain.model.options.Option;
 import com.dpgrandslam.stockdataservice.domain.model.options.OptionPriceData;
@@ -13,25 +11,16 @@ import com.dpgrandslam.stockdataservice.domain.model.stock.TrackedStock;
 import com.dpgrandslam.stockdataservice.domain.service.HistoricOptionsDataService;
 import com.dpgrandslam.stockdataservice.domain.service.TrackedStockService;
 import com.dpgrandslam.stockdataservice.testUtils.TestDataFactory;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.cucumber.java.Before;
 import io.cucumber.java.en.And;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
-import io.cucumber.java.eo.Se;
-import io.cucumber.java.hu.Ha;
-import io.cucumber.java.tr.Ama;
-import jdk.jshell.execution.LoaderDelegate;
 import org.junit.After;
 import org.junit.Ignore;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.MediaType;
-import org.springframework.test.web.servlet.MvcResult;
 
-import javax.batch.runtime.BatchStatus;
 import javax.transaction.Transactional;
 import java.io.IOException;
 import java.sql.Timestamp;
@@ -43,7 +32,6 @@ import static junit.framework.TestCase.*;
 import static org.junit.Assert.assertNotEquals;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @Ignore
 public class OptionCSVBatchLoadAcceptanceTestSteps extends BaseAcceptanceTestSteps {
@@ -157,7 +145,7 @@ public class OptionCSVBatchLoadAcceptanceTestSteps extends BaseAcceptanceTestSte
 
     @And("^the data for ([^\"]*) updated in the database$")
     public void theDataForSPYUpdatedInTheDatabase(String ticker) {
-        Set<HistoricalOption> options = historicOptionsDataService.findOptions(ticker);
+        Set<HistoricalOption> options = historicOptionsDataService.findOptionsNoCache(ticker);
         assertTrue(options.size() > 4000);
         HistoricalOption specific = historicOptionsDataService.findOption("SPY", LocalDate.of(2019, 1, 2), 100.0, Option.OptionType.CALL);
         assertNotNull(specific);

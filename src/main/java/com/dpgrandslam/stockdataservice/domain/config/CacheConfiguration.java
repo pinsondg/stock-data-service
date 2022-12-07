@@ -80,7 +80,7 @@ public class CacheConfiguration {
     public Cache<SingleHistoricOptionCacheKey, HistoricalOption> singleOptionCache() {
         return Caffeine.newBuilder()
                 .expireAfterWrite(5, TimeUnit.HOURS)
-                .maximumSize(1000000)
+                .maximumSize(1000)
                 .build();
     }
 
