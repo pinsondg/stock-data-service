@@ -19,6 +19,11 @@ public class OptionCSVItemWriter implements ItemWriter<HistoricalOption> {
 
     @Override
     public void write(List<? extends HistoricalOption> list) throws Exception {
-        dataService.saveOptions(list.stream().map(x -> (HistoricalOption) x).collect(Collectors.toList()));
+        try {
+            dataService.saveOptions(list.stream().map(x -> (HistoricalOption) x).collect(Collectors.toList()));
+        } catch (Exception e) {
+            log.error("Failed to update options in DB.", e);
+            throw e;
+        }
     }
 }
