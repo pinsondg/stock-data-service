@@ -106,7 +106,7 @@ public class HistoricOptionsDataService {
      * @return a set of options
      */
     //This method is very weird. Not sure why, but the cache only works this way...
-    public Set<HistoricalOption> findOptionsWithCache(String ticker) {
+    public Set<HistoricalOption> findOptions(String ticker) {
         log.info("Searching DB for options with ticker: {}", ticker);
         TimerUtil timerUtil = TimerUtil.startTimer();
         Set<HistoricalOption.CacheableHistoricalOption> options = historicalOptionCache.get(ticker, t -> {
@@ -116,15 +116,6 @@ public class HistoricOptionsDataService {
         log.debug("Took {} ms to load options with ticker: {}", timerUtil.stop(), ticker);
         log.debug("Found {} options with ticker: {}", options.size(), ticker);
         return options.stream().map(HistoricalOption::fromCacheableHistoricalOption).collect(Collectors.toSet());
-    }
-
-    public Set<HistoricalOption> findOptionsNoCache(String ticker) {
-        log.info("Searching DB for options with ticker: {}", ticker);
-        TimerUtil timerUtil = TimerUtil.startTimer();
-        Set<HistoricalOption> options = historicalOptionRepository.findByTicker(ticker);
-        log.debug("Took {} ms to load options with ticker: {}", timerUtil.stop(), ticker);
-        log.debug("Found {} options with ticker: {}", options.size(), ticker);
-        return options;
     }
 
     /**

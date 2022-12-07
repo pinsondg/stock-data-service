@@ -123,7 +123,7 @@ public class HistoricOptionsDataServiceTest {
         LocalDate now = LocalDate.now(ZoneId.of("America/New_York"));
         when(historicalOptionCache.get(anyString(), any())).thenReturn(Stream.of(HistoricalOption.CacheableHistoricalOption.fromHistoricalOption(TestDataFactory.HistoricalOptionMother.completeWithOnePriceData().build())).collect(Collectors.toSet()));
 
-        subject.findOptionsWithCache("TEST");
+        subject.findOptions("TEST");
 
         verify(historicalOptionCache, times(1)).get(eq("TEST"), any());
     }
