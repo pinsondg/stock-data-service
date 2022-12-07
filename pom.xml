@@ -5,7 +5,7 @@
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
-        <version>2.5.6</version>
+        <version>2.6.1</version>
         <relativePath/> <!-- lookup parent from repository -->
     </parent>
     <groupId>com.dpgrandslam</groupId>
@@ -16,9 +16,9 @@
     <properties>
         <java.version>11</java.version>
         <feign.version>11.8</feign.version>
-        <jsoup.version>1.14.3</jsoup.version>
+        <jsoup.version>1.15.3</jsoup.version>
         <jasypt.version>1.9.3</jasypt.version>
-        <caffine.version>3.0.5</caffine.version>
+        <caffine.version>3.0.6</caffine.version>
         <validation-api.version>2.0.1.Final</validation-api.version>
         <liquibase-hibernate5.version>3.10.2</liquibase-hibernate5.version>
         <cucumber.version>7.2.3</cucumber.version>
@@ -241,6 +241,7 @@
                             <excludes>
                                 <exclude>**/util*</exclude>
                                 <exclude>**/tiingo*</exclude>
+                                <exclude>**/error*</exclude>
                             </excludes>
                         </configuration>
                     </execution>
@@ -290,7 +291,7 @@
                     <dependency>
                         <groupId>org.springframework.data</groupId>
                         <artifactId>spring-data-jpa</artifactId>
-                        <version>2.6.0</version>
+                        <version>2.6.3</version>
                     </dependency>
                     <dependency>
                         <groupId>org.yaml</groupId>

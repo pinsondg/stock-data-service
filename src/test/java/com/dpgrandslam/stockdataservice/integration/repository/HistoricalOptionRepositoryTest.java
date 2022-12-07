@@ -6,7 +6,12 @@ import com.dpgrandslam.stockdataservice.domain.model.options.HistoricalOption;
 import com.dpgrandslam.stockdataservice.domain.model.options.Option;
 import com.dpgrandslam.stockdataservice.domain.model.options.OptionPriceData;
 import com.dpgrandslam.stockdataservice.testUtils.TestDataFactory;
+import io.cucumber.java.eo.Se;
+import io.cucumber.java.it.Ma;
 import lombok.extern.slf4j.Slf4j;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -33,6 +38,11 @@ public class HistoricalOptionRepositoryTest extends RepositoryIntTestBase {
 
     @Autowired
     protected HistoricalOptionJDBCRepository jdbcRepository;
+
+    @Before
+    public void setup() {
+        subject.deleteAll();
+    }
 
     @Test
     public void testAddAndRemoveData() {
@@ -127,6 +137,7 @@ public class HistoricalOptionRepositoryTest extends RepositoryIntTestBase {
         assertEquals(2, priceData.size());
     }
 
+
     @Test
     public void testGetExpirationDatesForOptionsAfterDate() {
         LocalDate monday = LocalDate.now().with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
@@ -159,5 +170,20 @@ public class HistoricalOptionRepositoryTest extends RepositoryIntTestBase {
         assertTrue(actual.contains(expiration1));
         assertTrue(actual.contains(expiration2));
         assertTrue(actual.contains(expiration3));
+    }
+
+    private Set<OptionPriceData> generatePriceDataBetweenDates(LocalDate startDate, LocalDate endDate, int size) {
+        Set<OptionPriceData> optionPriceDataSet = new HashSet<>();
+        Random random = new Random();
+        for (int i = 0; i < size; i++) {
+            int diff = (int) Math.abs(ChronoUnit.DAYS.between(startDate, endDate));
+            int randomDiff = random.nextInt(diff + 1);
+            LocalDate randomTradeDate = endDate.minusDays(randomDiff);
+            OptionPriceData optionPriceData = TestDataFactory.OptionPriceDataMother.complete()
+                    .tradeDate(randomTradeDate)
+                    .build();
+            optionPriceDataSet.add(optionPriceData);
+        }
+        return optionPriceDataSet;
     }
 }

@@ -8,4 +8,5 @@ public class JobRunResponse {
     private String jobStatus;
     private Long jobId;
     private Long jobExecutionId;
+    private String message;
 }

@@ -4,9 +4,11 @@ import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.model.S3ObjectSummary;
 import com.dpgrandslam.stockdataservice.adapter.repository.HistoricalOptionRepository;
 import com.dpgrandslam.stockdataservice.adapter.repository.TrackedStocksRepository;
+import com.dpgrandslam.stockdataservice.domain.config.OptionCSVLoadJobConfig;
 import com.dpgrandslam.stockdataservice.domain.model.JobRunResponse;
 import com.dpgrandslam.stockdataservice.domain.model.options.HistoricalOption;
 import com.dpgrandslam.stockdataservice.domain.model.options.Option;
+import com.dpgrandslam.stockdataservice.domain.model.options.OptionPriceData;
 import com.dpgrandslam.stockdataservice.domain.model.stock.TrackedStock;
 import com.dpgrandslam.stockdataservice.domain.service.HistoricOptionsDataService;
 import com.dpgrandslam.stockdataservice.domain.service.TrackedStockService;
@@ -17,9 +19,14 @@ import io.cucumber.java.en.And;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
+import io.cucumber.java.eo.Se;
+import io.cucumber.java.hu.Ha;
+import io.cucumber.java.tr.Ama;
+import jdk.jshell.execution.LoaderDelegate;
 import org.junit.After;
 import org.junit.Ignore;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MvcResult;
@@ -41,14 +48,11 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @Ignore
 public class OptionCSVBatchLoadAcceptanceTestSteps extends BaseAcceptanceTestSteps {
 
-    private static final String JOB_ENDPOINT_POST = "/job/run";
-    private static final String JOB_ENDPOINT_GET = "/job/status";
-
     @Value("${job.option-csv.test-bucket-name}")
     private String testBucketName;
 
     @Value("${job.option-csv.test-key}")
-    private String testS3Key;
+    private String testBucketKey;
 
     @Autowired
     private AmazonS3 amazonS3;
@@ -65,16 +69,41 @@ public class OptionCSVBatchLoadAcceptanceTestSteps extends BaseAcceptanceTestSte
     @Autowired
     private TrackedStockService trackedStockService;
 
-    private long jobExecutionId;
+    private BaseBatchJobAcceptanceTestSteps baseBatchJobAcceptanceTestSteps;
+    private List<HistoricalOption> largeExistingHistoricalOptions;
+    private HistoricalOption largePriceDataOption;
 
     @Before
     public void setup() throws IOException {
-//        AcceptanceTest.mockServerRule.getClient().when(
-//                request().withPath("/tiingo/daily/*").withMethod("GET"),
-//                Times.unlimited()
-//        ).respond(HttpResponse.response()
-//                .withStatusCode(200)
-//                .withBody(TestUtils.loadBodyFromTestResourceFile("mocks/tiingo/mock-search-response-spy.json")));
+        baseBatchJobAcceptanceTestSteps = new BaseBatchJobAcceptanceTestSteps(testBucketName, testBucketKey, amazonS3, mockMvc);
+    }
+
+    private Set<OptionPriceData> generateRandomOptionPriceData(LocalDate startDate, LocalDate endDate) {
+        Set<OptionPriceData> optionPriceDataSet = new HashSet<>();
+        LocalDate date = startDate;
+        while (date.isBefore(endDate)) {
+            OptionPriceData optionPriceData = TestDataFactory.OptionPriceDataMother.complete()
+                    .dataObtainedDate(Timestamp.from(Instant.now()))
+                    .bid(Math.random() * 100)
+                    .ask(Math.random() * 100)
+                    .tradeDate(date)
+                    .lastTradePrice(Math.random() * 100)
+                    .impliedVolatility(Math.random() * 10)
+                    .build();
+            optionPriceDataSet.add(optionPriceData);
+            date = date.plusDays(1);
+        }
+        return optionPriceDataSet;
+    }
+
+    private HistoricalOption generateHistoricalOptionWithMockPriceData(String ticker, LocalDate expiration, Double strike, Option.OptionType optionType) {
+        return TestDataFactory.HistoricalOptionMother.noPriceData()
+                .historicalPriceData(generateRandomOptionPriceData(LocalDate.of(2019, 1, 1), expiration))
+                .ticker(ticker)
+                .expiration(expiration)
+                .strike(strike)
+                .optionType(optionType)
+                .build();
     }
 
     @Given("^options data for ([^\"]*) exists in DB$")
@@ -84,12 +113,21 @@ public class OptionCSVBatchLoadAcceptanceTestSteps extends BaseAcceptanceTestSte
                 .ticker(ticker)
                 .strike(100.0)
                 .optionType(Option.OptionType.CALL)
-                .historicalPriceData(Collections.singleton(TestDataFactory.OptionPriceDataMother.complete()
+                .historicalPriceData(new HashSet<>(Arrays.asList(TestDataFactory.OptionPriceDataMother.complete()
                         .tradeDate(LocalDate.now().minusDays(1))
                         .dataObtainedDate(Timestamp.from(Instant.now()))
-                        .build()
+                        .build(),
+                        TestDataFactory.OptionPriceDataMother.complete()
+                                .tradeDate(LocalDate.of(2019, 1, 5))
+                                .dataObtainedDate(Timestamp.from(Instant.now()))
+                                .build())
                 ))
                 .build();
+        largeExistingHistoricalOptions = Arrays.asList(
+                generateHistoricalOptionWithMockPriceData(ticker, LocalDate.of(2019, 6, 21), 345.0, Option.OptionType.CALL),
+                generateHistoricalOptionWithMockPriceData(ticker, LocalDate.of(2019, 3, 29), 258.0, Option.OptionType.PUT),
+                generateHistoricalOptionWithMockPriceData(ticker, LocalDate.of(2019, 2, 15), 60.0, Option.OptionType.PUT)
+        );
         TrackedStock trackedStock = TrackedStock.builder()
                 .ticker("SPY")
                 .name("S&P 500 ETF TRUST ETF")
@@ -99,72 +137,42 @@ public class OptionCSVBatchLoadAcceptanceTestSteps extends BaseAcceptanceTestSte
                 .build();
         trackedStocksRepository.save(trackedStock);
         historicOptionsDataService.saveOption(saveOption);
+        largeExistingHistoricalOptions = historicOptionsDataService.saveOptions(largeExistingHistoricalOptions);
     }
 
-    @And("^test option csv files exist in S3$")
-    public void checkTestCSVsExist() {
-        List<S3ObjectSummary> objectSummaries = amazonS3.listObjectsV2(testBucketName, testS3Key)
-                .getObjectSummaries();
-        assertFalse("S3 Bucket does not contain csv files.", objectSummaries.isEmpty());
+    @And("a option-csv test file exists in S3")
+    public void checkTestFileExists() {
+        baseBatchJobAcceptanceTestSteps.checkTestFileExist();
     }
 
-    @When("^the job is triggered through the API$")
+    @When("^the option-csv job is triggered through the API$")
     public void triggerJob() throws Exception {
-        ObjectMapper objectMapper = new ObjectMapper();
-        Map<String, Object> body = new HashMap<>();
-        Map<String, String> jobParams = new HashMap<>();
-        jobParams.put("bucket", testBucketName);
-        jobParams.put("keyPrefix", testS3Key);
-        body.put("jobName", "job1");
-        body.put("jobParams", jobParams);
-
-        MvcResult mvcResult = mockMvc.perform(post(JOB_ENDPOINT_POST).contentType(MediaType.APPLICATION_JSON_VALUE)
-                .content(objectMapper.writeValueAsString(body)))
-                .andExpect(status().is2xxSuccessful())
-                .andReturn();
-
-        JobRunResponse response = objectMapper.readValue(mvcResult.getResponse().getContentAsString(), JobRunResponse.class);
-        assertEquals("STARTING", response.getJobStatus());
-        assertNotNull(response.getJobId());
-        assertNotNull(response.getJobExecutionId());
-        jobExecutionId = response.getJobExecutionId();
+        baseBatchJobAcceptanceTestSteps.triggerJob(OptionCSVLoadJobConfig.JOB_NAME);
     }
 
-    @Then("the job succeeds within {int} seconds")
-    public void waitForJobToComplete(int timeoutSeconds) throws Exception {
-        ObjectMapper objectMapper = new ObjectMapper();
-        long start = System.currentTimeMillis();
-        JobRunResponse response = null;
-        while (((System.currentTimeMillis() - start) / 1000 < timeoutSeconds) && (response == null || !BatchStatus.COMPLETED.name().equalsIgnoreCase(response.getJobStatus()))) {
-            MvcResult result = mockMvc.perform(get(JOB_ENDPOINT_GET + "?executionId=" + jobExecutionId))
-                    .andExpect(status().is2xxSuccessful())
-                    .andReturn();
-            response = objectMapper.readValue(result.getResponse().getContentAsString(), JobRunResponse.class);
-            assertNotEquals("FAILED", response.getJobStatus());
-            Thread.sleep(2000);
-        }
-        assertNotNull(response);
-        assertNotNull(response.getJobStatus());
-        assertEquals("Job did not complete on time.", BatchStatus.COMPLETED.name(), response.getJobStatus());
+    @Then("the option-csv job succeeds within {int} seconds")
+    public void waitForJobToComplete(int seconds) throws Exception {
+        baseBatchJobAcceptanceTestSteps.waitForJobToComplete(seconds);
     }
-
 
     @And("^the data for ([^\"]*) updated in the database$")
     public void theDataForSPYUpdatedInTheDatabase(String ticker) {
         Set<HistoricalOption> options = historicOptionsDataService.findOptions(ticker);
         assertTrue(options.size() > 4000);
-        HistoricalOption specfic = historicOptionsDataService.findOption("SPY", LocalDate.of(2019, 1, 2), 100.0, Option.OptionType.CALL);
-        assertNotNull(specfic);
-        assertEquals(1, specfic.getOptionPriceData().size());
-        specfic = historicOptionsDataService.findOption("SPY" , LocalDate.of(2019,6, 21), 345.00, Option.OptionType.CALL);
-        assertEquals(2, specfic.getOptionPriceData().size());
-        specfic = historicOptionsDataService.findOption("SPY", LocalDate.of(2019, 2, 4),160.00, Option.OptionType.PUT);
-        assertEquals(2, specfic.getOptionPriceData().size());
-        assertNotNull(specfic.getOptionPriceData().stream().findFirst().get().getDataObtainedDate());
-        assertNotNull(specfic.getOptionPriceData().stream().findFirst().get().getBid());
-        assertNotNull(specfic.getOptionPriceData().stream().findFirst().get().getAsk());
-        assertNotNull(specfic.getOptionPriceData().stream().findFirst().get().getTradeDate());
-        assertNotNull(specfic.getOptionPriceData().stream().findFirst().get().getLastTradePrice());
+        HistoricalOption specific = historicOptionsDataService.findOption("SPY", LocalDate.of(2019, 1, 2), 100.0, Option.OptionType.CALL);
+        assertNotNull(specific);
+        assertEquals(1, specific.getOptionPriceData().size());
+        largeExistingHistoricalOptions.forEach(option -> {
+            HistoricalOption saved = historicOptionsDataService.findOption(option.getTicker(), option.getExpiration(), option.getStrike(), option.getOptionType());
+            assertEquals(option.getOptionPriceData().size(), saved.getOptionPriceData().size());
+        });
+        specific = historicOptionsDataService.findOption("SPY", LocalDate.of(2019, 2, 4),160.00, Option.OptionType.PUT);
+        assertEquals(2, specific.getOptionPriceData().size());
+        assertNotNull(specific.getOptionPriceData().stream().findFirst().get().getDataObtainedDate());
+        assertNotNull(specific.getOptionPriceData().stream().findFirst().get().getBid());
+        assertNotNull(specific.getOptionPriceData().stream().findFirst().get().getAsk());
+        assertNotNull(specific.getOptionPriceData().stream().findFirst().get().getTradeDate());
+        assertNotNull(specific.getOptionPriceData().stream().findFirst().get().getLastTradePrice());
 
         TrackedStock trackedStock = trackedStockService.findByTicker("SPY");
         assertEquals(LocalDate.of(2019, 1, 2), trackedStock.getOptionsHistoricDataStartDate());

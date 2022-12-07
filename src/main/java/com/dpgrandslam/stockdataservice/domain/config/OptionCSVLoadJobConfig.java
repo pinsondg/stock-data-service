@@ -1,10 +1,10 @@
 package com.dpgrandslam.stockdataservice.domain.config;
 
 import com.amazonaws.services.s3.AmazonS3;
-import com.dpgrandslam.stockdataservice.domain.jobs.optioncsv.AWSS3ItemReader;
 import com.dpgrandslam.stockdataservice.domain.jobs.optioncsv.OptionCSVItemProcessor;
-import com.dpgrandslam.stockdataservice.domain.model.OptionCSVFile;
+import com.dpgrandslam.stockdataservice.domain.jobs.optioncsv.OptionCSVFile;
 import com.dpgrandslam.stockdataservice.domain.model.options.HistoricalOption;
+import com.dpgrandslam.stockdataservice.domain.util.AWSS3ItemReader;
 import lombok.AllArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -27,6 +27,7 @@ import org.springframework.batch.item.file.mapping.BeanWrapperFieldSetMapper;
 import org.springframework.batch.item.file.mapping.DefaultLineMapper;
 import org.springframework.batch.item.file.transform.DelimitedLineTokenizer;
 import org.springframework.batch.item.support.SynchronizedItemStreamReader;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -51,7 +52,7 @@ public class OptionCSVLoadJobConfig {
     public static final String JOB_NAME = "option-csv-load-job";
     public static final String STEP_NAME = "option-csv-load-step";
 
-    @Bean
+    @Bean("optionCsvLoadJobStep")
     public Step optionCsvLoadJobStep(StepBuilderFactory stepBuilderFactory,
                                      ItemReader<OptionCSVFile> itemReader,
                                      OptionCSVItemProcessor itemProcessor,
@@ -70,18 +71,17 @@ public class OptionCSVLoadJobConfig {
 
     @Bean
     public TaskExecutor taskExecutor() {
-        int cores = Runtime.getRuntime().availableProcessors();
         ThreadPoolTaskExecutor taskExecutor = new ThreadPoolTaskExecutor();
-        taskExecutor.setCorePoolSize(cores - 1);
-        taskExecutor.setMaxPoolSize(cores - 1);
+        taskExecutor.setCorePoolSize(10);
+        taskExecutor.setMaxPoolSize(15);
         taskExecutor.setQueueCapacity(10);
         taskExecutor.setThreadNamePrefix("MultiThreaded-");
         taskExecutor.setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy());
         return taskExecutor;
     }
 
-    @Bean
-    public Job optionCSVLoadJob(JobBuilderFactory jobBuilderFactory, Step optionCsvLoadJobStep) {
+    @Bean("optionCSVLoadJob")
+    public Job optionCSVLoadJob(JobBuilderFactory jobBuilderFactory, @Qualifier("optionCsvLoadJobStep") Step optionCsvLoadJobStep) {
         return jobBuilderFactory.get(JOB_NAME)
                 .incrementer(new RunIdIncrementer())
                 .validator(jobParametersValidator())
@@ -97,17 +97,17 @@ public class OptionCSVLoadJobConfig {
     }
 
 
-    @Bean
+    @Bean("optionCSVItemReader")
     @StepScope
-    public ItemStreamReader<OptionCSVFile> itemReader(@Value("#{jobParameters['bucket']}") String bucket,
-                                                      @Value("#{jobParameters['keyPrefix']}") String keyPrefix,
-                                                      AmazonS3 amazonS3) throws IOException {
+    public ItemStreamReader<OptionCSVFile> optionCSVItemReader(@Value("#{jobParameters['bucket']}") String bucket,
+                                                               @Value("#{jobParameters['keyPrefix']}") String keyPrefix,
+                                                               AmazonS3 amazonS3) throws IOException {
         FlatFileItemReader<OptionCSVFile> csvReader = new FlatFileItemReader<>();
         csvReader.setLineMapper(lineMapper());
         csvReader.setName("optionCSVReader");
         csvReader.setLinesToSkip(1);
 
-        AWSS3ItemReader awss3ItemReader = new AWSS3ItemReader(amazonS3);
+        AWSS3ItemReader<OptionCSVFile> awss3ItemReader = new AWSS3ItemReader<>(amazonS3);
         awss3ItemReader.setBucket(bucket);
         awss3ItemReader.setKeyPrefix(keyPrefix);
         awss3ItemReader.setDelegate(csvReader);

@@ -1,7 +1,7 @@
 package com.dpgrandslam.stockdataservice.unit.job.optionscsv;
 
 import com.dpgrandslam.stockdataservice.domain.jobs.optioncsv.OptionCSVItemProcessor;
-import com.dpgrandslam.stockdataservice.domain.model.OptionCSVFile;
+import com.dpgrandslam.stockdataservice.domain.jobs.optioncsv.OptionCSVFile;
 import com.dpgrandslam.stockdataservice.domain.model.options.HistoricalOption;
 import com.dpgrandslam.stockdataservice.domain.model.options.Option;
 import com.dpgrandslam.stockdataservice.domain.model.stock.TrackedStock;

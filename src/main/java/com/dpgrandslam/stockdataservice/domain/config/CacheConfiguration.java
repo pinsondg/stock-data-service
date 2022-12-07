@@ -2,17 +2,21 @@ package com.dpgrandslam.stockdataservice.domain.config;
 
 import com.dpgrandslam.stockdataservice.domain.model.FearGreedIndex;
 import com.dpgrandslam.stockdataservice.domain.model.options.HistoricalOption;
+import com.dpgrandslam.stockdataservice.domain.model.options.Option;
 import com.dpgrandslam.stockdataservice.domain.model.stock.EndOfDayStockData;
-import com.dpgrandslam.stockdataservice.domain.model.stock.YahooFinanceTenYearTreasuryYield;
+import com.dpgrandslam.stockdataservice.domain.model.stock.YahooFinanceQuote;
 import com.dpgrandslam.stockdataservice.domain.model.tiingo.TiingoStockSearchResponse;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
+import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 import lombok.NonNull;
 import org.apache.commons.lang3.tuple.Pair;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+import javax.validation.constraints.NotNull;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Set;
@@ -40,8 +44,8 @@ public class CacheConfiguration {
                 .build();
     }
 
-    @Bean
-    public Cache<LocalDate, YahooFinanceTenYearTreasuryYield> treasuryYieldCache() {
+    @Bean("TreasuryYieldCache")
+    public Cache<Pair<LocalDate, LocalDate>, List<YahooFinanceQuote>> treasuryYieldCache() {
         return Caffeine.newBuilder()
                 .expireAfterWrite(10, TimeUnit.DAYS)
                 .maximumSize(1000)
@@ -60,10 +64,41 @@ public class CacheConfiguration {
     public Cache<Pair<LocalDate, LocalDate>, List<FearGreedIndex>> fearGreedBetweenDatesCache() {
         return Caffeine.newBuilder()
                 .expireAfterWrite(2, TimeUnit.HOURS)
-                .maximumSize(500)
+                .maximumSize(2000)
                 .build();
     }
 
+    @Bean("VIXCache")
+    public Cache<Pair<LocalDate, LocalDate>, List<YahooFinanceQuote>> vixCache() {
+        return Caffeine.newBuilder()
+                .expireAfterWrite(2, TimeUnit.DAYS)
+                .maximumSize(1000)
+                .build();
+    }
+
+    @Bean
+    public Cache<SingleHistoricOptionCacheKey, HistoricalOption> singleOptionCache() {
+        return Caffeine.newBuilder()
+                .expireAfterWrite(5, TimeUnit.HOURS)
+                .maximumSize(1000000)
+                .build();
+    }
+
+    @Data
+    @AllArgsConstructor
+    public static class SingleHistoricOptionCacheKey {
+        @NotNull
+        private String ticker;
+
+        @NotNull
+        private LocalDate expiration;
+
+        @NotNull
+        private Option.OptionType optionType;
+
+        @NotNull
+        private Double strike;
+    }
 
     @Data
     public static class HistoricOptionsDataCacheKey {
