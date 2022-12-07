@@ -2,19 +2,16 @@ package com.dpgrandslam.stockdataservice.unit.service;
 
 import com.dpgrandslam.stockdataservice.adapter.repository.HistoricalOptionJDBCRepository;
 import com.dpgrandslam.stockdataservice.adapter.repository.HistoricalOptionRepository;
-import com.dpgrandslam.stockdataservice.domain.config.CacheConfiguration;
 import com.dpgrandslam.stockdataservice.domain.model.options.HistoricalOption;
 import com.dpgrandslam.stockdataservice.domain.model.options.Option;
 import com.dpgrandslam.stockdataservice.domain.model.options.OptionPriceData;
 import com.dpgrandslam.stockdataservice.domain.service.HistoricOptionsDataService;
 import com.dpgrandslam.stockdataservice.testUtils.TestDataFactory;
 import com.github.benmanes.caffeine.cache.Cache;
-import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.*;
 import org.mockito.junit.MockitoJUnitRunner;
-import org.springframework.test.util.ReflectionTestUtils;
 
 import javax.persistence.EntityNotFoundException;
 import java.time.LocalDate;
@@ -23,7 +20,6 @@ import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -49,16 +45,6 @@ public class HistoricOptionsDataServiceTest {
 
     @Captor
     private ArgumentCaptor<HistoricalOption> historicalOptionAC;
-
-    @Before
-    public void setup() {
-        Cache<CacheConfiguration.SingleHistoricOptionCacheKey, HistoricalOption> singleHistoricOptionCache = mock(Cache.class);
-        ReflectionTestUtils.setField(subject, "singleHistoricOptionCache", singleHistoricOptionCache);
-        when(singleHistoricOptionCache.get(any(), any())).then(invocationOnMock -> {
-            Function<CacheConfiguration.SingleHistoricOptionCacheKey, HistoricalOption> func = invocationOnMock.getArgument(1);
-            return func.apply(invocationOnMock.getArgument(0));
-        });
-    }
 
     @Test
     public void testAddOption_noOptionExists_addsOption() {
@@ -92,11 +78,10 @@ public class HistoricOptionsDataServiceTest {
     @Test
     public void testFindOption_optionExists() {
         LocalDate expiration = LocalDate.now(ZoneId.of("America/New_York"));
-
         when(historicalOptionRepository.findByStrikeAndExpirationAndTickerAndOptionType(any(), any(), any(), any()))
-                .thenReturn(Optional.of(TestDataFactory.HistoricalOptionMother.completeWithOnePriceData().expiration(expiration).build()));
+                .thenReturn(Optional.of(TestDataFactory.HistoricalOptionMother.completeWithOnePriceData().build()));
 
-        subject.findOption("TEST", expiration, 12.5, Option.OptionType.CALL);
+        subject.findOption("TEST", LocalDate.now(ZoneId.of("America/New_York")), 12.5, Option.OptionType.CALL);
 
         verify(historicalOptionRepository, times(1)).findByStrikeAndExpirationAndTickerAndOptionType(eq(12.5), eq(expiration), eq("TEST"), eq(Option.OptionType.CALL));
     }

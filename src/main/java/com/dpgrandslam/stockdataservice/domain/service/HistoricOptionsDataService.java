@@ -3,7 +3,6 @@ package com.dpgrandslam.stockdataservice.domain.service;
 import com.dpgrandslam.stockdataservice.adapter.repository.HistoricalOptionJDBCRepository;
 import com.dpgrandslam.stockdataservice.adapter.repository.HistoricalOptionRepository;
 import com.dpgrandslam.stockdataservice.adapter.repository.OptionPriceDataRepository;
-import com.dpgrandslam.stockdataservice.domain.config.CacheConfiguration;
 import com.dpgrandslam.stockdataservice.domain.model.options.HistoricalOption;
 import com.dpgrandslam.stockdataservice.domain.model.options.Option;
 import com.dpgrandslam.stockdataservice.domain.model.options.OptionPriceData;
@@ -19,7 +18,6 @@ import java.time.LocalDate;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.stream.Collectors;
-
 import com.github.benmanes.caffeine.cache.Cache;
 
 
@@ -31,8 +29,6 @@ public class HistoricOptionsDataService {
     private final HistoricalOptionRepository historicalOptionRepository;
 
     private final Cache<String, Set<HistoricalOption.CacheableHistoricalOption>> historicalOptionCache;
-
-    private final Cache<CacheConfiguration.SingleHistoricOptionCacheKey, HistoricalOption> singleHistoricOptionCache;
 
     private final HistoricalOptionJDBCRepository historicalOptionJDBCRepository;
 
@@ -101,7 +97,6 @@ public class HistoricOptionsDataService {
 
     /**
      * Finds options for the given ticker. Uses a cache to find them faster.
-     *
      * @param ticker the ticker
      * @return a set of options
      */
@@ -109,7 +104,7 @@ public class HistoricOptionsDataService {
     public Set<HistoricalOption> findOptions(String ticker) {
         log.info("Searching DB for options with ticker: {}", ticker);
         TimerUtil timerUtil = TimerUtil.startTimer();
-        Set<HistoricalOption.CacheableHistoricalOption> options = historicalOptionCache.get(ticker, t -> {
+        Set<HistoricalOption.CacheableHistoricalOption> options =  historicalOptionCache.get(ticker, t -> {
             Set<HistoricalOption> o = historicalOptionRepository.findByTicker(t);
             return o.stream().map(HistoricalOption.CacheableHistoricalOption::fromHistoricalOption).collect(Collectors.toSet());
         });
@@ -121,9 +116,9 @@ public class HistoricOptionsDataService {
     /**
      * Finds options with price data within the two dates.
      *
-     * @param ticker    the ticker to look for
+     * @param ticker the ticker to look for
      * @param startDate the start date
-     * @param endDate   the end date
+     * @param endDate the end date
      * @return a set of option that has the data between the dates
      */
     public Set<HistoricalOption> findOptions(String ticker, final LocalDate startDate, final LocalDate endDate) {
@@ -145,23 +140,16 @@ public class HistoricOptionsDataService {
     }
 
     public HistoricalOption findOption(String ticker, LocalDate expiration, Double strike, Option.OptionType optionType) {
+        log.info("Searching DB for option with ticker: {}, expiration: {}, strike: {}, and optionType: {}", ticker, expiration, strike, optionType.name());
         long start = System.currentTimeMillis();
-        HistoricalOption option = singleHistoricOptionCache.get(new CacheConfiguration.SingleHistoricOptionCacheKey(ticker, expiration, optionType, strike),
-                (x) -> {
-                    log.info("Cache miss. Searching DB for option with ticker: {}, expiration: {}, strike: {}, and optionType: {}", ticker, expiration, strike, optionType.name());
-                    return historicalOptionRepository
-                            .findByStrikeAndExpirationAndTickerAndOptionType(strike, expiration, ticker, optionType).orElse(null);
-                });
+        HistoricalOption option =  historicalOptionRepository.findByStrikeAndExpirationAndTickerAndOptionType(strike, expiration, ticker, optionType)
+                .orElseThrow(() -> new EntityNotFoundException("Could not find option matching given criteria. " +
+                        "Ticker: " + ticker + "," +
+                        "Expiration: " + expiration + "," +
+                        "Strike: " + strike + "," +
+                        "OptionType: " + optionType));
         log.debug("Took {} ms to load option with ticker: {}, expiration: {}, strike: {}, and optionType: {}", System.currentTimeMillis() - start,
                 ticker, expiration, strike, optionType.name());
-        if (option == null) {
-            throw new EntityNotFoundException("Could not find option matching given criteria. " +
-                    "Ticker: " + ticker + "," +
-                    "Expiration: " + expiration + "," +
-                    "Strike: " + strike + "," +
-                    "OptionType: " + optionType);
-        }
-        ;
         return option;
     }
 
