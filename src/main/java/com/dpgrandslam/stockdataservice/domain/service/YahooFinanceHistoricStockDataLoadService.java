@@ -4,6 +4,7 @@ import com.dpgrandslam.stockdataservice.adapter.apiclient.WebpageLoader;
 import com.dpgrandslam.stockdataservice.domain.config.ApiClientConfigurationProperties;
 import com.dpgrandslam.stockdataservice.domain.error.YahooFinanceQuoteLoadException;
 import com.dpgrandslam.stockdataservice.domain.model.stock.YahooFinanceQuote;
+import com.dpgrandslam.stockdataservice.domain.util.TimeUtils;
 import com.google.common.base.Charsets;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -32,6 +33,9 @@ public class YahooFinanceHistoricStockDataLoadService {
     @Qualifier("YahooFinanceApiClientConfigurationProperties")
     private ApiClientConfigurationProperties clientConfigurationProperties;
 
+    @Autowired
+    private TimeUtils timeUtils;
+
 
     public List<YahooFinanceQuote> loadQuoteForDates(String ticker, LocalDate startDate, LocalDate endDate) {
         // Break into 3 month chunks since yahoo finance is weird about long dates
@@ -47,6 +51,7 @@ public class YahooFinanceHistoricStockDataLoadService {
         }
         return quotes.stream().filter(x -> (x.getDate().isAfter(startDate) || x.getDate().equals(startDate))
                         && (x.getDate().isBefore(endDate) || x.getDate().equals(endDate)))
+                .filter(x -> timeUtils.isTradingOpenOnDay(x.getDate()))
                 .sorted(Comparator.comparing(YahooFinanceQuote::getDate))
                 .collect(Collectors.toList());
     }
