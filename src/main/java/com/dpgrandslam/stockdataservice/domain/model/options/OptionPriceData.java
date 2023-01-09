@@ -23,7 +23,8 @@ import java.time.LocalDate;
 @JsonIgnoreProperties(ignoreUnknown = true)
 @Table(indexes = {
         @Index(name = "idx_optionId_tradeDate", columnList = "option_id, trade_date", unique = true),
-        @Index(name = "idx_optionId", columnList = "option_id")
+        @Index(name = "idx_optionId", columnList = "option_id"),
+        @Index(name = "idx_trade_date", columnList = "trade_date")
 })
 public class OptionPriceData {
 
