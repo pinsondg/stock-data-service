@@ -1,15 +1,14 @@
 package com.dpgrandslam.stockdataservice.adapter.api;
 
 import com.dpgrandslam.stockdataservice.domain.error.OptionsChainLoadException;
+import com.dpgrandslam.stockdataservice.domain.model.FearGreedIndex;
+import com.dpgrandslam.stockdataservice.domain.model.options.Option;
 import com.dpgrandslam.stockdataservice.domain.model.options.OptionsChain;
 import com.dpgrandslam.stockdataservice.domain.model.stock.*;
-import com.dpgrandslam.stockdataservice.domain.service.OptionsChainLoadService;
-import com.dpgrandslam.stockdataservice.domain.service.StockDataLoadService;
-import com.dpgrandslam.stockdataservice.domain.service.TenYearTreasuryYieldService;
-import com.dpgrandslam.stockdataservice.domain.service.TrackedStockService;
+import com.dpgrandslam.stockdataservice.domain.service.*;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.tomcat.jni.Local;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -19,7 +18,9 @@ import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
 import java.util.*;
+import java.util.stream.Collectors;
 
+@CrossOrigin(origins = "http://localhost:3000")
 @Controller
 @RequestMapping("/data")
 @Slf4j
@@ -38,6 +39,13 @@ public class StockDataServiceController {
 
     @Autowired
     private TenYearTreasuryYieldService treasuryYieldService;
+
+    @Autowired
+    @Qualifier("CNNFearGreedDataLoadAPIService")
+    private FearGreedDataLoadService fearGreedDataLoadService;
+
+    @Autowired
+    private VIXLoadService vixLoadService;
 
     @GetMapping("/option/{ticker}")
     public ResponseEntity<List<OptionsChain>> getOptionsChain(@PathVariable(name = "ticker") String ticker,
@@ -125,8 +133,30 @@ public class StockDataServiceController {
     }
 
     @GetMapping("/treasury-yield")
-    public ResponseEntity<YahooFinanceTenYearTreasuryYield> getTreasuryYield(@RequestParam Optional<String> date) {
-        return ResponseEntity.ok(treasuryYieldService.getTreasuryYieldForDate(date.map(LocalDate::parse)
-                .orElse(LocalDate.now())));
+    public ResponseEntity<List<YahooFinanceQuote>> getTreasuryYield(@RequestParam String startDate, @RequestParam Optional<String> endDate) {
+        return ResponseEntity.ok(treasuryYieldService.getTreasuryYieldForDate(LocalDate.parse(startDate),
+                endDate.map(LocalDate::parse).orElse(LocalDate.now())));
+    }
+
+    @GetMapping("/fear-greed")
+    public ResponseEntity<List<FearGreedIndex>> getFearGreedIndexBetweenDates(@RequestParam Optional<String> startDate,
+                                                                              @RequestParam Optional<String> endDate) {
+        LocalDate sd = startDate.map(LocalDate::parse).orElse(LocalDate.now());
+        LocalDate ed = endDate.map(LocalDate::parse).orElse(LocalDate.now());
+
+        if (sd.equals(LocalDate.now()) && ed.equals(LocalDate.now())) {
+            return ResponseEntity.ok(fearGreedDataLoadService.loadCurrentFearGreedIndex().stream()
+                    .sorted(Comparator.comparing(FearGreedIndex::getTradeDate))
+                    .collect(Collectors.toList()));
+        } else if (sd.equals(ed)) {
+            Optional<FearGreedIndex> fgIndex = fearGreedDataLoadService.getFearGreedIndexOfDay(sd);
+            return fgIndex.map(fearGreedIndex -> ResponseEntity.ok(Collections.singletonList(fearGreedIndex))).orElseGet(() -> ResponseEntity.notFound().build());
+        }
+        return ResponseEntity.ok(fearGreedDataLoadService.loadFearGreedDataBetweenDates(sd, ed));
+    }
+
+    @GetMapping("/vix")
+    public ResponseEntity<List<YahooFinanceQuote>> getVixForDates(@RequestParam String startDate, @RequestParam Optional<String> endDate) {
+        return ResponseEntity.ok(vixLoadService.loadVIXBetweenDates(LocalDate.parse(startDate), endDate.map(LocalDate::parse).orElse(LocalDate.parse(startDate))));
     }
 }

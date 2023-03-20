@@ -11,7 +11,7 @@ import java.time.LocalDate;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class YahooFinanceTenYearTreasuryYield implements EndOfDayStockData {
+public class YahooFinanceQuote implements EndOfDayStockData {
 
     private LocalDate date;
     private Double open;
@@ -19,6 +19,7 @@ public class YahooFinanceTenYearTreasuryYield implements EndOfDayStockData {
     private Double high;
     private Double low;
     private Double adjClose;
+    private String ticker;
 
 
     @Override
@@ -33,6 +34,16 @@ public class YahooFinanceTenYearTreasuryYield implements EndOfDayStockData {
 
     @Override
     public Integer getAdjVolume() {
+        return null;
+    }
+
+    @Override
+    public Double getAdjHigh() {
+        return null;
+    }
+
+    @Override
+    public Double getAdjLow() {
         return null;
     }
 

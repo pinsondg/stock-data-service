@@ -12,7 +12,11 @@ public interface EndOfDayStockData {
 
     Double getHigh();
 
+    Double getAdjHigh();
+
     Double getLow();
+
+    Double getAdjLow();
 
     Double getClose();
 

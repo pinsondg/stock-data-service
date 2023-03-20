@@ -11,7 +11,9 @@ import java.io.IOException;
 import java.time.*;
 import java.time.temporal.TemporalAdjusters;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 @Component
 @Slf4j
@@ -19,8 +21,7 @@ public class TimeUtils {
 
     private static final String HOLIDAYS_FILE_PATH = "data/market-holidays.csv";
 
-    private List<Holiday> stockMarketHolidays;
-
+    private Set<Holiday> stockMarketHolidays;
 
     public TimeUtils() {
         Assert.notNull(getStockMarketHolidays(), "Holidays are null on startup.");
@@ -30,10 +31,10 @@ public class TimeUtils {
         return LocalDateTime.now(ZoneId.of("America/New_York"));
     }
 
-    public List<Holiday> getStockMarketHolidays() {
+    public Set<Holiday> getStockMarketHolidays() {
         if (stockMarketHolidays == null) {
             try {
-                stockMarketHolidays = parseStockMarketHolidays();
+                stockMarketHolidays = new HashSet<>(parseStockMarketHolidays());
             } catch (IOException e) {
                 log.error("Error reading holiday file.", e);
             }
@@ -41,8 +42,8 @@ public class TimeUtils {
         return stockMarketHolidays;
     }
 
-    public LocalDate getLastTradeDate() {
-        LocalDateTime now = this.getNowAmericaNewYork();
+    public LocalDate getCurrentOrLastTradeDate(LocalDateTime dateTime) {
+        LocalDateTime now = dateTime;
         // If now is before a weekday at 9:30am set to previous day
         if (isWeekday(now.getDayOfWeek()) && now.toLocalTime().compareTo(LocalTime.of(9, 30)) < 0) {
             now = now.minusDays(1);
@@ -56,6 +57,10 @@ public class TimeUtils {
             now = now.minusDays(1);
         }
         return now.toLocalDate();
+    }
+
+    public LocalDate getCurrentOrLastTradeDate() {
+        return getCurrentOrLastTradeDate(this.getNowAmericaNewYork());
     }
 
     public LocalDate getStartDayOfCurrentTradeWeek() {
@@ -84,11 +89,15 @@ public class TimeUtils {
     }
 
     public boolean isStockMarketHoliday(LocalDate date) {
-        List<Holiday> stockMarketHolidays = getStockMarketHolidays();
+        Set<Holiday> stockMarketHolidays = getStockMarketHolidays();
         if (stockMarketHolidays != null) {
             return stockMarketHolidays.stream().map(Holiday::getDate).anyMatch(date::equals);
         }
         return false;
+    }
+
+    public boolean isTradingOpenOnDay(LocalDate date) {
+        return !isStockMarketHoliday(date) && isWeekday(date.getDayOfWeek());
     }
 
     public boolean isTodayAmericaNewYorkStockMarketHoliday() {

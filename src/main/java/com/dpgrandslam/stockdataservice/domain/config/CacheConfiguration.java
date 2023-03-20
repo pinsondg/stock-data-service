@@ -1,13 +1,15 @@
 package com.dpgrandslam.stockdataservice.domain.config;
 
+import com.dpgrandslam.stockdataservice.domain.model.FearGreedIndex;
 import com.dpgrandslam.stockdataservice.domain.model.options.HistoricalOption;
 import com.dpgrandslam.stockdataservice.domain.model.stock.EndOfDayStockData;
-import com.dpgrandslam.stockdataservice.domain.model.stock.YahooFinanceTenYearTreasuryYield;
+import com.dpgrandslam.stockdataservice.domain.model.stock.YahooFinanceQuote;
 import com.dpgrandslam.stockdataservice.domain.model.tiingo.TiingoStockSearchResponse;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import lombok.Data;
 import lombok.NonNull;
+import org.apache.commons.lang3.tuple.Pair;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -38,8 +40,8 @@ public class CacheConfiguration {
                 .build();
     }
 
-    @Bean
-    public Cache<LocalDate, YahooFinanceTenYearTreasuryYield> treasuryYieldCache() {
+    @Bean("TreasuryYieldCache")
+    public Cache<Pair<LocalDate, LocalDate>, List<YahooFinanceQuote>> treasuryYieldCache() {
         return Caffeine.newBuilder()
                 .expireAfterWrite(10, TimeUnit.DAYS)
                 .maximumSize(1000)
@@ -50,6 +52,22 @@ public class CacheConfiguration {
     public Cache<HistoricOptionsDataCacheKey, List<EndOfDayStockData>> endOfDayStockDataCache() {
         return Caffeine.newBuilder()
                 .expireAfterWrite(30, TimeUnit.MINUTES)
+                .maximumSize(1000)
+                .build();
+    }
+
+    @Bean
+    public Cache<Pair<LocalDate, LocalDate>, List<FearGreedIndex>> fearGreedBetweenDatesCache() {
+        return Caffeine.newBuilder()
+                .expireAfterWrite(2, TimeUnit.HOURS)
+                .maximumSize(2000)
+                .build();
+    }
+
+    @Bean("VIXCache")
+    public Cache<Pair<LocalDate, LocalDate>, List<YahooFinanceQuote>> vixCache() {
+        return Caffeine.newBuilder()
+                .expireAfterWrite(2, TimeUnit.DAYS)
                 .maximumSize(1000)
                 .build();
     }

@@ -1,6 +1,6 @@
 package com.dpgrandslam.stockdataservice.integration.service;
 
-import com.dpgrandslam.stockdataservice.domain.model.stock.YahooFinanceTenYearTreasuryYield;
+import com.dpgrandslam.stockdataservice.domain.model.stock.YahooFinanceQuote;
 import com.dpgrandslam.stockdataservice.domain.service.TenYearTreasuryYieldService;
 import com.dpgrandslam.stockdataservice.integration.client.MockClientTest;
 import com.dpgrandslam.stockdataservice.testUtils.TestUtils;
@@ -11,6 +11,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 
 import java.io.IOException;
 import java.time.LocalDate;
+import java.util.List;
 
 import static junit.framework.TestCase.assertEquals;
 import static org.mockserver.model.HttpRequest.request;
@@ -32,14 +33,15 @@ public class YahooFinanceTenYearTreasuryYieldTest extends MockClientTest {
                 .withHeader("Content-Type", "text/html")
                 .withBody(TestUtils.loadHtmlFileAndClean("mocks/yahoofinance/yahoo-finance-tnx.html")));
 
-        LocalDate date = LocalDate.of(2021, 9, 14);
-        YahooFinanceTenYearTreasuryYield tenYearTreasuryYield = subject.getTreasuryYieldForDate(date);
+        LocalDate startDate = LocalDate.of(2021, 9, 14);
+        LocalDate endDate = LocalDate.of(2021, 9, 16);
+        List<YahooFinanceQuote> tenYearTreasuryYield = subject.getTreasuryYieldForDate(startDate, endDate);
 
-        assertEquals(date, tenYearTreasuryYield.getDate());
-        assertEquals(1.3460, tenYearTreasuryYield.getOpen());
-        assertEquals(1.3500, tenYearTreasuryYield.getHigh());
-        assertEquals(1.2650, tenYearTreasuryYield.getLow());
-        assertEquals(1.2770, tenYearTreasuryYield.getClose());
-        assertEquals(1.2770, tenYearTreasuryYield.getAdjClose());
+        assertEquals(startDate, tenYearTreasuryYield.get(0).getDate());
+        assertEquals(1.3460, tenYearTreasuryYield.get(0).getOpen());
+        assertEquals(1.3500, tenYearTreasuryYield.get(0).getHigh());
+        assertEquals(1.2650, tenYearTreasuryYield.get(0).getLow());
+        assertEquals(1.2770, tenYearTreasuryYield.get(0).getClose());
+        assertEquals(1.2770, tenYearTreasuryYield.get(0).getAdjClose());
     }
 }

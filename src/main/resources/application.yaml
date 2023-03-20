@@ -1,6 +1,9 @@
 spring:
   profiles:
     active: local
+  datasource:
+    hikari:
+      max-lifetime: 240000
   jpa:
     #optional - show SQL statements in console.
     show-sql: true
@@ -26,6 +29,9 @@ spring:
           region:
             #required - classpath to cache region factory.
             factory_class: org.hibernate.cache.jcache.JCacheRegionFactory
+  batch:
+    job:
+      enabled: false
 
 api:
   client:
@@ -35,6 +41,12 @@ api:
       authorization-token: ${TIINGO_AUTH_TOKEN}
     yahoo-finance:
       url: http://finance.yahoo.com
+    cnn:
+      url: https://money.cnn.com
+    fear-greed:
+      url: https://production.dataviz.cnn.io
+  security:
+    enabled: false
 
 server:
   port: 5000

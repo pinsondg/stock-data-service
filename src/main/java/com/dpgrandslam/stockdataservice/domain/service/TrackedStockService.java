@@ -11,11 +11,13 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 
 import javax.persistence.EntityNotFoundException;
+import javax.sound.midi.Track;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
@@ -53,13 +55,15 @@ public class TrackedStockService {
 
     public void updateOptionUpdatedTimestamp(String ticker)  {
         TrackedStock trackedStock = findByTicker(ticker);
-        trackedStock.setLastOptionsHistoricDataUpdate(timeUtils.getLastTradeDate());
+        trackedStock.setLastOptionsHistoricDataUpdate(timeUtils.getCurrentOrLastTradeDate());
         trackedStocksRepository.save(trackedStock);
     }
 
     public void addTrackedStocks(List<String> tickers) {
         log.info("Attempting to track tickers {}", tickers);
-        List<TrackedStock> added = trackedStocksRepository.saveAll(tickers.stream()
+        Set<String> existing = trackedStocksRepository.findAll().stream().map(TrackedStock::getTicker).collect(Collectors.toSet());
+        List<String> tickersToSave = tickers.stream().filter(x -> !existing.contains(x)).collect(Collectors.toList());
+        List<TrackedStock> added = trackedStocksRepository.saveAll(tickersToSave.stream()
                 .map(ticker -> verifyAndBuildTrackedStock(ticker)
                         .orElseThrow(() -> new IllegalStateException("Ticker: " + ticker + " is not valid. Skipping addition.")))
                 .collect(Collectors.toList()));
@@ -73,6 +77,11 @@ public class TrackedStockService {
             log.info("Added tracked stock: {}", saved);
             applicationEventPublisher.publishEvent(new TrackedStockAddedEvent(this, Collections.singleton(saved)));
         });
+    }
+
+    public TrackedStock saveTrackedStock(TrackedStock trackedStock) {
+        log.info("Adding tracked stock with ticker: {}", trackedStock.getTicker());
+        return trackedStocksRepository.save(trackedStock);
     }
 
     private Optional<TrackedStock> verifyAndBuildTrackedStock(String ticker) {
