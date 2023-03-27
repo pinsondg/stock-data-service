@@ -28,12 +28,12 @@ public class YahooFinanceQuote implements EndOfDayStockData {
     }
 
     @Override
-    public Integer getVolume() {
+    public Long getVolume() {
         return null;
     }
 
     @Override
-    public Integer getAdjVolume() {
+    public Long getAdjVolume() {
         return null;
     }
 

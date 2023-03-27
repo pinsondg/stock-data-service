@@ -22,9 +22,9 @@ public interface EndOfDayStockData {
 
     Double getAdjClose();
 
-    Integer getVolume();
+    Long getVolume();
 
-    Integer getAdjVolume();
+    Long getAdjVolume();
 
     Double getSplitFactor();
 }
