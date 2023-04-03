@@ -8,7 +8,7 @@ databaseChangeLog:
   - include:
       file: db/changelog/schema/liquibase-add-index-20210322.xml
   - include:
-      file: db/changelog/2021/04/20-01-changelog.xmlfear_greed_index
+      file: db/changelog/2021/04/20-01-changelog.xml
   - include:
       file: db/changelog/2021/05/14-01-changelog.xml
   - include:
