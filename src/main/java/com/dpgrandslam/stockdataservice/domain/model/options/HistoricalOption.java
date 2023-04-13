@@ -126,9 +126,6 @@ public class HistoricalOption extends Option {
         }
 
         public static CacheableHistoricalOption fromHistoricalOption(HistoricalOption historicalOption) {
-            if (historicalOption == null) {
-                return null;
-            }
             return new CacheableHistoricalOption(historicalOption);
         }
     }
