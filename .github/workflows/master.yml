@@ -49,6 +49,7 @@ jobs:
              zip -r test_results.zip ${{ github.workspace }}/target/site/
       - name: Save Testing Report
         uses: actions/upload-artifact@v2
+        if: success() || failure()
         with:
           name: test_results.zip
           path: ${{ github.workspace }}/test_results.zip
