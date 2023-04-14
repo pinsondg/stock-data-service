@@ -15,7 +15,7 @@
     <description>MicroService for getting stock and options data</description>
     <properties>
         <java.version>11</java.version>
-        <feign.version>11.8</feign.version>
+        <feign.version>12.3</feign.version>
         <jsoup.version>1.15.3</jsoup.version>
         <jasypt.version>1.9.3</jasypt.version>
         <caffine.version>3.0.6</caffine.version>
